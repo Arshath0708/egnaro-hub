@@ -58,7 +58,9 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: string;
+  address: string;
+  id: string;                // internal DB id
+  order_id: string;          // <-- added to match backend JSON
   items: OrderItem[];
   total: number;
   status: OrderStatus;

@@ -1,226 +1,441 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, LogOut, Users, Package, ShoppingBag, IndianRupee, Check, X, Truck } from "lucide-react";
+import {
+  Shield,
+  Check,
+  X,
+  Package,
+  LogOut,
+  Users,
+  Truck,
+} from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { useAuth } from "@/context/auth-store";
-import { api } from "@/services/api";
-import { inr, dateShort } from "@/lib/format";
 import { toast } from "sonner";
-import type { OrderStatus } from "@/types";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin Panel — Egnaro Mart" }] }),
-  component: Admin,
+  component: AdminPage,
 });
 
-const STATUSES: OrderStatus[] = ["processing", "confirmed", "packed", "shipped", "out-for-delivery", "delivered"];
+type Product = {
+  id: number;
+  name: string;
+  category: string;
+  image: string;
+  price: number;
+  original_price: number;
+  discount: number;
+  description: string;
+  approved: number;
+};
 
-function Admin() {
-  const { isAdmin, loginAdmin, logoutAdmin } = useAuth();
-  if (!isAdmin) return <AdminLogin onLogin={loginAdmin} />;
+type Vendor = {
+  id: number;
+  vendor_name: string;
+  company_name: string;
+  phone: string;
+  email: string;
+  address: string;
+  status: string;
+};
+
+type Order = {
+  id: number;
+  order_id: string;
+  customer_name: string;
+  phone: string;
+  email: string;
+  address: string;
+  total: number;
+  status: string;
+};
+
+function AdminPage() {
+  const { isAdmin, logoutAdmin } = useAuth();
+  if (!isAdmin) return <AdminLogin />;
   return <AdminPanel onLogout={logoutAdmin} />;
 }
 
-function AdminLogin({ onLogin }: { onLogin: (u: string, p: string) => boolean }) {
-  const [u, setU] = useState("admin");
-  const [p, setP] = useState("");
-  const inp = "w-full bg-secondary/60 border border-glass-border rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring";
+/* -------------------------------------------------- */
+/*  LOGIN                                              */
+/* -------------------------------------------------- */
+
+function AdminLogin() {
+  const loginAdmin = useAuth((s) => s.loginAdmin);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const res = await fetch("https://egnaromart.com/api/admin-login.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loginAdmin(data.admin);
+        toast.success(`Welcome ${data.admin.name} 🚀`);
+      } else {
+        toast.error(data.message || "Invalid credentials");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <Shell>
-      <div className="mx-auto max-w-md px-4 py-20">
-        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-strong rounded-3xl p-10 shadow-elegant">
-          <div className="h-14 w-14 rounded-2xl gradient-accent grid place-items-center mb-5 shadow-glow-accent"><Shield className="h-7 w-7 text-accent-foreground" /></div>
-          <h1 className="font-display text-3xl font-bold">Admin Login</h1>
-          <p className="text-muted-foreground text-sm mt-1 mb-6">Enterprise control panel</p>
-          <form onSubmit={(e) => { e.preventDefault(); if (!onLogin(u, p)) toast.error("Invalid credentials"); }} className="space-y-3">
-            <label className="block"><span className="text-xs text-muted-foreground mb-1 block">Username</span><input required className={inp} value={u} onChange={(e) => setU(e.target.value)} /></label>
-            <label className="block"><span className="text-xs text-muted-foreground mb-1 block">Password</span><input required type="password" className={inp} value={p} onChange={(e) => setP(e.target.value)} /></label>
-            <button className="w-full gradient-primary text-primary-foreground py-3 rounded-xl font-semibold shadow-glow shimmer">Sign In</button>
+      {/* ✅ FIXED: removed overflow-hidden so page can scroll */}
+      <div className="relative flex min-h-[80vh] items-center justify-center px-4 py-16">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,255,255,0.15),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.2),transparent_35%)]" />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 w-full max-w-md overflow-hidden rounded-[32px] border border-white/10 bg-[#071028]/90 p-10 shadow-[0_0_80px_rgba(0,255,255,0.08)] backdrop-blur-2xl"
+        >
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-yellow-400" />
+
+          <div className="mb-8 flex justify-center">
+            <div className="grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-cyan-400 to-blue-600 shadow-2xl">
+              <Shield className="h-10 w-10 text-white" />
+            </div>
+          </div>
+
+          <div className="text-center">
+            <h1 className="text-4xl font-black text-white">Admin Portal</h1>
+            <p className="mt-3 text-gray-400">
+              Secure access to Egnaro Mart Control Center
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="mt-10 space-y-5">
+            <input
+              type="email"
+              required
+              placeholder="Admin Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white placeholder:text-gray-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
+            />
+            <input
+              type="password"
+              required
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white placeholder:text-gray-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
+            />
+            <button
+              disabled={loading}
+              className="w-full rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-yellow-300 py-4 text-lg font-bold text-black shadow-[0_10px_40px_rgba(0,255,255,0.25)] transition hover:scale-[1.02] disabled:opacity-60"
+            >
+              {loading ? "Authenticating..." : "Access Dashboard"}
+            </button>
           </form>
-          <div className="mt-5 text-xs text-muted-foreground text-center">Demo: <code className="text-primary">admin</code> / <code className="text-primary">egnaro@2025</code></div>
+
+          <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-cyan-400/5 p-4 text-center text-sm text-cyan-200">
+            Protected Enterprise Admin System
+          </div>
         </motion.div>
       </div>
     </Shell>
   );
 }
 
+/* -------------------------------------------------- */
+/*  ADMIN PANEL                                        */
+/* -------------------------------------------------- */
+
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
-  const qc = useQueryClient();
-  const [tab, setTab] = useState<"overview" | "vendors" | "products" | "orders">("overview");
+  const [pendingProducts, setPendingProducts] = useState<Product[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingVendors, setLoadingVendors] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
-  const { data: vendors = [] } = useQuery({ queryKey: ["vendors"], queryFn: () => api.getVendors() });
-  const { data: products = [] } = useQuery({ queryKey: ["all-products"], queryFn: () => api.getProducts() });
-  const { data: orders = [] } = useQuery({ queryKey: ["orders"], queryFn: () => api.getOrders() });
+  useEffect(() => {
+    loadPendingProducts();
+    loadPendingVendors();
+    loadOrders();
+  }, []);
 
-  const pendingVendors = vendors.filter((v) => v.status === "pending");
-  const pendingProducts = products.filter((p) => !p.approved);
-  const revenue = orders.reduce((s, o) => s + o.total, 0);
+  async function loadPendingProducts() {
+    try {
+      setLoadingProducts(true);
+      const res = await fetch("https://egnaromart.com/api/get-pending.php");
+      const data = await res.json();
+      setPendingProducts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load products");
+    } finally {
+      setLoadingProducts(false);
+    }
+  }
 
-  const setVendor = useMutation({ mutationFn: ({ id, s }: { id: string; s: any }) => api.setVendorStatus(id, s), onSuccess: () => { qc.invalidateQueries({ queryKey: ["vendors"] }); toast.success("Vendor updated"); } });
-  const setProd = useMutation({ mutationFn: ({ id, a }: { id: string; a: boolean }) => api.approveProduct(id, a), onSuccess: () => { qc.invalidateQueries({ queryKey: ["all-products"] }); toast.success("Product updated"); } });
-  const setOrder = useMutation({ mutationFn: ({ id, s }: { id: string; s: OrderStatus }) => api.setOrderStatus(id, s), onSuccess: () => { qc.invalidateQueries({ queryKey: ["orders"] }); toast.success("Order updated"); } });
+  async function loadPendingVendors() {
+    try {
+      setLoadingVendors(true);
+      const res = await fetch("https://egnaromart.com/api/get-vendors.php");
+      const data = await res.json();
+      setVendors(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load vendors");
+    } finally {
+      setLoadingVendors(false);
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      setLoadingOrders(true);
+      const res = await fetch("https://egnaromart.com/api/get-orders.php");
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load orders");
+    } finally {
+      setLoadingOrders(false);
+    }
+  }
+
+  async function approveProduct(id: number) {
+    try {
+      const res = await fetch("https://egnaromart.com/api/admin-approve.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (data.success) { toast.success("Product approved"); loadPendingProducts(); }
+      else toast.error(data.message || "Approval failed");
+    } catch { toast.error("Server error"); }
+  }
+
+  async function rejectProduct(id: number) {
+    try {
+      const res = await fetch("https://egnaromart.com/api/admin-reject.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (data.success) { toast.success("Product rejected"); loadPendingProducts(); }
+      else toast.error(data.message || "Reject failed");
+    } catch { toast.error("Server error"); }
+  }
+
+  async function approveVendor(id: number) {
+    try {
+      const res = await fetch("https://egnaromart.com/api/approve-vendor.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (data.success) { toast.success("Vendor approved"); loadPendingVendors(); }
+      else toast.error(data.message || "Approval failed");
+    } catch { toast.error("Server error"); }
+  }
+
+  async function rejectVendor(id: number) {
+    try {
+      const res = await fetch("https://egnaromart.com/api/reject-vendor.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (data.success) { toast.success("Vendor rejected"); loadPendingVendors(); }
+      else toast.error(data.message || "Reject failed");
+    } catch { toast.error("Server error"); }
+  }
+
+  async function updateOrderStatus(order_id: string, newStatus: string) {
+    try {
+      const res = await fetch("https://egnaromart.com/api/update-order-status.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id, status: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) { toast.success(`Order #${order_id} → ${newStatus}`); loadOrders(); }
+      else toast.error(data.message || "Update failed");
+    } catch { toast.error("Server error"); }
+  }
 
   return (
+    // ✅ FIXED: Added Shell wrapper + removed overflow-hidden
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="mx-auto max-w-7xl px-4 py-10">
+
+        {/* HEADER */}
+        <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-accent font-semibold mb-1"><Shield className="h-3 w-3" /> Admin Panel</div>
-            <h1 className="font-display text-4xl font-bold">Control Center</h1>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              Admin Dashboard
+            </div>
+            <h1 className="font-display text-4xl font-bold">
+              Egnaro Mart Control Center
+            </h1>
           </div>
-          <button onClick={onLogout} className="inline-flex items-center gap-2 glass px-4 py-2.5 rounded-xl font-semibold hover:bg-white/10 self-start"><LogOut className="h-4 w-4" /> Logout</button>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium transition hover:bg-white/10"
+          >
+            <LogOut className="h-4 w-4" /> Logout
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Stat icon={Users} label="Vendors" value={String(vendors.length)} sub={`${pendingVendors.length} pending`} />
-          <Stat icon={Package} label="Products" value={String(products.length)} sub={`${pendingProducts.length} pending`} />
-          <Stat icon={ShoppingBag} label="Orders" value={String(orders.length)} />
-          <Stat icon={IndianRupee} label="Revenue" value={inr(revenue)} />
+        {/* STATS */}
+        <div className="mb-8 grid gap-4 md:grid-cols-3">
+          <StatBox icon={<Package className="h-6 w-6 text-primary" />} count={pendingProducts.length} label="Pending Products" />
+          <StatBox icon={<Users className="h-6 w-6 text-primary" />} count={vendors.length} label="Vendor Requests" />
+          <StatBox icon={<Truck className="h-6 w-6 text-primary" />} count={orders.length} label="Total Orders" />
         </div>
 
-        <div className="glass rounded-2xl p-1.5 inline-flex gap-1 mb-6 flex-wrap">
-          {(["overview", "vendors", "products", "orders"] as const).map((t) => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${tab === t ? "gradient-primary text-primary-foreground shadow-glow" : "hover:bg-white/5 text-muted-foreground"}`}>
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {tab === "overview" && (
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card title="Pending Vendor Approvals">
-              {pendingVendors.length === 0 ? <Empty>No pending vendors</Empty> : pendingVendors.slice(0, 5).map((v) => (
-                <Row key={v.id} title={v.companyName} sub={`${v.vendorName} · ${v.email}`}>
-                  <button onClick={() => setVendor.mutate({ id: v.id, s: "approved" })} className="p-1.5 rounded-md bg-success/15 text-success hover:bg-success/25"><Check className="h-4 w-4" /></button>
-                  <button onClick={() => setVendor.mutate({ id: v.id, s: "rejected" })} className="p-1.5 rounded-md bg-destructive/15 text-destructive hover:bg-destructive/25"><X className="h-4 w-4" /></button>
-                </Row>
-              ))}
-            </Card>
-            <Card title="Pending Product Approvals">
-              {pendingProducts.length === 0 ? <Empty>No pending products</Empty> : pendingProducts.slice(0, 5).map((p) => (
-                <Row key={p.id} title={p.name} sub={`${inr(p.price)} · ${p.category}`}>
-                  <button onClick={() => setProd.mutate({ id: p.id, a: true })} className="p-1.5 rounded-md bg-success/15 text-success hover:bg-success/25"><Check className="h-4 w-4" /></button>
-                  <button onClick={() => setProd.mutate({ id: p.id, a: false })} className="p-1.5 rounded-md bg-destructive/15 text-destructive hover:bg-destructive/25"><X className="h-4 w-4" /></button>
-                </Row>
-              ))}
-            </Card>
-          </div>
-        )}
-
-        {tab === "vendors" && (
-          <Card title="All Vendors">
-            <div className="overflow-x-auto"><table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground uppercase tracking-wider"><tr><th className="text-left py-2">Company</th><th className="text-left">Contact</th><th className="text-left">GST</th><th className="text-center">Status</th><th className="text-right">Action</th></tr></thead>
-              <tbody className="divide-y divide-glass-border">
-                {vendors.map((v) => (
-                  <tr key={v.id}>
-                    <td className="py-3 font-medium">{v.companyName}<div className="text-xs text-muted-foreground">{v.vendorName}</div></td>
-                    <td className="text-muted-foreground">{v.phone}<div className="text-xs">{v.email}</div></td>
-                    <td className="font-mono text-xs">{v.gst}</td>
-                    <td className="text-center"><Badge status={v.status} /></td>
-                    <td className="text-right space-x-1">
-                      <button onClick={() => setVendor.mutate({ id: v.id, s: "approved" })} className="p-1.5 rounded-md bg-success/15 text-success hover:bg-success/25"><Check className="h-4 w-4" /></button>
-                      <button onClick={() => setVendor.mutate({ id: v.id, s: "rejected" })} className="p-1.5 rounded-md bg-destructive/15 text-destructive hover:bg-destructive/25"><X className="h-4 w-4" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-          </Card>
-        )}
-
-        {tab === "products" && (
-          <Card title="All Products">
-            <div className="overflow-x-auto"><table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground uppercase tracking-wider"><tr><th className="text-left py-2">Product</th><th className="text-left">Category</th><th className="text-right">Price</th><th className="text-center">Status</th><th className="text-right">Action</th></tr></thead>
-              <tbody className="divide-y divide-glass-border">
-                {products.map((p) => (
-                  <tr key={p.id}>
-                    <td className="py-3 flex items-center gap-3"><img src={p.image} className="h-10 w-10 rounded-lg object-cover" alt="" /><span className="font-medium line-clamp-1 max-w-xs">{p.name}</span></td>
-                    <td className="capitalize text-muted-foreground">{p.category.replace("-", " ")}</td>
-                    <td className="text-right font-semibold">{inr(p.price)}</td>
-                    <td className="text-center"><Badge status={p.approved ? "approved" : "pending"} /></td>
-                    <td className="text-right space-x-1">
-                      <button onClick={() => setProd.mutate({ id: p.id, a: true })} className="p-1.5 rounded-md bg-success/15 text-success hover:bg-success/25"><Check className="h-4 w-4" /></button>
-                      <button onClick={() => setProd.mutate({ id: p.id, a: false })} className="p-1.5 rounded-md bg-destructive/15 text-destructive hover:bg-destructive/25"><X className="h-4 w-4" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-          </Card>
-        )}
-
-        {tab === "orders" && (
-          <Card title="Order Management">
-            <div className="space-y-3">
-              {orders.length === 0 ? <Empty>No orders yet</Empty> : orders.map((o) => (
-                <div key={o.id} className="glass rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-4">
+        {/* VENDORS */}
+        <div className="glass-strong mb-8 rounded-3xl p-6">
+          <h2 className="mb-6 font-display text-2xl font-bold flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" /> Vendor Approval Requests
+          </h2>
+          {loadingVendors ? (
+            <p className="py-10 text-center text-muted-foreground">Loading vendors...</p>
+          ) : vendors.length === 0 ? (
+            <p className="py-10 text-center text-muted-foreground">No pending vendor requests</p>
+          ) : (
+            <div className="space-y-4">
+              {vendors.map((vendor) => (
+                <div
+                  key={vendor.id}
+                  className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 md:flex-row md:items-center"
+                >
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1"><Truck className="h-4 w-4 text-primary" /><span className="font-mono font-bold">{o.id}</span><Badge status={o.status as any} /></div>
-                    <div className="text-xs text-muted-foreground">{o.customer.fullName} · {o.customer.phone} · {dateShort(o.createdAt)}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{o.items.length} items · <span className="text-foreground font-semibold">{inr(o.total)}</span></div>
+                    <h3 className="text-lg font-semibold">{vendor.company_name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{vendor.vendor_name}</p>
+                    <p className="text-sm text-muted-foreground">{vendor.email}</p>
+                    <p className="text-sm text-muted-foreground">{vendor.phone}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{vendor.address}</p>
                   </div>
-                  <select defaultValue={o.status} onChange={(e) => setOrder.mutate({ id: o.id, s: e.target.value as OrderStatus })}
-                    className="bg-secondary border border-glass-border rounded-lg px-3 py-2 text-sm capitalize">
-                    {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/-/g, " ")}</option>)}
+                  <div className="flex gap-3">
+                    <button onClick={() => approveVendor(vendor.id)} className="flex items-center gap-2 rounded-xl bg-green-500/20 px-4 py-2 text-sm font-semibold text-green-400 transition hover:bg-green-500/30">
+                      <Check className="h-4 w-4" /> Approve
+                    </button>
+                    <button onClick={() => rejectVendor(vendor.id)} className="flex items-center gap-2 rounded-xl bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/30">
+                      <X className="h-4 w-4" /> Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* PRODUCTS */}
+        <div className="glass-strong mb-8 rounded-3xl p-6">
+          <h2 className="mb-6 font-display text-2xl font-bold flex items-center gap-2">
+            <Package className="h-6 w-6 text-primary" /> Pending Products
+          </h2>
+          {loadingProducts ? (
+            <p className="py-10 text-center text-muted-foreground">Loading products...</p>
+          ) : pendingProducts.length === 0 ? (
+            <p className="py-10 text-center text-muted-foreground">No pending products found</p>
+          ) : (
+            <div className="space-y-4">
+              {pendingProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 md:flex-row md:items-center"
+                >
+                  <img
+                    src={product.image || "/placeholder.png"}
+                    alt={product.name}
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.png"; }}
+                    className="h-24 w-24 rounded-xl object-cover"
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{product.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{product.category}</p>
+                    <p className="mt-2 font-bold text-primary">₹{Number(product.price || 0).toLocaleString()}</p>
+                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => approveProduct(product.id)} className="flex items-center gap-2 rounded-xl bg-green-500/20 px-4 py-2 text-sm font-semibold text-green-400 transition hover:bg-green-500/30">
+                      <Check className="h-4 w-4" /> Approve
+                    </button>
+                    <button onClick={() => rejectProduct(product.id)} className="flex items-center gap-2 rounded-xl bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/30">
+                      <X className="h-4 w-4" /> Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ORDERS */}
+        <div className="glass-strong rounded-3xl p-6">
+          <h2 className="mb-6 font-display text-2xl font-bold flex items-center gap-2">
+            <Truck className="h-6 w-6 text-primary" /> Orders Management
+          </h2>
+          {loadingOrders ? (
+            <p className="py-10 text-center text-muted-foreground">Loading orders...</p>
+          ) : orders.length === 0 ? (
+            <p className="py-10 text-center text-muted-foreground">No orders found</p>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 md:flex-row md:items-center"
+                >
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">Order #{order.order_id}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{order.customer_name} — {order.phone}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{order.address}</p>
+                    <p className="mt-2 font-bold text-primary">₹{Number(order.total || 0).toLocaleString()}</p>
+                  </div>
+                  <select
+                    value={order.status}
+                    onChange={(e) => updateOrderStatus(order.order_id, e.target.value)}
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
+                  >
+                    <option value="Processing">Processing</option>
+                    <option value="Packed">Packed</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Out for Delivery">Out for Delivery</option>
+                    <option value="Delivered">Delivered</option>
                   </select>
                 </div>
               ))}
             </div>
-          </Card>
-        )}
+          )}
+        </div>
+
       </div>
     </Shell>
   );
 }
 
-function Stat({ icon: Icon, label, value, sub }: { icon: any; label: string; value: string; sub?: string }) {
+function StatBox({ icon, count, label }: { icon: React.ReactNode; count: number; label: string }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-2xl p-5 hover-lift">
-      <Icon className="h-5 w-5 text-primary mb-3" />
-      <div className="font-display text-2xl font-bold text-gradient">{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{label}{sub && <span className="text-warning ml-1">· {sub}</span>}</div>
-    </motion.div>
-  );
-}
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="glass-strong rounded-2xl p-6 shadow-elegant">
-      <h3 className="font-display text-xl font-bold mb-4">{title}</h3>
-      <div className="space-y-2">{children}</div>
+    <div className="glass rounded-2xl p-6">
+      {icon}
+      <div className="mt-3 text-3xl font-bold">{count}</div>
+      <div className="mt-1 text-sm text-muted-foreground">{label}</div>
     </div>
   );
-}
-
-function Row({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 p-3 glass rounded-xl">
-      <div className="flex-1 min-w-0"><div className="font-medium text-sm line-clamp-1">{title}</div><div className="text-xs text-muted-foreground">{sub}</div></div>
-      <div className="flex gap-1">{children}</div>
-    </div>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="text-sm text-muted-foreground text-center py-6">{children}</div>;
-}
-
-function Badge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    approved: "bg-success/15 text-success",
-    pending: "bg-warning/15 text-warning",
-    rejected: "bg-destructive/15 text-destructive",
-    processing: "bg-warning/15 text-warning",
-    confirmed: "bg-accent/20 text-accent",
-    packed: "bg-accent/20 text-accent",
-    shipped: "bg-primary/15 text-primary",
-    "out-for-delivery": "bg-primary/15 text-primary",
-    delivered: "bg-success/15 text-success",
-  };
-  return <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${map[status] ?? "bg-muted text-muted-foreground"}`}>{status.replace(/-/g, " ")}</span>;
 }

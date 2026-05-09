@@ -1,6 +1,6 @@
 import type { Product, Vendor, Order, OrderStatus, CartItem } from "@/types";
-import { SEED_PRODUCTS, SEED_VENDORS, SEED_ORDERS } from "@/data/seed";
 
+// ✅ No seed imports anymore — everything starts empty
 const KEY = "egnaro:db:v1";
 
 interface DB {
@@ -12,17 +12,17 @@ interface DB {
 const isBrowser = typeof window !== "undefined";
 
 function load(): DB {
-  if (!isBrowser) return { products: SEED_PRODUCTS, vendors: SEED_VENDORS, orders: SEED_ORDERS };
+  if (!isBrowser) return { products: [], vendors: [], orders: [] };
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
-      const init: DB = { products: SEED_PRODUCTS, vendors: SEED_VENDORS, orders: SEED_ORDERS };
+      const init: DB = { products: [], vendors: [], orders: [] };
       localStorage.setItem(KEY, JSON.stringify(init));
       return init;
     }
     return JSON.parse(raw) as DB;
   } catch {
-    return { products: SEED_PRODUCTS, vendors: SEED_VENDORS, orders: SEED_ORDERS };
+    return { products: [], vendors: [], orders: [] };
   }
 }
 
@@ -35,7 +35,12 @@ const delay = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 const id = (p: string) => `${p}${Math.random().toString(36).slice(2, 8)}`;
 
 export const api = {
-  async getProducts(filter?: { category?: string; approvedOnly?: boolean; vendorId?: string; search?: string }): Promise<Product[]> {
+  async getProducts(filter?: {
+    category?: string;
+    approvedOnly?: boolean;
+    vendorId?: string;
+    search?: string;
+  }): Promise<Product[]> {
     await delay(200);
     let list = load().products;
     if (filter?.approvedOnly) list = list.filter((p) => p.approved);
@@ -43,7 +48,11 @@ export const api = {
     if (filter?.vendorId) list = list.filter((p) => p.vendorId === filter.vendorId);
     if (filter?.search) {
       const q = filter.search.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
+      );
     }
     return list;
   },
@@ -53,11 +62,19 @@ export const api = {
     return load().products.find((p) => p.id === pid) ?? null;
   },
 
-  async submitVendorApplication(input: Omit<Vendor, "id" | "status" | "createdAt">): Promise<Vendor> {
+  async submitVendorApplication(
+    input: Omit<Vendor, "id" | "status" | "createdAt">
+  ): Promise<Vendor> {
     await delay();
     const db = load();
-    const vendor: Vendor = { ...input, id: id("v"), status: "pending", createdAt: new Date().toISOString() };
-    db.vendors.push(vendor); save(db);
+    const vendor: Vendor = {
+      ...input,
+      id: id("v"),
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    db.vendors.push(vendor);
+    save(db);
     return vendor;
   },
 
@@ -70,15 +87,26 @@ export const api = {
   async setVendorStatus(vid: string, status: Vendor["status"]): Promise<void> {
     await delay();
     const db = load();
-    const v = db.vendors.find((x) => x.id === vid); if (v) v.status = status;
+    const v = db.vendors.find((x) => x.id === vid);
+    if (v) v.status = status;
     save(db);
   },
 
-  async submitVendorProduct(input: Omit<Product, "id" | "approved" | "createdAt" | "rating" | "reviews">): Promise<Product> {
+  async submitVendorProduct(
+    input: Omit<Product, "id" | "approved" | "createdAt" | "rating" | "reviews">
+  ): Promise<Product> {
     await delay();
     const db = load();
-    const p: Product = { ...input, id: id("p"), approved: false, rating: 0, reviews: 0, createdAt: new Date().toISOString() };
-    db.products.push(p); save(db);
+    const p: Product = {
+      ...input,
+      id: id("p"),
+      approved: false,
+      rating: 0,
+      reviews: 0,
+      createdAt: new Date().toISOString(),
+    };
+    db.products.push(p);
+    save(db);
     return p;
   },
 
@@ -100,7 +128,8 @@ export const api = {
   async approveProduct(pid: string, approved: boolean): Promise<void> {
     await delay();
     const db = load();
-    const p = db.products.find((x) => x.id === pid); if (p) p.approved = approved;
+    const p = db.products.find((x) => x.id === pid);
+    if (p) p.approved = approved;
     save(db);
   },
 
@@ -113,7 +142,13 @@ export const api = {
     const db = load();
     const orderItems = input.items.map((ci) => {
       const prod = db.products.find((p) => p.id === ci.productId)!;
-      return { productId: prod.id, name: prod.name, price: prod.price, quantity: ci.quantity, image: prod.image };
+      return {
+        productId: prod.id,
+        name: prod.name,
+        price: prod.price,
+        quantity: ci.quantity,
+        image: prod.image,
+      };
     });
     const total = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
     const oid = `EM${Date.now().toString().slice(-7)}`;
@@ -128,14 +163,18 @@ export const api = {
       estimatedDelivery: new Date(Date.now() + 86400000 * 5).toISOString(),
       history: [{ status: "processing", at: new Date().toISOString() }],
     };
-    db.orders.push(order); save(db);
+    db.orders.push(order);
+    save(db);
     return order;
   },
 
   async trackOrder(query: string): Promise<Order | null> {
     await delay();
     const q = query.trim();
-    const o = load().orders.find((x) => x.id.toLowerCase() === q.toLowerCase() || x.customer.phone === q);
+    const o = load().orders.find(
+      (x) =>
+        x.id.toLowerCase() === q.toLowerCase() || x.customer.phone === q
+    );
     return o ?? null;
   },
 

@@ -1,3 +1,4 @@
+// src/components/layout/Footer.tsx
 import { Link } from "@tanstack/react-router";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import { useState } from "react";
@@ -10,10 +11,8 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-1">
+            {/* ✅ Clean brand name only, no orange/glow background */}
             <div className="flex items-center gap-2 mb-4">
-              <div className="h-9 w-9 rounded-xl gradient-primary grid place-items-center shadow-glow">
-                <span className="text-primary-foreground font-display font-bold text-lg">E</span>
-              </div>
               <div className="font-display font-bold text-lg">Egnaro Mart</div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -46,12 +45,26 @@ export function Footer() {
             <h4 className="text-sm font-semibold mb-4 tracking-wide uppercase text-foreground/90">Newsletter</h4>
             <p className="text-sm text-muted-foreground mb-3">Get exclusive deals & launches.</p>
             <form
-              onSubmit={(e) => { e.preventDefault(); if (!email) return; toast.success("Subscribed", { description: "Welcome to Egnaro Mart insiders." }); setEmail(""); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!email) return;
+                toast.success("Subscribed", { description: "Welcome to Egnaro Mart insiders." });
+                setEmail("");
+              }}
               className="flex items-center gap-2 glass rounded-xl p-1.5"
             >
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required placeholder="you@email.com"
-                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground" />
-              <button type="submit" className="gradient-primary text-primary-foreground p-2 rounded-lg hover:shadow-glow transition-shadow">
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                required
+                placeholder="you@email.com"
+                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+              />
+              <button
+                type="submit"
+                className="gradient-primary text-primary-foreground p-2 rounded-lg hover:shadow-glow transition-shadow"
+              >
                 <Send className="h-4 w-4" />
               </button>
             </form>
@@ -60,7 +73,6 @@ export function Footer() {
 
         <div className="mt-12 pt-6 border-t border-glass-border flex flex-col sm:flex-row gap-3 items-center justify-between text-xs text-muted-foreground">
           <div>© {new Date().getFullYear()} Egnaro Mart. All rights reserved.</div>
-          <div>A sister company of Ansel Power System · 25+ years of trust</div>
         </div>
       </div>
     </footer>
