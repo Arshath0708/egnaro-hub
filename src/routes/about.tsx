@@ -1,27 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Award, Users, Package, ShieldCheck } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 
-export const Route = createFileRoute("/about")({
-  head: () => ({ meta: [{ title: "About — Egnaro Mart" }, { name: "description", content: "Egnaro Mart is a sister company of Ansel Power System with 25+ years of trust delivering premium electronics & hardware." }] }),
-  component: About,
-});
-
-const STATS = [
-  { icon: Award, n: "25+", l: "Years Experience" },
-  { icon: Users, n: "3,000+", l: "Happy Customers" },
-  { icon: Package, n: "500+", l: "Products" },
-  { icon: ShieldCheck, n: "100%", l: "Quality Assured" },
-];
-
-const TESTIMONIALS = [
-  { name: "Mr. Prem Kumar", text: "Excellent quality and delivery. Egnaro Mart has been our go-to for industrial supplies." },
-  { name: "Mr. Raghual", text: "Pricing is unbeatable and the team is highly responsive. Truly direct from manufacturer." },
-  { name: "Mr. Suresh", text: "Bought a motor pump and I'm impressed with after-sales support. Recommended." },
-];
-
-function About() {
+export default function About() {
   return (
     <Shell>
       <section className="relative overflow-hidden">
@@ -72,6 +53,20 @@ function About() {
           ))}
         </div>
       </section>
+      
     </Shell>
   );
 }
+
+const STATS = [
+  { icon: Award, n: "25+", l: "Years Experience" },
+  { icon: Users, n: "3,000+", l: "Happy Customers" },
+  { icon: Package, n: "500+", l: "Products" },
+  { icon: ShieldCheck, n: "100%", l: "Quality Assured" },
+];
+
+const TESTIMONIALS = [
+  { name: "Mr. Prem Kumar", text: "Excellent quality and delivery. Egnaro Mart has been our go-to for industrial supplies." },
+  { name: "Mr. Raghual", text: "Pricing is unbeatable and the team is highly responsive. Truly direct from manufacturer." },
+  { name: "Mr. Suresh", text: "Bought a motor pump and I'm impressed with after-sales support. Recommended." },
+];

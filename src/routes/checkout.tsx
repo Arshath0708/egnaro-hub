@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";   // ✅ switched to react-router-dom
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { CreditCard, Smartphone, Wallet, MessageCircle } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { useCart } from "@/context/cart-store";
@@ -8,33 +8,55 @@ import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/checkout")({ component: CheckoutPage });
-
 const QR =
   "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=egnaromart@okaxis%26pn=EgnaroMart";
 
-function CheckoutPage() {
+const inputCls =
+  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";
+
+type FormState = {
+  fullName: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  gst: string;
+  notes: string;
+};
+
+const EMPTY_FORM: FormState = {
+  fullName: "",
+  phone: "",
+  email: "",
+  address: "",
+  city: "",
+  state: "",
+  pincode: "",
+  gst: "",
+  notes: "",
+};
+
+export default function CheckoutPage() {   // ✅ default export
   const nav = useNavigate();
   const { items, clear } = useCart();
   const [submitting, setSubmitting] = useState(false);
+  const [payment, setPayment] = useState<"cod" | "upi" | "card">("cod");
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products", "all"],
-    queryFn: () => getProducts(),
+    queryKey: ["products"],
+    queryFn: getProducts,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const [payment, setPayment] = useState<"cod" | "upi" | "card">("cod");
-  const [form, setForm] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
-    gst: "",
-    notes: "",
-  });
+  const setField = useCallback(
+    <K extends keyof FormState>(key: K, value: string) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
 
   const detailed = items
     .map((i) => ({
@@ -55,50 +77,39 @@ function CheckoutPage() {
       <Shell>
         <div className="mx-auto max-w-3xl px-4 py-20 text-center">
           <h1 className="font-display text-3xl font-bold">Cart is empty</h1>
+          <p className="mt-2 text-muted-foreground">
+            Add products before checking out.
+          </p>
         </div>
       </Shell>
     );
   }
 
-  const inputCls =
-    "w-full bg-secondary/60 border border-glass-border rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring transition";
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
-
     try {
-      const response = await fetch(
-        "https://egnaromart.com/api/create-order.php",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customer_name: form.fullName,
-            phone: form.phone,
-            email: form.email,
-            address: `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`,
-            total,
-            payment_method: payment,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
+      const res = await fetch("https://egnaromart.com/api/create-order.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name: form.fullName,
+          phone: form.phone,
+          email: form.email,
+          address: `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`,
+          total,
+          payment_method: payment,
+        }),
+      });
+      const data = await res.json();
       if (data.success) {
         clear();
-        // ✅ FIXED: data.order_id is returned at root level from create-order.php
-        nav({
-          to: "/order-success",
-          search: { orderId: data.order_id },
-        });
+        nav(`/order-success?orderId=${data.order_id}`);   // ✅ simplified navigation
       } else {
         toast.error(data.message || "Order failed. Try again.");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Network error. Please try again.");
     } finally {
       setSubmitting(false);
@@ -107,100 +118,92 @@ function CheckoutPage() {
 
   return (
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        <h1 className="font-display text-4xl font-bold mb-8">Checkout</h1>
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <h1 className="font-display text-3xl font-bold mb-8">Checkout</h1>
+
         <form
           onSubmit={handleSubmit}
-          className="grid lg:grid-cols-[1fr_400px] gap-8"
+          className="grid lg:grid-cols-[1fr_380px] gap-8"
         >
-          {/* Shipping Details */}
+          {/* LEFT — Shipping + Payment */}
           <div className="space-y-6">
-            <section className="glass-strong rounded-2xl p-6">
-              <h2 className="font-display text-xl font-bold mb-5">
-                Shipping Details
-              </h2>
+            {/* Shipping */}
+            <section className="rounded-xl border border-border bg-card p-6">
+              <h2 className="font-semibold text-lg mb-5">Shipping Details</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <Field label="Full Name *">
                   <input
                     required
+                    autoComplete="name"
                     className={inputCls}
                     value={form.fullName}
-                    onChange={(e) =>
-                      setForm({ ...form, fullName: e.target.value })
-                    }
+                    onChange={(e) => setField("fullName", e.target.value)}
                   />
                 </Field>
                 <Field label="Phone Number *">
                   <input
                     required
                     type="tel"
+                    autoComplete="tel"
                     pattern="[0-9]{10}"
                     className={inputCls}
                     value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
+                    onChange={(e) => setField("phone", e.target.value)}
                   />
                 </Field>
                 <Field label="Email Address *" full>
                   <input
                     required
                     type="email"
+                    autoComplete="email"
                     className={inputCls}
                     value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
+                    onChange={(e) => setField("email", e.target.value)}
                   />
                 </Field>
                 <Field label="Street Address *" full>
                   <input
                     required
+                    autoComplete="street-address"
                     className={inputCls}
                     value={form.address}
-                    onChange={(e) =>
-                      setForm({ ...form, address: e.target.value })
-                    }
+                    onChange={(e) => setField("address", e.target.value)}
                   />
                 </Field>
                 <Field label="City *">
                   <input
                     required
+                    autoComplete="address-level2"
                     className={inputCls}
                     value={form.city}
-                    onChange={(e) =>
-                      setForm({ ...form, city: e.target.value })
-                    }
+                    onChange={(e) => setField("city", e.target.value)}
                   />
                 </Field>
                 <Field label="State *">
                   <input
                     required
+                    autoComplete="address-level1"
                     className={inputCls}
                     value={form.state}
-                    onChange={(e) =>
-                      setForm({ ...form, state: e.target.value })
-                    }
+                    onChange={(e) => setField("state", e.target.value)}
                   />
                 </Field>
                 <Field label="Pincode *">
                   <input
                     required
                     pattern="[0-9]{6}"
+                    autoComplete="postal-code"
                     className={inputCls}
                     value={form.pincode}
-                    onChange={(e) =>
-                      setForm({ ...form, pincode: e.target.value })
-                    }
+                    onChange={(e) => setField("pincode", e.target.value)}
                   />
                 </Field>
                 <Field label="GST Number (Optional)">
                   <input
+                    autoComplete="off"
                     className={inputCls}
                     value={form.gst}
-                    onChange={(e) =>
-                      setForm({ ...form, gst: e.target.value })
-                    }
+                    onChange={(e) => setField("gst", e.target.value)}
                   />
                 </Field>
                 <Field label="Order Notes (Optional)" full>
@@ -208,19 +211,15 @@ function CheckoutPage() {
                     rows={3}
                     className={inputCls}
                     value={form.notes}
-                    onChange={(e) =>
-                      setForm({ ...form, notes: e.target.value })
-                    }
+                    onChange={(e) => setField("notes", e.target.value)}
                   />
                 </Field>
               </div>
             </section>
 
-            {/* Payment Method */}
-            <section className="glass-strong rounded-2xl p-6">
-              <h2 className="font-display text-xl font-bold mb-5">
-                Payment Method
-              </h2>
+            {/* Payment */}
+            <section className="rounded-xl border border-border bg-card p-6">
+              <h2 className="font-semibold text-lg mb-5">Payment Method</h2>
               <div className="grid grid-cols-3 gap-3 mb-5">
                 {[
                   { id: "cod", label: "Cash on Delivery", icon: Wallet },
@@ -231,10 +230,10 @@ function CheckoutPage() {
                     key={p.id}
                     type="button"
                     onClick={() => setPayment(p.id as any)}
-                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
                       payment === p.id
-                        ? "border-primary bg-primary/10 shadow-glow"
-                        : "border-glass-border glass hover:border-primary/40"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40"
                     }`}
                   >
                     <p.icon className="h-5 w-5 mb-2 text-primary" />
@@ -244,17 +243,19 @@ function CheckoutPage() {
               </div>
 
               {payment === "upi" && (
-                <div className="glass rounded-xl p-5 grid sm:grid-cols-[200px_1fr] gap-5 items-center">
+                <div className="rounded-lg border border-border p-5 grid sm:grid-cols-[180px_1fr] gap-5 items-center">
                   <img
                     src={QR}
                     alt="UPI QR"
                     className="rounded-lg bg-white p-2 mx-auto"
+                    width={180}
+                    height={180}
                   />
                   <div className="space-y-2 text-sm">
                     <div className="text-muted-foreground">
                       Pay via any UPI app
                     </div>
-                    <div>
+                                        <div>
                       <span className="text-muted-foreground">UPI ID:</span>{" "}
                       <span className="font-mono font-semibold">
                         egnaromart@okaxis
@@ -262,37 +263,44 @@ function CheckoutPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Amount:</span>{" "}
-                      <span className="font-display font-bold text-lg text-gradient">
-                        {inr(total)}
-                      </span>
+                      <span className="font-bold text-lg">{inr(total)}</span>
                     </div>
                     <a
                       href="https://wa.me/919442581506"
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 mt-2 text-success hover:underline text-sm"
+                      className="inline-flex items-center gap-2 mt-2 text-green-600 hover:underline text-sm"
                     >
-                      <MessageCircle className="h-4 w-4" /> Send payment
-                      screenshot via WhatsApp
+                      <MessageCircle className="h-4 w-4" /> Send screenshot via
+                      WhatsApp
                     </a>
                   </div>
                 </div>
               )}
 
               {payment === "card" && (
-                <div className="glass rounded-xl p-5 space-y-3">
+                <div className="rounded-lg border border-border p-5 space-y-3">
                   <Field label="Card Number">
                     <input
                       placeholder="0000 0000 0000 0000"
+                      autoComplete="cc-number"
                       className={inputCls}
                     />
                   </Field>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Expiry">
-                      <input placeholder="MM/YY" className={inputCls} />
+                      <input
+                        placeholder="MM/YY"
+                        autoComplete="cc-exp"
+                        className={inputCls}
+                      />
                     </Field>
                     <Field label="CVV">
-                      <input placeholder="123" className={inputCls} />
+                      <input
+                        placeholder="123"
+                        autoComplete="cc-csc"
+                        className={inputCls}
+                      />
                     </Field>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -303,19 +311,16 @@ function CheckoutPage() {
 
               {payment === "cod" && (
                 <p className="text-sm text-muted-foreground">
-                  Pay in cash when your order arrives. A small COD fee may
-                  apply at delivery.
+                  Pay in cash when your order arrives.
                 </p>
               )}
             </section>
           </div>
 
-          {/* Order Summary */}
-          <aside className="glass-strong rounded-2xl p-6 h-fit shadow-elegant sticky top-24">
-            <h3 className="font-display text-xl font-bold mb-4">
-              Order Summary
-            </h3>
-            <div className="space-y-3 max-h-64 overflow-auto pr-1 mb-4 scrollbar-hide">
+          {/* RIGHT — Summary */}
+          <aside className="rounded-xl border border-border bg-card p-6 h-fit sticky top-24">
+            <h3 className="font-semibold text-lg mb-4">Order Summary</h3>
+            <div className="space-y-3 max-h-64 overflow-y-auto pr-1 mb-4">
               {detailed.map((i) => (
                 <div
                   key={i.productId}
@@ -324,7 +329,11 @@ function CheckoutPage() {
                   <img
                     src={i.product.image}
                     alt=""
-                    className="h-12 w-12 rounded-lg object-cover"
+                    loading="lazy"
+                    className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/placeholder.png";
+                    }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="line-clamp-1 font-medium">
@@ -334,13 +343,14 @@ function CheckoutPage() {
                       Qty {i.quantity}
                     </div>
                   </div>
-                  <div className="font-semibold">
+                  <div className="font-semibold flex-shrink-0">
                     {inr(i.product.price * i.quantity)}
                   </div>
                 </div>
               ))}
             </div>
-            <div className="border-t border-glass-border pt-3 space-y-2 text-sm">
+
+            <div className="border-t border-border pt-3 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>{inr(subtotal)}</span>
@@ -349,17 +359,16 @@ function CheckoutPage() {
                 <span className="text-muted-foreground">Shipping</span>
                 <span>{shipping === 0 ? "FREE" : inr(shipping)}</span>
               </div>
-              <div className="flex justify-between text-lg pt-2 border-t border-glass-border">
-                <span className="font-semibold">Total</span>
-                <span className="font-display font-bold text-gradient">
-                  {inr(total)}
-                </span>
+              <div className="flex justify-between font-bold text-base pt-2 border-t border-border">
+                <span>Total</span>
+                <span>{inr(total)}</span>
               </div>
             </div>
+
             <button
               type="submit"
               disabled={submitting}
-              className="mt-5 w-full gradient-primary text-primary-foreground py-3.5 rounded-xl font-semibold shadow-glow shimmer disabled:opacity-60"
+              className="mt-5 w-full rounded-lg bg-primary text-primary-foreground py-3.5 font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
             >
               {submitting ? "Placing Order..." : "Place Order"}
             </button>

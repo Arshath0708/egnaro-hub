@@ -1,214 +1,122 @@
-import {
-  createFileRoute,
-  useNavigate,
-} from "@tanstack/react-router";
-
-import { useState } from "react";
-
-import { motion } from "framer-motion";
-
-import {
-  Store,
-  CheckCircle2,
-  LogIn,
-  ShieldCheck,
-  Lock,
-} from "lucide-react";
-
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";   // ✅ switched to react-router-dom
+import { CheckCircle2, LogIn, ShieldCheck, Lock } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { addVendor } from "@/services/api";
 import { useAuth } from "@/context/auth-store";
 import { toast } from "sonner";
 
-export const Route = createFileRoute(
-  "/vendor-register"
-)({
-  component: VendorRegister,
-});
+type RegisterForm = {
+  vendor_name: string;
+  company_name: string;
+  phone: string;
+  email: string;
+  password: string;
+  address: string;
+};
+type LoginForm = { email: string; password: string };
 
-export default function VendorRegister() {
+const EMPTY_REGISTER: RegisterForm = {
+  vendor_name: "",
+  company_name: "",
+  phone: "",
+  email: "",
+  password: "",
+  address: "",
+};
+const EMPTY_LOGIN: LoginForm = { email: "", password: "" };
+
+const inp =
+  "w-full rounded-lg border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-primary focus:ring-1 focus:ring-primary";
+
+export default function VendorRegister() {   // ✅ default export
   const navigate = useNavigate();
+  const loginVendor = useAuth((s) => s.loginVendor);
+  const [mode, setMode] = useState<"register" | "login">("register");
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState<RegisterForm>(EMPTY_REGISTER);
+  const [loginData, setLoginData] = useState<LoginForm>(EMPTY_LOGIN);
 
-  const loginVendor = useAuth(
-    (s) => s.loginVendor
+  const setRegField = useCallback(
+    <K extends keyof RegisterForm>(k: K, v: RegisterForm[K]) =>
+      setForm((p) => ({ ...p, [k]: v })),
+    []
+  );
+  const setLoginField = useCallback(
+    <K extends keyof LoginForm>(k: K, v: LoginForm[K]) =>
+      setLoginData((p) => ({ ...p, [k]: v })),
+    []
   );
 
-  const [mode, setMode] = useState<
-    "register" | "login"
-  >("register");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [submitted, setSubmitted] =
-    useState(false);
-
-  /* REGISTER FORM */
-
-  const [form, setForm] = useState({
-    vendor_name: "",
-    company_name: "",
-    phone: "",
-    email: "",
-    password: "",
-    address: "",
-  });
-
-  /* LOGIN FORM */
-
-  const [loginData, setLoginData] =
-    useState({
-      email: "",
-      password: "",
-    });
-
-  const inputClass =
-    "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30";
-
-  /* REGISTER */
-
-  async function handleRegister(
-    e: React.FormEvent
-  ) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-
     if (form.password.length < 6) {
-      toast.error(
-        "Password must be at least 6 characters"
-      );
+      toast.error("Password must be at least 6 characters");
       return;
     }
-
     setLoading(true);
-
     try {
       const res = await addVendor(form);
-
       if (res.success) {
         setSubmitted(true);
-
-        toast.success(
-          "Vendor application submitted"
-        );
-      } else {
-        toast.error(
-          res.message ||
-            "Registration failed"
-        );
-      }
-    } catch (err) {
-      console.error(err);
-
+        toast.success("Application submitted");
+      } else toast.error(res.message || "Registration failed");
+    } catch {
       toast.error("Server error");
     } finally {
       setLoading(false);
     }
   }
 
-  /* LOGIN */
-
-  async function handleLogin(
-    e: React.FormEvent
-  ) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-
     setLoading(true);
-
     try {
-      const res = await fetch(
-        "https://egnaromart.com/api/vendor-login.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            email: loginData.email,
-            password:
-              loginData.password,
-          }),
-        }
-      );
-
+      const res = await fetch("https://egnaromart.com/api/vendor-login.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData),
+      });
       const data = await res.json();
-
       if (data.success) {
-        loginVendor(
-          String(data.vendor.id)
-        );
-
-        localStorage.setItem(
-          "vendorId",
-          String(data.vendor.id)
-        );
-
-        toast.success(
-          `Welcome ${data.vendor.vendor_name}`
-        );
-
-        navigate({
-          to: "/vendor-dashboard",
-        });
-      } else {
-        toast.error(
-          data.message ||
-            "Login failed"
-        );
-      }
-    } catch (err) {
-      console.error(err);
-
+        loginVendor(String(data.vendor.id));
+        localStorage.setItem("vendorId", String(data.vendor.id));
+        toast.success(`Welcome ${data.vendor.vendor_name}`);
+        navigate("/vendor-dashboard");   // ✅ simplified navigation
+      } else toast.error(data.message || "Login failed");
+    } catch {
       toast.error("Server error");
     } finally {
       setLoading(false);
     }
   }
-
-  /* SUCCESS SCREEN */
 
   if (submitted) {
     return (
       <Shell>
-        <div className="mx-auto max-w-xl px-4 py-24">
-          <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.95,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-            }}
-            className="glass-strong rounded-[32px] border border-white/10 p-10 text-center shadow-2xl"
-          >
-            <div className="mx-auto mb-6 grid h-24 w-24 place-items-center rounded-full gradient-primary shadow-glow">
-              <CheckCircle2 className="h-12 w-12 text-white" />
-            </div>
-
-            <h1 className="font-display text-4xl font-bold">
+        <div className="flex min-h-[80vh] items-center justify-center px-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
+            <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-400" />
+            <h1 className="text-2xl font-bold text-white">
               Application Submitted
             </h1>
-
-            <p className="mt-4 text-muted-foreground">
-              Your vendor account is now
-              awaiting admin approval.
+            <p className="mt-2 text-gray-400">
+              Your account is awaiting admin approval.
             </p>
-
-            <div className="mt-8 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-4 text-sm text-yellow-300">
-              You can login after the admin
-              approves your account.
+            <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-sm text-yellow-300">
+              You can login after admin approves your account.
             </div>
-
             <button
-              onClick={() =>
-                setMode("login")
-              }
-              className="mt-8 rounded-2xl gradient-primary px-6 py-3 font-semibold text-white shadow-glow"
+              onClick={() => {
+                setSubmitted(false);
+                setMode("login");
+              }}
+              className="mt-6 rounded-lg gradient-primary px-6 py-2.5 font-semibold text-white"
             >
               Go to Login
             </button>
-          </motion.div>
+          </div>
         </div>
       </Shell>
     );
@@ -216,248 +124,192 @@ export default function VendorRegister() {
 
   return (
     <Shell>
-      <div className="relative overflow-hidden">
-        <div className="absolute left-0 top-0 h-96 w-96 rounded-full bg-primary/20 blur-lg" />
+      <div className="mx-auto max-w-2xl px-4 py-14">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-white">
+            {mode === "register" ? "Become a Vendor" : "Vendor Login"}
+          </h1>
+          <p className="mt-2 text-gray-400">
+            Join India's marketplace for electronics & industrial goods.
+          </p>
+        </div>
 
-        <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-blue-500/20 blur-lg" />
-
-        <div className="mx-auto max-w-4xl px-4 py-14">
-          {/* HEADER */}
-
-          <div className="mb-12 text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs font-semibold backdrop-blur-sm">
-              <Store className="h-4 w-4 text-primary" />
-
-              Egnaro Vendor Portal
-            </div>
-
-            <h1 className="font-display text-5xl font-bold leading-tight md:text-6xl">
-              {mode === "register"
-                ? "Become a Vendor"
-                : "Vendor Login"}
-            </h1>
-
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
-              Join India's premium
-              marketplace for electronics,
-              industrial products &
-              appliances.
-            </p>
+        <div className="rounded-2xl border border-white/10 bg-slate-900 p-8">
+          {/* Tabs */}
+          <div className="mb-6 flex gap-3">
+            <button
+              onClick={() => setMode("register")}
+              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold ${
+                mode === "register"
+                  ? "gradient-primary text-white"
+                  : "bg-slate-800 text-gray-300"
+              }`}
+            >
+              Register
+            </button>
+            <button
+              onClick={() => setMode("login")}
+              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold ${
+                mode === "login"
+                  ? "gradient-primary text-white"
+                  : "bg-slate-800 text-gray-300"
+              }`}
+            >
+              Login
+            </button>
           </div>
 
-          {/* CARD */}
-
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            className="glass-strong rounded-[32px] border border-white/10 p-8 shadow-2xl backdrop-blur-sm"
-          >
-            {/* TABS */}
-
-            <div className="mb-8 flex gap-3">
-              <button
-                onClick={() =>
-                  setMode("register")
-                }
-                className={`flex-1 rounded-2xl py-3 font-semibold transition-all ${
-                  mode === "register"
-                    ? "gradient-primary text-white shadow-glow"
-                    : "bg-white/5 hover:bg-white/10"
-                }`}
-              >
-                Register
-              </button>
-
-              <button
-                onClick={() =>
-                  setMode("login")
-                }
-                className={`flex-1 rounded-2xl py-3 font-semibold transition-all ${
-                  mode === "login"
-                    ? "gradient-primary text-white shadow-glow"
-                    : "bg-white/5 hover:bg-white/10"
-                }`}
-              >
-                Login
-              </button>
-            </div>
-
-            {/* REGISTER */}
-
-            {mode === "register" ? (
-              <form
-                onSubmit={handleRegister}
-                className="grid gap-5 md:grid-cols-2"
-              >
-                <input
-                  required
-                  placeholder="Vendor Name"
-                  className={inputClass}
-                  value={form.vendor_name}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      vendor_name:
-                        e.target.value,
-                    })
-                  }
-                />
-
-                <input
-                  required
-                  placeholder="Company Name"
-                  className={inputClass}
-                  value={form.company_name}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      company_name:
-                        e.target.value,
-                    })
-                  }
-                />
-
-                <input
-                  required
-                  placeholder="Phone Number"
-                  className={inputClass}
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      phone:
-                        e.target.value,
-                    })
-                  }
-                />
-
-                <input
-                  required
-                  type="email"
-                  placeholder="Email Address"
-                  className={inputClass}
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      email:
-                        e.target.value,
-                    })
-                  }
-                />
-
-                <div className="relative md:col-span-2">
-                  <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
-
+          {mode === "register" ? (
+            <form
+              onSubmit={handleRegister}
+              autoComplete="on"
+              className="space-y-4"
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Vendor Name
+                  </label>
                   <input
                     required
-                    type="password"
-                    placeholder="Create Password"
-                    className={`${inputClass} pl-12`}
-                    value={form.password}
+                    autoComplete="name"
+                    placeholder="Your full name"
+                    className={inp}
+                    value={form.vendor_name}
                     onChange={(e) =>
-                      setForm({
-                        ...form,
-                        password:
-                          e.target.value,
-                      })
+                      setRegField("vendor_name", e.target.value)
                     }
                   />
                 </div>
-
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Company Name
+                  </label>
+                  <input
+                    required
+                    autoComplete="organization"
+                    placeholder="Company / Shop name"
+                    className={inp}
+                    value={form.company_name}
+                    onChange={(e) =>
+                      setRegField("company_name", e.target.value)
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Phone
+                  </label>
+                  <input
+                    required
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="+91 98765 43210"
+                    className={inp}
+                    value={form.phone}
+                    onChange={(e) => setRegField("phone", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Email
+                  </label>
+                  <input
+                    required
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@company.com"
+                    className={inp}
+                    value={form.email}
+                    onChange={(e) => setRegField("email", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3.5 h-4 w-4 text-gray-500" />
+                  <input
+                    required
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Min 6 characters"
+                    className={`${inp} pl-10`}
+                    value={form.password}
+                    onChange={(e) => setRegField("password", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">
+                  Business Address
+                </label>
                 <textarea
                   required
-                  rows={4}
-                  placeholder="Business Address"
-                  className={`${inputClass} md:col-span-2`}
+                  rows={3}
+                  autoComplete="street-address"
+                  placeholder="Full business address"
+                  className={`${inp} resize-none`}
                   value={form.address}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      address:
-                        e.target.value,
-                    })
-                  }
+                  onChange={(e) => setRegField("address", e.target.value)}
                 />
-
-                <button
-                  disabled={loading}
-                  className="md:col-span-2 rounded-2xl gradient-primary py-4 font-semibold text-white shadow-glow transition hover:-translate-y-0.5 disabled:opacity-60"
-                >
-                  {loading
-                    ? "Submitting..."
-                    : "Submit Vendor Application"}
-                </button>
-              </form>
-            ) : (
-              /* LOGIN */
-
-              <form
-                onSubmit={handleLogin}
-                className="space-y-5"
+              </div>
+                            <button
+                disabled={loading}
+                className="w-full rounded-lg gradient-primary py-3 font-semibold text-white disabled:opacity-60"
               >
+                {loading ? "Submitting..." : "Submit Application"}
+              </button>
+            </form>
+          ) : (
+            <form
+              onSubmit={handleLogin}
+              autoComplete="on"
+              className="space-y-4"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">
+                  Email
+                </label>
                 <input
                   required
                   type="email"
-                  placeholder="Vendor Email"
-                  className={inputClass}
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  className={inp}
                   value={loginData.email}
-                  onChange={(e) =>
-                    setLoginData({
-                      ...loginData,
-                      email:
-                        e.target.value,
-                    })
-                  }
+                  onChange={(e) => setLoginField("email", e.target.value)}
                 />
-
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">
+                  Password
+                </label>
                 <input
                   required
                   type="password"
-                  placeholder="Password"
-                  className={inputClass}
-                  value={
-                    loginData.password
-                  }
-                  onChange={(e) =>
-                    setLoginData({
-                      ...loginData,
-                      password:
-                        e.target.value,
-                    })
-                  }
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className={inp}
+                  value={loginData.password}
+                  onChange={(e) => setLoginField("password", e.target.value)}
                 />
-
-                <button
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-primary py-4 font-semibold text-white shadow-glow"
-                >
-                  <LogIn className="h-4 w-4" />
-
-                  {loading
-                    ? "Authenticating..."
-                    : "Login to Dashboard"}
-                </button>
-
-                <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-300">
-                  <div className="mb-1 flex items-center gap-2 font-semibold">
-                    <ShieldCheck className="h-4 w-4" />
-                    Approved Vendors Only
-                  </div>
-
-                  Your account must be
-                  approved by admin before
-                  dashboard access.
-                </div>
-              </form>
-            )}
-          </motion.div>
+              </div>
+              <button
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg gradient-primary py-3 font-semibold text-white disabled:opacity-60"
+              >
+                <LogIn className="h-4 w-4" />
+                {loading ? "Authenticating..." : "Login to Dashboard"}
+              </button>
+              <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-300 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 flex-shrink-0" /> Approved
+                vendors only.
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </Shell>

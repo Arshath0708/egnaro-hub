@@ -1,6 +1,5 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";   // ✅ switched to react-router-dom
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import {
   CheckCircle2,
   PackageCheck,
@@ -12,13 +11,6 @@ import {
 } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { inr } from "@/lib/format";
-
-export const Route = createFileRoute("/order-success")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    orderId: String(search.orderId ?? ""),
-  }),
-  component: OrderSuccessPage,
-});
 
 type Order = {
   id: number;
@@ -34,8 +26,18 @@ type Order = {
   created_at: string;
 };
 
-function OrderSuccessPage() {
-  const { orderId } = useSearch({ from: "/order-success" });
+const STATUS_COLORS: Record<string, string> = {
+  Processing: "bg-yellow-100 text-yellow-800",
+  Packed: "bg-blue-100 text-blue-800",
+  Shipped: "bg-purple-100 text-purple-800",
+  "Out for Delivery": "bg-orange-100 text-orange-800",
+  Delivered: "bg-green-100 text-green-800",
+};
+
+export default function OrderSuccessPage() {   // ✅ default export
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get("orderId") || "";
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,233 +48,145 @@ function OrderSuccessPage() {
       setLoading(false);
       return;
     }
-
-    // ✅ Direct fetch — bypasses the broken request() wrapper in api.ts
     fetch(`https://egnaromart.com/api/get-order.php?order_id=${orderId}`)
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
-        if (data.success && data.order) {
-          setOrder(data.order);
-        } else {
-          setFetchError(true);
-        }
+        data.success && data.order ? setOrder(data.order) : setFetchError(true);
       })
-      .catch((err) => {
-        console.error("Order fetch error:", err);
-        setFetchError(true);
-      })
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [orderId]);
 
   return (
     <Shell>
-      <div className="relative overflow-hidden">
-        {/* BACKGROUND */}
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(0,255,255,0.12),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.15),transparent_35%)]" />
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        {/* Success header */}
+        <div className="rounded-xl border border-border bg-card p-8 text-center mb-6">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+            <CheckCircle2 className="h-10 w-10 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-black">Order Placed! 🎉</h1>
+          <p className="mt-2 text-muted-foreground">
+            Your order has been placed successfully.
+          </p>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold">
+            <PackageCheck className="h-4 w-4" />
+            Order ID: {orderId || "—"}
+          </div>
+        </div>
 
-        <div className="mx-auto max-w-4xl px-4 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden rounded-[36px] border border-white/10 bg-[#071028]/90 shadow-[0_0_80px_rgba(0,255,255,0.08)] backdrop-blur-2xl"
-          >
-            {/* TOP GRADIENT BAR */}
-            <div className="h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-yellow-300" />
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" /> Loading order details...
+          </div>
+        )}
 
-            <div className="p-8 md:p-12">
-
-              {/* SUCCESS ICON */}
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="mb-8 flex justify-center"
-              >
-                <div className="grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-[0_0_60px_rgba(16,185,129,0.45)]">
-                  <CheckCircle2 className="h-14 w-14 text-white" />
+        {/* Order details */}
+        {!loading && order && (
+          <div className="rounded-xl border border-border bg-card p-6 mb-6">
+            <h2 className="font-semibold text-lg mb-5">Order Details</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-border p-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <PackageCheck className="h-4 w-4" /> Customer
                 </div>
-              </motion.div>
+                <div className="font-semibold">{order.customer_name}</div>
+              </div>
 
-              {/* TITLE */}
-              <div className="text-center">
-                <h1 className="text-4xl font-black text-white md:text-5xl">
-                  Order Placed 🎉
-                </h1>
-                <p className="mt-4 text-lg text-gray-400">
-                  Your order has been placed successfully.
-                </p>
-                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-300">
-                  <PackageCheck className="h-4 w-4" />
-                  Order ID: {orderId || "—"}
+              <div className="rounded-lg border border-border p-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <Phone className="h-4 w-4" /> Phone
+                </div>
+                <div className="font-semibold">{order.phone}</div>
+              </div>
+
+              <div className="rounded-lg border border-border p-4 sm:col-span-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <MapPin className="h-4 w-4" /> Delivery Address
+                </div>
+                <div className="font-semibold">{order.address}</div>
+              </div>
+
+              <div className="rounded-lg border border-border p-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <CreditCard className="h-4 w-4" /> Payment
+                </div>
+                <div className="font-semibold">
+                  {order.payment_method?.toUpperCase()}
                 </div>
               </div>
 
-              {/* LOADING */}
-              {loading && (
-                <div className="mt-10 flex items-center justify-center gap-3 py-10 text-gray-400">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Loading order details...
+              <div className="rounded-lg border border-border p-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <Truck className="h-4 w-4" /> Total Amount
                 </div>
-              )}
-
-              {/* ORDER DETAILS */}
-              {!loading && order && (
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                  className="mt-10 rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
-                >
-                  <h2 className="mb-8 text-2xl font-bold text-white">
-                    Order Details
-                  </h2>
-
-                  <div className="grid gap-5 md:grid-cols-2">
-
-                    {/* CUSTOMER */}
-                    <InfoCard
-                      icon={<PackageCheck className="h-5 w-5" />}
-                      label="Customer"
-                      value={order.customer_name}
-                    />
-
-                    {/* PHONE */}
-                    <InfoCard
-                      icon={<Phone className="h-5 w-5" />}
-                      label="Phone"
-                      value={order.phone}
-                    />
-
-                    {/* ADDRESS */}
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-5 md:col-span-2">
-                      <div className="mb-3 flex items-center gap-2 text-cyan-300">
-                        <MapPin className="h-5 w-5" />
-                        Delivery Address
-                      </div>
-                      <div className="leading-relaxed text-white">
-                        {order.address}
-                      </div>
-                    </div>
-
-                    {/* PAYMENT */}
-                    <InfoCard
-                      icon={<CreditCard className="h-5 w-5" />}
-                      label="Payment Method"
-                      value={order.payment_method?.toUpperCase()}
-                    />
-
-                    {/* TOTAL */}
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                      <div className="mb-3 flex items-center gap-2 text-cyan-300">
-                        <Truck className="h-5 w-5" />
-                        Total Amount
-                      </div>
-                      <div className="text-3xl font-black text-green-400">
-                        {inr(Number(order.total || 0))}
-                      </div>
-                    </div>
-
-                    {/* STATUS */}
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                      <div className="mb-3 text-cyan-300">Order Status</div>
-                      <StatusBadge status={order.status || "Processing"} />
-                    </div>
-
-                    {/* ESTIMATED DELIVERY */}
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                      <div className="mb-3 text-cyan-300">
-                        Estimated Delivery
-                      </div>
-                      <div className="font-semibold text-white">
-                        {order.estimated_days || "3–5 Business Days"}
-                      </div>
-                    </div>
-
-                    {/* ORDER DATE */}
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-5 md:col-span-2">
-                      <div className="mb-3 text-cyan-300">Order Placed On</div>
-                      <div className="font-semibold text-white">
-                        {new Date(order.created_at).toLocaleString("en-IN", {
-                          dateStyle: "long",
-                          timeStyle: "short",
-                        })}
-                      </div>
-                    </div>
-
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ERROR — only show if no orderId OR fetch genuinely failed */}
-              {!loading && fetchError && (
-                <div className="mt-10 rounded-3xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-300">
-                  Could not load order details. Please use Track Order below.
+                <div className="text-2xl font-black text-green-600">
+                  {inr(Number(order.total || 0))}
                 </div>
-              )}
-
-              {/* BUTTONS */}
-              <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:justify-center">
-                <Link
-                  to="/products"
-                  className="rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-yellow-300 px-8 py-4 text-center font-bold text-black shadow-[0_10px_40px_rgba(0,255,255,0.25)] transition hover:scale-[1.02]"
-                >
-                  Continue Shopping
-                </Link>
-                <Link
-                  to="/track-order"
-                  className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-center font-semibold text-white backdrop-blur-xl transition hover:bg-white/10"
-                >
-                  Track Order
-                </Link>
               </div>
 
+              <div className="rounded-lg border border-border p-4">
+                <div className="text-sm text-muted-foreground mb-2">
+                  Order Status
+                </div>
+                <span
+                  className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${
+                    STATUS_COLORS[order.status] ??
+                    "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {order.status}
+                </span>
+              </div>
+
+              <div className="rounded-lg border border-border p-4">
+                <div className="text-sm text-muted-foreground mb-2">
+                  Estimated Delivery
+                </div>
+                <div className="font-semibold">
+                  {order.estimated_days || "3–5 Business Days"}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border p-4 sm:col-span-2">
+                <div className="text-sm text-muted-foreground mb-2">
+                  Order Placed On
+                </div>
+                <div className="font-semibold">
+                  {new Date(order.created_at).toLocaleString("en-IN", {
+                    dateStyle: "long",
+                    timeStyle: "short",
+                  })}
+                </div>
+              </div>
             </div>
-          </motion.div>
+          </div>
+        )}
+
+        {/* Error */}
+        {!loading && fetchError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-center text-red-700 mb-6">
+            Could not load order details. Please use Track Order below.
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            to="/products"
+            className="rounded-lg bg-primary text-primary-foreground px-6 py-3 text-center font-semibold hover:bg-primary/90 transition-colors"
+          >
+            Continue Shopping
+          </Link>
+          <Link
+            to="/track-order"
+            className="rounded-lg border border-border px-6 py-3 text-center font-semibold hover:bg-accent transition-colors"
+          >
+            Track Order
+          </Link>
         </div>
       </div>
     </Shell>
-  );
-}
-
-/* ---- Helper Components ---- */
-
-function InfoCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-      <div className="mb-3 flex items-center gap-2 text-cyan-300">
-        {icon}
-        {label}
-      </div>
-      <div className="text-lg font-semibold text-white">{value}</div>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    Processing: "bg-yellow-500/20 text-yellow-300",
-    Packed: "bg-blue-500/20 text-blue-300",
-    Shipped: "bg-purple-500/20 text-purple-300",
-    "Out for Delivery": "bg-orange-500/20 text-orange-300",
-    Delivered: "bg-green-500/20 text-green-300",
-  };
-
-  return (
-    <div
-      className={`inline-flex rounded-full px-4 py-2 text-sm font-bold ${
-        colors[status] ?? "bg-yellow-500/20 text-yellow-300"
-      }`}
-    >
-      {status}
-    </div>
   );
 }

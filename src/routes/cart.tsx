@@ -1,18 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";   // ✅ switched to react-router-dom
 import { useQuery } from "@tanstack/react-query";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { EmptyState } from "@/components/Section";
 import { useCart } from "@/context/cart-store";
-import { getProducts } from "@/services/api";   // ✅ FIXED import
+import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
 
-export const Route = createFileRoute("/cart")({ component: CartPage });
-
-function CartPage() {
+export default function CartPage() {   
   const { items, setQty, remove } = useCart();
 
-  // ✅ FIXED usage: call getProducts directly
   const { data: products = [] } = useQuery({
     queryKey: ["products", "all"],
     queryFn: () => getProducts(),
@@ -68,8 +65,7 @@ function CartPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <Link
-                      to="/product/$id"
-                      params={{ id: i.product.id }}
+                      to={`/product/${i.product.id}`}   // ✅ fixed link syntax
                       className="font-semibold hover:text-primary line-clamp-1"
                     >
                       {i.product.name}
