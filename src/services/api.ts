@@ -56,6 +56,17 @@ export async function approveProduct(id: number) {
   });
 }
 
+export async function rejectProduct(id: number) {
+  return await request("/admin-reject.php", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function getAllVendors() {
+  return await request("/get-all-vendors.php");
+}
+
 /* =========================
    VENDORS
 ========================= */

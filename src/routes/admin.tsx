@@ -5,31 +5,14 @@ import {
   LogOut,
   Users,
   Truck,
-  Check,
-  X,
+  ClipboardList,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
 import { useAuth } from "@/context/auth-store";
 import { toast } from "sonner";
-
-type Product = {
-  id: number;
-  name: string;
-  category: string;
-  image: string;
-  price: number;
-  description: string;
-};
-
-type Vendor = {
-  id: number;
-  vendor_name: string;
-  company_name: string;
-  phone: string;
-  email: string;
-  address: string;
-};
+import { VendorRequestsModal } from "@/modals/VendorRequestsModal";
+import { ProductRequestsModal } from "@/modals/ProductRequestsModal";
 
 type Order = {
   id: number;
@@ -67,19 +50,11 @@ function AdminLogin() {
     try {
       setLoading(true);
 
-      const res = await fetch(
-        "https://egnaromart.com/api/admin-login.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      );
+      const res = await fetch("https://egnaromart.com/api/admin-login.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       const data = await res.json();
 
@@ -107,10 +82,7 @@ function AdminLogin() {
           </div>
 
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-black text-white">
-              Admin Portal
-            </h1>
-
+            <h1 className="text-3xl font-black text-white">Admin Portal</h1>
             <p className="mt-2 text-sm text-gray-400">
               Egnaro Mart Control Center
             </p>
@@ -118,10 +90,7 @@ function AdminLogin() {
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="mb-2 block text-sm text-gray-300">
-                Email
-              </label>
-
+              <label className="mb-2 block text-sm text-gray-300">Email</label>
               <input
                 type="email"
                 required
@@ -136,7 +105,6 @@ function AdminLogin() {
               <label className="mb-2 block text-sm text-gray-300">
                 Password
               </label>
-
               <input
                 type="password"
                 required
@@ -161,51 +129,42 @@ function AdminLogin() {
 }
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
-  const [pendingProducts, setPendingProducts] = useState<Product[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [totalVendors, setTotalVendors] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const loadPendingProducts = useCallback(async () => {
-    const d = await fetch(
-      "https://egnaromart.com/api/get-pending.php"
-    ).then((r) => r.json());
+  // modal state
+  const [vendorModalOpen, setVendorModalOpen] = useState(false);
+  const [productModalOpen, setProductModalOpen] = useState(false);
 
-    setPendingProducts(Array.isArray(d) ? d : []);
-  }, []);
+  const loadStats = useCallback(async () => {
+    const safeJson = (res: Response) =>
+      res.json().catch(() => []);
 
-  const loadPendingVendors = useCallback(async () => {
-    const d = await fetch(
-      "https://egnaromart.com/api/get-vendors.php"
-    ).then((r) => r.json());
+    const [vendorsData, productsData, ordersData] = await Promise.all([
+      fetch("https://egnaromart.com/api/get-all-vendors.php").then(safeJson).catch(() => []),
+      fetch("https://egnaromart.com/api/get-products.php").then(safeJson).catch(() => []),
+      fetch("https://egnaromart.com/api/get-orders.php").then(safeJson).catch(() => []),
+    ]);
 
-    setVendors(Array.isArray(d) ? d : []);
-  }, []);
-
-  const loadOrders = useCallback(async () => {
-    const d = await fetch(
-      "https://egnaromart.com/api/get-orders.php"
-    ).then((r) => r.json());
-
-    setOrders(Array.isArray(d) ? d : []);
+    setTotalVendors(Array.isArray(vendorsData) ? vendorsData.length : 0);
+    setTotalProducts(Array.isArray(productsData) ? productsData.length : 0);
+    setOrders(Array.isArray(ordersData) ? ordersData : []);
   }, []);
 
   useEffect(() => {
-    loadPendingProducts();
-    loadPendingVendors();
-    loadOrders();
-  }, []);
+    loadStats();
+  }, [loadStats]);
 
   return (
     <Shell>
       <div className="mx-auto max-w-7xl px-4 py-10">
+        {/* header */}
         <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-4xl font-black text-white">
-              Admin Dashboard
-            </h1>
-
+            <h1 className="text-4xl font-black text-white">Admin Dashboard</h1>
             <p className="mt-2 text-gray-400">
-              Manage vendors, products & orders
+              Manage vendors, products &amp; orders
             </p>
           </div>
 
@@ -218,19 +177,18 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </button>
         </div>
 
+        {/* stat cards */}
         <div className="mb-8 grid gap-5 md:grid-cols-3">
           <StatCard
             icon={<Package />}
-            count={pendingProducts.length}
-            label="Pending Products"
+            count={totalProducts}
+            label="Total Products"
           />
-
           <StatCard
             icon={<Users />}
-            count={vendors.length}
-            label="Vendor Requests"
+            count={totalVendors}
+            label="Total Vendors"
           />
-
           <StatCard
             icon={<Truck />}
             count={orders.length}
@@ -238,31 +196,93 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           />
         </div>
 
-        <Section title="Vendor Requests">
-          <div className="space-y-4">
-            {vendors.map((v) => (
-              <VendorRow key={v.id} vendor={v} />
-            ))}
-          </div>
-        </Section>
+        {/* approval action buttons */}
+        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+          <ActionButton
+            icon={<Users className="h-5 w-5" />}
+            label="Vendor Requests"
+            description="Review and approve / reject pending vendor registrations"
+            accent="from-[#0B3D2E] to-[#14532d]"
+            onClick={() => setVendorModalOpen(true)}
+          />
+          <ActionButton
+            icon={<Package className="h-5 w-5" />}
+            label="Product Requests"
+            description="Review and approve / reject products submitted by vendors"
+            accent="from-[#1a0a00] to-[#3d1800]"
+            onClick={() => setProductModalOpen(true)}
+          />
+        </div>
 
-        <Section title="Pending Products">
-          <div className="space-y-4">
-            {pendingProducts.map((p) => (
-              <ProductRow key={p.id} product={p} />
-            ))}
-          </div>
-        </Section>
-
+        {/* orders section */}
         <Section title="Orders">
           <div className="space-y-4">
-            {orders.map((o) => (
-              <OrderRow key={o.id} order={o} />
-            ))}
+            {orders.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-500">
+                No orders yet
+              </p>
+            ) : (
+              orders.map((o) => <OrderRow key={o.id} order={o} />)
+            )}
           </div>
         </Section>
       </div>
+
+      {/* modals */}
+      {vendorModalOpen && (
+        <VendorRequestsModal
+          onClose={() => setVendorModalOpen(false)}
+          onVendorActioned={() =>
+            setTotalVendors((n) => Math.max(0, n))
+          }
+        />
+      )}
+
+      {productModalOpen && (
+        <ProductRequestsModal
+          onClose={() => setProductModalOpen(false)}
+          onProductActioned={() =>
+            setTotalProducts((n) => Math.max(0, n))
+          }
+        />
+      )}
     </Shell>
+  );
+}
+
+/* ─── Sub-components ─── */
+
+function ActionButton({
+  icon,
+  label,
+  description,
+  accent,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  accent: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex items-center gap-4 rounded-[24px] border border-white/10 bg-white/[0.04] p-5 text-left backdrop-blur-2xl transition-all hover:border-white/20 hover:bg-white/[0.07]"
+    >
+      <div
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accent} text-[#FF6600] transition-transform group-hover:scale-110`}
+      >
+        {icon}
+      </div>
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="text-base font-bold text-white">{label}</span>
+          <ClipboardList className="h-4 w-4 text-[#FF6600] opacity-70" />
+        </div>
+        <p className="mt-0.5 text-xs text-gray-500">{description}</p>
+      </div>
+    </button>
   );
 }
 
@@ -275,10 +295,7 @@ function Section({
 }) {
   return (
     <div className="mb-8 rounded-[28px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-2xl">
-      <h2 className="mb-5 text-2xl font-bold text-white">
-        {title}
-      </h2>
-
+      <h2 className="mb-5 text-2xl font-bold text-white">{title}</h2>
       {children}
     </div>
   );
@@ -298,106 +315,20 @@ function StatCard({
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B3D2E] text-[#FF6600]">
         {icon}
       </div>
-
-      <div className="text-4xl font-black text-white">
-        {count}
-      </div>
-
-      <div className="mt-2 text-gray-400">
-        {label}
-      </div>
+      <div className="text-4xl font-black text-white">{count}</div>
+      <div className="mt-2 text-gray-400">{label}</div>
     </div>
   );
 }
 
-const VendorRow = memo(({ vendor }: { vendor: Vendor }) => {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <h3 className="text-lg font-semibold text-white">
-        {vendor.company_name}
-      </h3>
-
-      <p className="mt-2 text-sm text-gray-400">
-        {vendor.vendor_name}
-      </p>
-
-      <p className="text-sm text-gray-500">
-        {vendor.email} • {vendor.phone}
-      </p>
-
-      <p className="mt-2 text-sm text-gray-500">
-        {vendor.address}
-      </p>
-
-      <div className="mt-4 flex gap-3">
-        <button className="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-white">
-          <Check className="h-4 w-4" />
-          Approve
-        </button>
-
-        <button className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-white">
-          <X className="h-4 w-4" />
-          Reject
-        </button>
-      </div>
-    </div>
-  );
-});
-
-const ProductRow = memo(({ product }: { product: Product }) => {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <div className="flex gap-4">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="h-20 w-20 rounded-2xl object-cover"
-        />
-
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-white">
-            {product.name}
-          </h3>
-
-          <p className="mt-1 text-sm text-gray-400">
-            {product.category}
-          </p>
-
-          <p className="mt-2 text-[#FF6600] font-bold">
-            ₹{product.price}
-          </p>
-
-          <p className="mt-2 text-sm text-gray-500">
-            {product.description}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-});
-
 const OrderRow = memo(({ order }: { order: Order }) => {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <h3 className="font-semibold text-white">
-        #{order.order_id}
-      </h3>
-
-      <p className="mt-2 text-sm text-gray-400">
-        {order.customer_name}
-      </p>
-
-      <p className="text-sm text-gray-500">
-        {order.phone}
-      </p>
-
-      <p className="mt-2 text-[#FF6600] font-bold">
-        ₹{order.total}
-      </p>
-
-      <p className="mt-2 text-sm text-gray-500">
-        {order.address}
-      </p>
+      <h3 className="font-semibold text-white">#{order.order_id}</h3>
+      <p className="mt-2 text-sm text-gray-400">{order.customer_name}</p>
+      <p className="text-sm text-gray-500">{order.phone}</p>
+      <p className="mt-2 font-bold text-[#FF6600]">₹{order.total}</p>
+      <p className="mt-2 text-sm text-gray-500">{order.address}</p>
     </div>
   );
 });
