@@ -52,9 +52,11 @@ type ProductForm = {
 
 export default function VendorDashboard() {
   const vendorId = useAuth((s) => s.vendorId);
+  const isVendor = useAuth((s) => s.isVendor);
   const logout = useAuth((s) => s.logoutVendor);
 
-  if (!vendorId) {
+  // Same pattern as admin: check the persisted boolean, not the nullable string.
+  if (!isVendor) {
     return (
       <Shell>
         <div className="flex min-h-[80vh] items-center justify-center px-4">
@@ -85,11 +87,12 @@ export default function VendorDashboard() {
 
   return (
     <DashboardContent
-      vendorId={vendorId}
+      vendorId={vendorId!}
       onLogout={logout}
     />
   );
 }
+
 
 function DashboardContent({
   vendorId,

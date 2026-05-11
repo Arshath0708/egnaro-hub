@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";   // ✅ switched to react-router-dom
+import { useNavigate, Navigate } from "react-router-dom";
 import { CheckCircle2, LogIn, ShieldCheck, Lock } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { addVendor } from "@/services/api";
@@ -32,6 +32,8 @@ const inp =
 export default function VendorRegister() {   // ✅ default export
   const navigate = useNavigate();
   const loginVendor = useAuth((s) => s.loginVendor);
+  const isVendor = useAuth((s) => s.isVendor);
+
   const [mode, setMode] = useState<"register" | "login">("register");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -83,13 +85,18 @@ export default function VendorRegister() {   // ✅ default export
         loginVendor(String(data.vendor.id));
         localStorage.setItem("vendorId", String(data.vendor.id));
         toast.success(`Welcome ${data.vendor.vendor_name}`);
-        navigate("/vendor-dashboard");   // ✅ simplified navigation
+        navigate("/vendor-dashboard");
       } else toast.error(data.message || "Login failed");
     } catch {
       toast.error("Server error");
     } finally {
       setLoading(false);
     }
+  }
+
+  // Auto-redirect if already logged in
+  if (isVendor) {
+    return <Navigate to="/vendor-dashboard" replace />;
   }
 
   if (submitted) {
@@ -139,21 +146,19 @@ export default function VendorRegister() {   // ✅ default export
           <div className="mb-6 flex gap-3">
             <button
               onClick={() => setMode("register")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold ${
-                mode === "register"
+              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold ${mode === "register"
                   ? "gradient-primary text-white"
                   : "bg-slate-800 text-gray-300"
-              }`}
+                }`}
             >
               Register
             </button>
             <button
               onClick={() => setMode("login")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold ${
-                mode === "login"
+              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold ${mode === "login"
                   ? "gradient-primary text-white"
                   : "bg-slate-800 text-gray-300"
-              }`}
+                }`}
             >
               Login
             </button>
@@ -256,7 +261,7 @@ export default function VendorRegister() {   // ✅ default export
                   onChange={(e) => setRegField("address", e.target.value)}
                 />
               </div>
-                            <button
+              <button
                 disabled={loading}
                 className="w-full rounded-lg gradient-primary py-3 font-semibold text-white disabled:opacity-60"
               >

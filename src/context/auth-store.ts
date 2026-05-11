@@ -10,17 +10,15 @@ interface AdminData {
 
 interface AuthState {
   vendorId: string | null;
+  isVendor: boolean;
 
   admin: AdminData | null;
-
   isAdmin: boolean;
 
   loginVendor: (vendorId: string) => void;
-
   logoutVendor: () => void;
 
   loginAdmin: (admin: AdminData) => void;
-
   logoutAdmin: () => void;
 }
 
@@ -28,19 +26,21 @@ export const useAuth = create<AuthState>()(
   persist(
     (set) => ({
       vendorId: null,
+      isVendor: false,
 
       admin: null,
-
       isAdmin: false,
 
       loginVendor: (vendorId) =>
         set({
           vendorId,
+          isVendor: true,
         }),
 
       logoutVendor: () =>
         set({
           vendorId: null,
+          isVendor: false,
         }),
 
       loginAdmin: (admin) =>
@@ -60,4 +60,4 @@ export const useAuth = create<AuthState>()(
       name: "egnaro-auth",
     }
   )
-);
+);
