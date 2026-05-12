@@ -25,6 +25,7 @@ import {
   useCart,
   cartCount,
 } from "@/context/cart-store";
+import { useAuth } from "@/context/auth-store";
 
 import logo from "@/assets/logo.jpeg";
 
@@ -38,6 +39,7 @@ const NAV = [
 
 export function Header() {
   const count = useCart(cartCount);
+  const isVendor = useAuth((s) => s.isVendor);
 
   const [open, setOpen] = useState(false);
 
@@ -189,11 +191,11 @@ export function Header() {
           <div className="flex items-center gap-2">
 
             <Link
-              to="/vendor-register"
+              to={isVendor ? "/vendor-dashboard" : "/vendor-register"}
               className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:inline-flex"
             >
               <Store className="h-3.5 w-3.5" />
-              Sell on Egnaro
+              {isVendor ? "Vendor Dashboard" : "Sell on Egnaro"}
             </Link>
 
             <Link
@@ -314,10 +316,10 @@ export function Header() {
           <div className="my-2 border-t border-border" />
 
           <Link
-            to="/vendor-register"
+            to={isVendor ? "/vendor-dashboard" : "/vendor-register"}
             className="block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
           >
-            Sell on Egnaro
+            {isVendor ? "Vendor Dashboard" : "Sell on Egnaro"}
           </Link>
 
           <Link
