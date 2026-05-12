@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { X, Check, Loader2, Users } from "lucide-react";
-import { approveVendor, getVendors } from "@/services/api";
+import { approveVendor } from "@/services/api";
 import { toast } from "sonner";
 
 type Vendor = {
@@ -10,6 +10,8 @@ type Vendor = {
   phone: string;
   email: string;
   address: string;
+  status?: string;
+  approved?: number;
 };
 
 interface Props {
@@ -17,18 +19,58 @@ interface Props {
   onVendorActioned: () => void;
 }
 
-export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
+export function VendorRequestsModal({
+  onClose,
+  onVendorActioned,
+}: Props) {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [fetching, setFetching] = useState(true);
 
+  async function loadVendors() {
+    try {
+      setFetching(true);
+
+      const res = await fetch(
+        "https://egnaromart.com/api/get-vendors.php"
+      );
+
+      const text = await res.text();
+
+      console.log("GET VENDORS RAW:", text);
+
+      let data = [];
+
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error("JSON parse error:", err);
+      }
+
+      console.log("PARSED VENDORS:", data);
+
+      if (Array.isArray(data)) {
+        setVendors(data);
+      } else {
+        setVendors([]);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load vendors");
+      setVendors([]);
+    } finally {
+      setFetching(false);
+    }
+  }
+
   useEffect(() => {
-    getVendors()
-      .then((d) => setVendors(Array.isArray(d) ? d : []))
-      .finally(() => setFetching(false));
+    loadVendors();
   }, []);
 
   function removeVendor(id: number) {
-    setVendors((prev) => prev.filter((v) => v.id !== id));
+    setVendors((prev) =>
+      prev.filter((v) => v.id !== id)
+    );
+
     onVendorActioned();
   }
 
@@ -37,26 +79,36 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      {/* backdrop */}
+      {/* BACKDROP */}
+
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
+      {/* MODAL */}
+
       <div
-        className="relative z-10 w-full max-w-2xl max-h-[85vh] flex flex-col rounded-[28px] border border-white/10 bg-[#0a0f0a] shadow-2xl"
+        className="relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col rounded-[28px] border border-white/10 bg-[#0a0f0a] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* header */}
+        {/* HEADER */}
+
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B3D2E] text-[#FF6600]">
               <Users className="h-5 w-5" />
             </div>
+
             <div>
-              <h2 className="text-lg font-bold text-white">Vendor Requests</h2>
+              <h2 className="text-lg font-bold text-white">
+                Vendor Requests
+              </h2>
+
               <p className="text-xs text-gray-500">
-                {vendors.length} pending request{vendors.length !== 1 ? "s" : ""}
+                {vendors.length} pending request
+                {vendors.length !== 1 ? "s" : ""}
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
@@ -65,8 +117,9 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
           </button>
         </div>
 
-        {/* body */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        {/* BODY */}
+
+        <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
           {fetching ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
@@ -74,11 +127,18 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
           ) : vendors.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-500">
               <Users className="mb-3 h-12 w-12 opacity-30" />
-              <p className="text-sm">No pending vendor requests</p>
+
+              <p className="text-sm">
+                No pending vendor requests
+              </p>
             </div>
           ) : (
-            vendors.map((v) => (
-              <VendorCard key={v.id} vendor={v} onAction={removeVendor} />
+            vendors.map((vendor) => (
+              <VendorCard
+                key={vendor.id}
+                vendor={vendor}
+                onAction={removeVendor}
+              />
             ))
           )}
         </div>
@@ -86,6 +146,8 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
     </div>
   );
 }
+
+/* ================= CARD ================= */
 
 const VendorCard = memo(
   ({
@@ -95,26 +157,46 @@ const VendorCard = memo(
     vendor: Vendor;
     onAction: (id: number) => void;
   }) => {
-    const [loading, setLoading] = useState<"approve" | "reject" | null>(null);
+    const [loading, setLoading] = useState<
+      "approve" | "reject" | null
+    >(null);
+
     const busy = loading !== null;
 
-    async function handleAction(action: "approve" | "reject") {
-      setLoading(action);
+    async function handleAction(
+      action: "approve" | "reject"
+    ) {
       try {
-        const status = action === "approve" ? "approved" : "rejected";
-        const res = await approveVendor(vendor.id, status);
-        if (res && res.success === false) {
-          toast.error(res.message || "Action failed");
-        } else {
+        setLoading(action);
+
+        const status =
+          action === "approve"
+            ? "approved"
+            : "rejected";
+
+        const res = await approveVendor(
+          vendor.id,
+          status
+        );
+
+        console.log("APPROVE RESPONSE:", res);
+
+        if (res?.success) {
           toast.success(
             action === "approve"
               ? `${vendor.company_name} approved`
               : `${vendor.company_name} rejected`
           );
+
           onAction(vendor.id);
+        } else {
+          toast.error(
+            res?.message || "Action failed"
+          );
         }
-      } catch {
-        toast.error("Server error. Please try again.");
+      } catch (err) {
+        console.error(err);
+        toast.error("Server error");
       } finally {
         setLoading(null);
       }
@@ -123,40 +205,63 @@ const VendorCard = memo(
     return (
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <div className="flex items-start justify-between gap-4">
+
+          {/* INFO */}
+
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-base font-semibold text-white">
               {vendor.company_name}
             </h3>
-            <p className="mt-0.5 text-sm text-gray-400">{vendor.vendor_name}</p>
-            <p className="mt-1 text-xs text-gray-500">
-              {vendor.email} · {vendor.phone}
+
+            <p className="mt-1 text-sm text-gray-400">
+              {vendor.vendor_name}
             </p>
-            <p className="mt-1 text-xs text-gray-600">{vendor.address}</p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              {vendor.email}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              {vendor.phone}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-600">
+              {vendor.address}
+            </p>
           </div>
+
+          {/* BUTTONS */}
 
           <div className="flex shrink-0 gap-2 pt-1">
             <button
               disabled={busy}
-              onClick={() => handleAction("approve")}
-              className="flex items-center gap-1.5 rounded-xl bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity disabled:opacity-60 hover:bg-green-500"
+              onClick={() =>
+                handleAction("approve")
+              }
+              className="flex items-center gap-1.5 rounded-xl bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:bg-green-500 disabled:opacity-60"
             >
               {loading === "approve" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Check className="h-3.5 w-3.5" />
               )}
+
               Approve
             </button>
+
             <button
               disabled={busy}
-              onClick={() => handleAction("reject")}
-              className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity disabled:opacity-60 hover:bg-red-500"
+              onClick={() =>
+                handleAction("reject")
+              }
+              className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:bg-red-500 disabled:opacity-60"
             >
               {loading === "reject" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <X className="h-3.5 w-3.5" />
               )}
+
               Reject
             </button>
           </div>

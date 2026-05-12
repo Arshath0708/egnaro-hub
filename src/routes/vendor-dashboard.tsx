@@ -1,7 +1,9 @@
+//vendor dashboard 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+
 
 import type { LucideIcon } from "lucide-react";
 
@@ -372,6 +374,7 @@ function AddProductModal({
 }) {
   const [previewImage, setPreviewImage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState<ProductForm>({
     vendorId,
@@ -385,28 +388,40 @@ function AddProductModal({
   });
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      return addProduct(form);
-    },
+  mutationFn: async () => {
+    console.log("Submitting form:", form);
 
-    onSuccess: () => {
-      toast.success("Product submitted for approval 🚀");
-      onClose();
-    },
+    const response = await addProduct(form);
 
-    onError: () => {
-      toast.error("Failed to submit product");
-    },
-  });
+    console.log("Server response:", response);
+
+    return response;
+  },
+
+  onSuccess: async () => {
+    toast.success("Product submitted for approval 🚀");
+
+    await queryClient.invalidateQueries({
+      queryKey: ["vendor-products", vendorId],
+    });
+
+    onClose();
+  },
+
+  onError: (err: any) => {
+    console.error(err);
+
+    toast.error(err.message || "Failed to submit product");
+  },
+});
 
   async function handleImageUpload(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
-    // LOCAL PREVIEW
+    // Local preview
     const localPreview = URL.createObjectURL(file);
     setPreviewImage(localPreview);
 
@@ -416,6 +431,9 @@ function AddProductModal({
       const formData = new FormData();
       formData.append("image", file);
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
       const res = await fetch(
         "https://egnaromart.com/api/upload-image.php",
         {
@@ -424,20 +442,25 @@ function AddProductModal({
         }
       );
 
+      clearTimeout(timeout);
+
       const data = await res.json();
 
-      if (data.success && data.url) {
+      if (data.success && (data.url || data.image)) {
         setForm((prev) => ({
           ...prev,
-          image: data.url,
+          image: data.url || data.image,
         }));
 
-        toast.success("Image uploaded");
+        toast.success("Image uploaded successfully");
       } else {
-        toast.error("Image upload failed");
+        toast.error(data.message || "Image upload failed");
+        setPreviewImage("");
       }
-    } catch {
+    } catch (error) {
+      console.error("Upload error:", error);
       toast.error("Upload failed");
+      setPreviewImage("");
     } finally {
       setUploading(false);
     }
@@ -446,39 +469,12 @@ function AddProductModal({
   const inputClass =
     "w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-gray-500 focus:border-cyan-400";
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (
-      !form.name ||
-      !form.price ||
-      !form.original_price ||
-      !form.discount ||
-      !form.description
-    ) {
-      toast.error("Please fill all fields");
-      return;
-    }
-
-    if (!form.image) {
-      toast.error("Please upload image");
-      return;
-    }
-
-    mutation.mutate();
-  }
-
+  
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 backdrop-blur-md">
       <div className="flex min-h-full items-start justify-center py-8">
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative w-full max-w-5xl rounded-[36px] border border-white/10 bg-[#050816]"
-        >
+        <div className="relative w-full max-w-5xl rounded-[36px] border border-white/10 bg-[#050816] shadow-2xl">
           <div className="p-8 lg:p-10">
-
             {/* HEADER */}
             <div className="mb-8 flex items-start justify-between">
               <div>
@@ -497,8 +493,9 @@ function AddProductModal({
               </div>
 
               <button
+                type="button"
                 onClick={onClose}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 text-white"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 text-white transition hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -506,13 +503,11 @@ function AddProductModal({
 
             {/* FORM */}
             <form
-              onSubmit={handleSubmit}
-              className="grid gap-8 lg:grid-cols-2"
-            >
-
+  
+  className="grid gap-8 lg:grid-cols-2"
+>
               {/* LEFT */}
               <div className="space-y-5">
-
                 <InputField
                   label="Product Name"
                   value={form.name}
@@ -615,9 +610,7 @@ function AddProductModal({
                   </label>
 
                   <label className="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-cyan-400/30 bg-cyan-400/5 px-5 py-6 transition hover:bg-cyan-400/10">
-
                     <div className="flex flex-col items-center">
-
                       {previewImage ? (
                         <img
                           src={previewImage}
@@ -653,9 +646,7 @@ function AddProductModal({
 
               {/* RIGHT PREVIEW */}
               <div>
-
                 <div className="sticky top-10 rounded-3xl border border-white/10 bg-[#0b1220] p-6">
-
                   <div className="mb-5 flex items-center gap-2 text-cyan-300">
                     <Eye className="h-5 w-5" />
                     <span className="font-semibold">
@@ -664,9 +655,7 @@ function AddProductModal({
                   </div>
 
                   <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#111827]">
-
                     <div className="relative">
-
                       {previewImage ? (
                         <img
                           src={previewImage}
@@ -687,7 +676,6 @@ function AddProductModal({
                     </div>
 
                     <div className="p-6">
-
                       <div className="mb-2 text-xs uppercase tracking-[0.2em] text-cyan-300">
                         {form.category}
                       </div>
@@ -702,7 +690,6 @@ function AddProductModal({
                       </p>
 
                       <div className="mt-5 flex items-center justify-between">
-
                         <div>
                           <div className="text-3xl font-black text-cyan-400">
                             ₹{form.price || "0"}
@@ -723,26 +710,74 @@ function AddProductModal({
                     </div>
                   </div>
 
-                  {/* SUBMIT */}
+                  {/* SUBMIT BUTTON */}
                   <button
-                    type="submit"
-                    disabled={mutation.isPending || uploading}
-                    className="mt-6 w-full rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-300 to-cyan-400 px-8 py-4 font-bold text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {mutation.isPending
-                      ? "Submitting..."
-                      : "Submit For Approval"}
-                  </button>
+  type="button"
+  onClick={() => {
+    console.log("BUTTON CLICKED");
+
+    if (uploading) {
+      toast.error("Please wait until image upload is complete");
+      return;
+    }
+
+    if (!vendorId) {
+      toast.error("Vendor ID missing");
+      return;
+    }
+
+    if (!form.name.trim()) {
+      toast.error("Enter product name");
+      return;
+    }
+
+    if (!form.price) {
+      toast.error("Enter selling price");
+      return;
+    }
+
+    if (!form.original_price) {
+      toast.error("Enter original price");
+      return;
+    }
+
+    if (!form.discount) {
+      toast.error("Enter discount");
+      return;
+    }
+
+    if (!form.description.trim()) {
+      toast.error("Enter description");
+      return;
+    }
+
+    if (!form.image) {
+      toast.error("Upload product image");
+      return;
+    }
+
+    console.log("Submitting form:", form);
+
+    mutation.mutate();
+  }}
+  disabled={mutation.isPending || uploading}
+  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-300 to-cyan-400 px-8 py-4 font-bold text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {uploading
+    ? "Uploading Image..."
+    : mutation.isPending
+    ? "Submitting..."
+    : "Submit For Approval"}
+</button>
                 </div>
               </div>
             </form>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
 }
-
 type InputFieldProps = {
   label: string;
   value: string;

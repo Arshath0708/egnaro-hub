@@ -23,7 +23,11 @@ export function ProductRequestsModal({ onClose, onProductActioned }: Props) {
 
   useEffect(() => {
     getPendingProducts()
-      .then((d) => setProducts(Array.isArray(d) ? d : []))
+      .then((d) => {
+  console.log("PENDING PRODUCTS:", d);
+
+  setProducts(Array.isArray(d) ? d : []);
+})
       .finally(() => setFetching(false));
   }, []);
 

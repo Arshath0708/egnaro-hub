@@ -34,7 +34,7 @@ const categories = [
   {
     id: "electronics",
     name: "Electronics",
-    count: "120+",
+    
     image:
       "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200",
     accent: "from-blue-500/20 to-blue-500/5",
@@ -42,7 +42,7 @@ const categories = [
   {
     id: "electricals",
     name: "Electricals",
-    count: "95+",
+    
     image:
       "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
     accent: "from-yellow-500/20 to-yellow-500/5",
@@ -50,7 +50,7 @@ const categories = [
   {
     id: "hardware",
     name: "Hardware",
-    count: "78+",
+    
     image:
       "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1200",
     accent: "from-orange-500/20 to-orange-500/5",
@@ -58,7 +58,7 @@ const categories = [
   {
     id: "motor-pumps",
     name: "Motor Pumps",
-    count: "54+",
+    
     image:
       "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1200",
     accent: "from-cyan-500/20 to-cyan-500/5",
@@ -66,7 +66,7 @@ const categories = [
   {
     id: "home-appliances",
     name: "Home Appliances",
-    count: "88+",
+    
     image:
       "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200",
     accent: "from-purple-500/20 to-purple-500/5",
@@ -74,7 +74,7 @@ const categories = [
   {
     id: "industrial",
     name: "Industrial",
-    count: "67+",
+    
     image:
       "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=1200",
     accent: "from-emerald-500/20 to-emerald-500/5",
@@ -312,7 +312,7 @@ function CategoryCardLarge({
 
         <div className="absolute inset-0 p-7 flex flex-col justify-end">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary mb-2">
-            {category.count}
+            
           </div>
 
           <div className="font-display text-2xl font-bold">
@@ -366,7 +366,7 @@ function CategoryCardSmall({
           </div>
 
           <div className="text-[10px] text-muted-foreground mt-0.5">
-            {category.count}
+            
           </div>
         </div>
       </Link>

@@ -1,18 +1,23 @@
-import { useNavigate } from "react-router-dom";   // ✅ switched to react-router-dom
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
-import { CreditCard, Smartphone, Wallet, MessageCircle } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+
+import {
+  CreditCard,
+  Smartphone,
+  Wallet,
+  MessageCircle,
+  CheckCircle2,
+} from "lucide-react";
+
 import { Shell } from "@/components/layout/Shell";
 import { useCart } from "@/context/cart-store";
 import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
 
-const QR =
-  "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=egnaromart@okaxis%26pn=EgnaroMart";
-
 const inputCls =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";
+  "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
 
 type FormState = {
   fullName: string;
@@ -38,11 +43,17 @@ const EMPTY_FORM: FormState = {
   notes: "",
 };
 
-export default function CheckoutPage() {   // ✅ default export
+export default function CheckoutPage() {
   const nav = useNavigate();
+
   const { items, clear } = useCart();
+
   const [submitting, setSubmitting] = useState(false);
-  const [payment, setPayment] = useState<"cod" | "upi" | "card">("cod");
+
+  const [payment, setPayment] = useState<
+    "cod" | "upi" | "card"
+  >("upi");
+
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
   const { data: products = [] } = useQuery({
@@ -53,33 +64,70 @@ export default function CheckoutPage() {   // ✅ default export
 
   const setField = useCallback(
     <K extends keyof FormState>(key: K, value: string) => {
-      setForm((prev) => ({ ...prev, [key]: value }));
+      setForm((prev) => ({
+        ...prev,
+        [key]: value,
+      }));
     },
     []
   );
 
-  const detailed = items
-    .map((i) => ({
-      ...i,
-      product: products.find((p: any) => p.id === i.productId)!,
-    }))
-    .filter((x) => x.product);
+  const detailed = useMemo(() => {
+    return items
+      .map((i) => ({
+        ...i,
+        product: products.find((p: any) => p.id === i.productId)!,
+      }))
+      .filter((x) => x.product);
+  }, [items, products]);
 
   const subtotal = detailed.reduce(
     (s, i) => s + i.product.price * i.quantity,
     0
   );
+
   const shipping = subtotal >= 5000 ? 0 : 99;
+
   const total = subtotal + shipping;
+
+  const upiLink = `upi://pay?pa=samsonelectronics50@oksbi&pn=EgnaroMart&am=${total}&cu=INR`;
+
+  const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+    upiLink
+  )}`;
+
+  const whatsappMessage = encodeURIComponent(`
+🛒 Egnaro Mart Payment Receipt
+
+Name: ${form.fullName}
+Phone: ${form.phone}
+Amount Paid: ₹${total}
+
+Please find my payment screenshot attached.
+  `);
+
+  const whatsappUrl = `https://wa.me/919442581506?text=${whatsappMessage}`;
 
   if (items.length === 0) {
     return (
       <Shell>
-        <div className="mx-auto max-w-3xl px-4 py-20 text-center">
-          <h1 className="font-display text-3xl font-bold">Cart is empty</h1>
-          <p className="mt-2 text-muted-foreground">
-            Add products before checking out.
-          </p>
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+          <div className="rounded-3xl border border-border bg-card p-10">
+            <h1 className="font-display text-4xl font-bold">
+              Your Cart is Empty
+            </h1>
+
+            <p className="mt-3 text-muted-foreground">
+              Add some products before proceeding to checkout.
+            </p>
+
+            <button
+              onClick={() => nav("/products")}
+              className="mt-6 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Continue Shopping
+            </button>
+          </div>
         </div>
       </Shell>
     );
@@ -87,29 +135,61 @@ export default function CheckoutPage() {   // ✅ default export
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     if (submitting) return;
+
     setSubmitting(true);
+
     try {
-      const res = await fetch("https://egnaromart.com/api/create-order.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_name: form.fullName,
-          phone: form.phone,
-          email: form.email,
-          address: `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`,
-          total,
-          payment_method: payment,
-        }),
-      });
+      const orderItems = detailed.map((i) => ({
+        id: i.product.id,
+        name: i.product.name,
+        image: i.product.image,
+        quantity: i.quantity,
+        price: i.product.price,
+      }));
+
+      const res = await fetch(
+        "https://egnaromart.com/api/create-order.php",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            customer_name: form.fullName,
+            phone: form.phone,
+            email: form.email,
+
+            address: `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`,
+
+            total,
+
+            payment_method: payment,
+
+            order_items: JSON.stringify(orderItems),
+
+            notes: form.notes,
+
+            gst: form.gst,
+          }),
+        }
+      );
+
       const data = await res.json();
+
       if (data.success) {
+        toast.success("Order placed successfully 🎉");
+
         clear();
-        nav(`/order-success?orderId=${data.order_id}`);   // ✅ simplified navigation
+
+        nav(`/order-success?orderId=${data.order_id}`);
       } else {
-        toast.error(data.message || "Order failed. Try again.");
+        toast.error(data.message || "Order failed");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Network error. Please try again.");
     } finally {
       setSubmitting(false);
@@ -119,248 +199,385 @@ export default function CheckoutPage() {   // ✅ default export
   return (
     <Shell>
       <div className="mx-auto max-w-7xl px-4 py-10">
-        <h1 className="font-display text-3xl font-bold mb-8">Checkout</h1>
+        {/* HEADER */}
+
+        <div className="mb-10">
+          <h1 className="font-display text-4xl font-black">
+            Checkout
+          </h1>
+
+          <p className="mt-2 text-muted-foreground">
+            Securely complete your order with Egnaro Mart
+          </p>
+        </div>
 
         <form
           onSubmit={handleSubmit}
-          className="grid lg:grid-cols-[1fr_380px] gap-8"
+          className="grid gap-8 lg:grid-cols-[1fr_400px]"
         >
-          {/* LEFT — Shipping + Payment */}
-          <div className="space-y-6">
-            {/* Shipping */}
-            <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="font-semibold text-lg mb-5">Shipping Details</h2>
-              <div className="grid sm:grid-cols-2 gap-4">
+          {/* LEFT */}
+
+          <div className="space-y-8">
+            {/* SHIPPING */}
+
+            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-bold">
+                    Shipping Details
+                  </h2>
+
+                  <p className="text-sm text-muted-foreground">
+                    Enter your delivery information
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Full Name *">
                   <input
                     required
-                    autoComplete="name"
-                    className={inputCls}
                     value={form.fullName}
-                    onChange={(e) => setField("fullName", e.target.value)}
+                    onChange={(e) =>
+                      setField("fullName", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="Your full name"
                   />
                 </Field>
+
                 <Field label="Phone Number *">
                   <input
                     required
-                    type="tel"
-                    autoComplete="tel"
                     pattern="[0-9]{10}"
-                    className={inputCls}
                     value={form.phone}
-                    onChange={(e) => setField("phone", e.target.value)}
+                    onChange={(e) =>
+                      setField("phone", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="10 digit mobile number"
                   />
                 </Field>
+
                 <Field label="Email Address *" full>
                   <input
                     required
                     type="email"
-                    autoComplete="email"
-                    className={inputCls}
                     value={form.email}
-                    onChange={(e) => setField("email", e.target.value)}
+                    onChange={(e) =>
+                      setField("email", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="you@example.com"
                   />
                 </Field>
+
                 <Field label="Street Address *" full>
                   <input
                     required
-                    autoComplete="street-address"
-                    className={inputCls}
                     value={form.address}
-                    onChange={(e) => setField("address", e.target.value)}
+                    onChange={(e) =>
+                      setField("address", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="House no, street, area"
                   />
                 </Field>
+
                 <Field label="City *">
                   <input
                     required
-                    autoComplete="address-level2"
-                    className={inputCls}
                     value={form.city}
-                    onChange={(e) => setField("city", e.target.value)}
+                    onChange={(e) =>
+                      setField("city", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="City"
                   />
                 </Field>
+
                 <Field label="State *">
                   <input
                     required
-                    autoComplete="address-level1"
-                    className={inputCls}
                     value={form.state}
-                    onChange={(e) => setField("state", e.target.value)}
+                    onChange={(e) =>
+                      setField("state", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="State"
                   />
                 </Field>
+
                 <Field label="Pincode *">
                   <input
                     required
                     pattern="[0-9]{6}"
-                    autoComplete="postal-code"
-                    className={inputCls}
                     value={form.pincode}
-                    onChange={(e) => setField("pincode", e.target.value)}
+                    onChange={(e) =>
+                      setField("pincode", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="6 digit pincode"
                   />
                 </Field>
-                <Field label="GST Number (Optional)">
+
+                <Field label="GST Number">
                   <input
-                    autoComplete="off"
-                    className={inputCls}
                     value={form.gst}
-                    onChange={(e) => setField("gst", e.target.value)}
+                    onChange={(e) =>
+                      setField("gst", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="Optional"
                   />
                 </Field>
-                <Field label="Order Notes (Optional)" full>
+
+                <Field label="Order Notes" full>
                   <textarea
-                    rows={3}
-                    className={inputCls}
+                    rows={4}
                     value={form.notes}
-                    onChange={(e) => setField("notes", e.target.value)}
+                    onChange={(e) =>
+                      setField("notes", e.target.value)
+                    }
+                    className={inputCls}
+                    placeholder="Any special instructions..."
                   />
                 </Field>
               </div>
             </section>
 
-            {/* Payment */}
-            <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="font-semibold text-lg mb-5">Payment Method</h2>
-              <div className="grid grid-cols-3 gap-3 mb-5">
+            {/* PAYMENT */}
+
+            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+              <h2 className="mb-5 text-xl font-bold">
+                Payment Method
+              </h2>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {[
-                  { id: "cod", label: "Cash on Delivery", icon: Wallet },
-                  { id: "upi", label: "UPI Payment", icon: Smartphone },
-                  { id: "card", label: "Card", icon: CreditCard },
+                  {
+                    id: "upi",
+                    label: "UPI Payment",
+                    icon: Smartphone,
+                  },
+
+                  {
+                    id: "cod",
+                    label: "Cash on Delivery",
+                    icon: Wallet,
+                  },
+
+                  {
+                    id: "card",
+                    label: "Card",
+                    icon: CreditCard,
+                  },
                 ].map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => setPayment(p.id as any)}
-                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                    className={`rounded-2xl border-2 p-5 text-left transition-all ${
                       payment === p.id
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/40"
                     }`}
                   >
-                    <p.icon className="h-5 w-5 mb-2 text-primary" />
-                    <div className="text-sm font-semibold">{p.label}</div>
+                    <p.icon className="mb-3 h-6 w-6 text-primary" />
+
+                    <div className="font-semibold">
+                      {p.label}
+                    </div>
                   </button>
                 ))}
               </div>
 
+              {/* UPI */}
+
               {payment === "upi" && (
-                <div className="rounded-lg border border-border p-5 grid sm:grid-cols-[180px_1fr] gap-5 items-center">
-                  <img
-                    src={QR}
-                    alt="UPI QR"
-                    className="rounded-lg bg-white p-2 mx-auto"
-                    width={180}
-                    height={180}
-                  />
-                  <div className="space-y-2 text-sm">
-                    <div className="text-muted-foreground">
-                      Pay via any UPI app
+                <div className="mt-6 rounded-3xl border border-border bg-background/50 p-6">
+                  <div className="grid items-center gap-6 md:grid-cols-[260px_1fr]">
+                    <div className="text-center">
+                      <img
+                        src={upiQrUrl}
+                        alt="UPI QR"
+                        className="mx-auto rounded-2xl border bg-white p-3"
+                      />
+
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Scan using GPay / PhonePe / Paytm
+                      </p>
                     </div>
-                                        <div>
-                      <span className="text-muted-foreground">UPI ID:</span>{" "}
-                      <span className="font-mono font-semibold">
-                        egnaromart@okaxis
-                      </span>
-                    </div>
+
                     <div>
-                      <span className="text-muted-foreground">Amount:</span>{" "}
-                      <span className="font-bold text-lg">{inr(total)}</span>
+                      <h3 className="text-lg font-bold">
+                        One Click UPI Payment 🚀
+                      </h3>
+
+                      <div className="mt-4 space-y-3 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">
+                            UPI ID:
+                          </span>{" "}
+                          <span className="font-semibold">
+                            samsonelectronics50@oksbi
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-muted-foreground">
+                            Amount:
+                          </span>{" "}
+                          <span className="text-xl font-black text-primary">
+                            {inr(total)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex flex-wrap gap-3">
+                        <a
+                          href={upiLink}
+                          className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                        >
+                          Pay with Any UPI App
+                        </a>
+
+                        <a
+                          href={whatsappUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          Send Receipt
+                        </a>
+                      </div>
+
+                      <div className="mt-5 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-sm text-yellow-700 dark:text-yellow-400">
+                        After payment, click{" "}
+                        <strong>Send Receipt</strong> and share
+                        your payment screenshot on WhatsApp.
+                      </div>
                     </div>
-                    <a
-                      href="https://wa.me/919442581506"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 mt-2 text-green-600 hover:underline text-sm"
-                    >
-                      <MessageCircle className="h-4 w-4" /> Send screenshot via
-                      WhatsApp
-                    </a>
                   </div>
                 </div>
               )}
 
+              {/* CARD */}
+
               {payment === "card" && (
-                <div className="rounded-lg border border-border p-5 space-y-3">
-                  <Field label="Card Number">
-                    <input
-                      placeholder="0000 0000 0000 0000"
-                      autoComplete="cc-number"
-                      className={inputCls}
-                    />
-                  </Field>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Expiry">
+                <div className="mt-6 rounded-2xl border border-border p-5">
+                  <div className="space-y-4">
+                    <Field label="Card Number">
                       <input
-                        placeholder="MM/YY"
-                        autoComplete="cc-exp"
                         className={inputCls}
+                        placeholder="0000 0000 0000 0000"
                       />
                     </Field>
-                    <Field label="CVV">
-                      <input
-                        placeholder="123"
-                        autoComplete="cc-csc"
-                        className={inputCls}
-                      />
-                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="Expiry">
+                        <input
+                          className={inputCls}
+                          placeholder="MM/YY"
+                        />
+                      </Field>
+
+                      <Field label="CVV">
+                        <input
+                          className={inputCls}
+                          placeholder="123"
+                        />
+                      </Field>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Demo gateway — no real charge.
+
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    Demo payment gateway only.
                   </p>
                 </div>
               )}
 
+              {/* COD */}
+
               {payment === "cod" && (
-                <p className="text-sm text-muted-foreground">
-                  Pay in cash when your order arrives.
-                </p>
+                <div className="mt-6 rounded-2xl border border-border bg-background/40 p-5 text-sm text-muted-foreground">
+                  You can pay with cash at the time of
+                  delivery.
+                </div>
               )}
             </section>
           </div>
 
-          {/* RIGHT — Summary */}
-          <aside className="rounded-xl border border-border bg-card p-6 h-fit sticky top-24">
-            <h3 className="font-semibold text-lg mb-4">Order Summary</h3>
-            <div className="space-y-3 max-h-64 overflow-y-auto pr-1 mb-4">
+          {/* RIGHT */}
+
+          <aside className="sticky top-24 h-fit rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="mb-5 text-2xl font-bold">
+              Order Summary
+            </h2>
+
+            <div className="mb-5 max-h-80 space-y-4 overflow-y-auto pr-1">
               {detailed.map((i) => (
                 <div
                   key={i.productId}
-                  className="flex gap-3 items-center text-sm"
+                  className="flex items-center gap-4"
                 >
                   <img
                     src={i.product.image}
-                    alt=""
-                    loading="lazy"
-                    className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
+                    alt={i.product.name}
+                    className="h-16 w-16 rounded-2xl object-cover border"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/placeholder.png";
+                      (
+                        e.target as HTMLImageElement
+                      ).src = "/placeholder.png";
                     }}
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="line-clamp-1 font-medium">
+
+                  <div className="min-w-0 flex-1">
+                    <div className="line-clamp-1 font-semibold">
                       {i.product.name}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Qty {i.quantity}
+
+                    <div className="text-sm text-muted-foreground">
+                      Qty: {i.quantity}
                     </div>
                   </div>
-                  <div className="font-semibold flex-shrink-0">
+
+                  <div className="font-bold">
                     {inr(i.product.price * i.quantity)}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="border-t border-border pt-3 space-y-2 text-sm">
+            <div className="space-y-3 border-t border-border pt-4 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-muted-foreground">
+                  Subtotal
+                </span>
+
                 <span>{inr(subtotal)}</span>
               </div>
+
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Shipping</span>
-                <span>{shipping === 0 ? "FREE" : inr(shipping)}</span>
+                <span className="text-muted-foreground">
+                  Shipping
+                </span>
+
+                <span>
+                  {shipping === 0
+                    ? "FREE"
+                    : inr(shipping)}
+                </span>
               </div>
-              <div className="flex justify-between font-bold text-base pt-2 border-t border-border">
+
+              <div className="flex justify-between border-t border-border pt-4 text-lg font-black">
                 <span>Total</span>
+
                 <span>{inr(total)}</span>
               </div>
             </div>
@@ -368,9 +585,11 @@ export default function CheckoutPage() {   // ✅ default export
             <button
               type="submit"
               disabled={submitting}
-              className="mt-5 w-full rounded-lg bg-primary text-primary-foreground py-3.5 font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+              className="mt-6 w-full rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
             >
-              {submitting ? "Placing Order..." : "Place Order"}
+              {submitting
+                ? "Placing Order..."
+                : "Place Order"}
             </button>
           </aside>
         </form>
@@ -390,9 +609,10 @@ function Field({
 }) {
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-xs font-medium text-muted-foreground mb-1.5 block">
+      <span className="mb-2 block text-sm font-medium text-muted-foreground">
         {label}
       </span>
+
       {children}
     </label>
   );

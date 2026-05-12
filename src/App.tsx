@@ -1,5 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-
 import Home from "./routes/index";
 import About from "./routes/about";
 import Products from "./routes/products";
@@ -36,6 +35,7 @@ export default function App() {
       <Route path="/admin" element={<Admin />} />
       <Route path="/vendor-dashboard" element={<VendorDashboard />} />
       <Route path="/vendor-register" element={<VendorRegister />} />
+      
     </Routes>
   );
 }
