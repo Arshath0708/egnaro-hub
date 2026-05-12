@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";   // ✅ switched to react-router-dom
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { CheckCircle2, LogIn, ShieldCheck, Lock } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { addVendor } from "@/services/api";
@@ -32,6 +32,14 @@ const inp =
 export default function VendorRegister() {   // ✅ default export
   const navigate = useNavigate();
   const loginVendor = useAuth((s) => s.loginVendor);
+  const isVendor = useAuth((s) => s.isVendor);
+
+  useEffect(() => {
+    if (isVendor) {
+      navigate("/vendor-dashboard");
+    }
+  }, [isVendor, navigate]);
+
   const [mode, setMode] = useState<"register" | "login">("register");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -81,9 +89,8 @@ export default function VendorRegister() {   // ✅ default export
       const data = await res.json();
       if (data.success) {
         loginVendor(String(data.vendor.id));
-        localStorage.setItem("vendorId", String(data.vendor.id));
         toast.success(`Welcome ${data.vendor.vendor_name}`);
-        navigate("/vendor-dashboard");   // ✅ simplified navigation
+        navigate("/vendor-dashboard");
       } else toast.error(data.message || "Login failed");
     } catch {
       toast.error("Server error");

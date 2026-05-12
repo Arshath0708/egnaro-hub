@@ -54,9 +54,10 @@ type ProductForm = {
 
 export default function VendorDashboard() {
   const vendorId = useAuth((s) => s.vendorId);
+  const isVendor = useAuth((s) => s.isVendor);
   const logout = useAuth((s) => s.logoutVendor);
 
-  if (!vendorId) {
+  if (!isVendor || !vendorId) {
     return (
       <Shell>
         <div className="flex min-h-[80vh] items-center justify-center px-4">

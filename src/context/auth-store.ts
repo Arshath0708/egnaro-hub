@@ -15,6 +15,8 @@ interface AuthState {
 
   isAdmin: boolean;
 
+  isVendor: boolean;
+
   loginVendor: (vendorId: string) => void;
 
   logoutVendor: () => void;
@@ -33,14 +35,18 @@ export const useAuth = create<AuthState>()(
 
       isAdmin: false,
 
+      isVendor: false,
+
       loginVendor: (vendorId) =>
         set({
           vendorId,
+          isVendor: true,
         }),
 
       logoutVendor: () =>
         set({
           vendorId: null,
+          isVendor: false,
         }),
 
       loginAdmin: (admin) =>
