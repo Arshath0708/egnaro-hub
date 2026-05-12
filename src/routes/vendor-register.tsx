@@ -13,6 +13,9 @@ type RegisterForm = {
   email: string;
   password: string;
   address: string;
+  bank_name: string;
+  account_number: string;
+  ifsc_code: string;
 };
 type LoginForm = { email: string; password: string };
 
@@ -23,6 +26,9 @@ const EMPTY_REGISTER: RegisterForm = {
   email: "",
   password: "",
   address: "",
+  bank_name: "",
+  account_number: "",
+  ifsc_code: "",
 };
 const EMPTY_LOGIN: LoginForm = { email: "", password: "" };
 
@@ -175,7 +181,7 @@ export default function VendorRegister() {   // ✅ default export
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-400">
-                    Vendor Name
+                    Vendor Name (as per in bank a/c)
                   </label>
                   <input
                     required
@@ -229,6 +235,44 @@ export default function VendorRegister() {   // ✅ default export
                     className={inp}
                     value={form.email}
                     onChange={(e) => setRegField("email", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Bank Name
+                  </label>
+                  <input
+                    required
+                    placeholder="e.g. HDFC Bank"
+                    className={inp}
+                    value={form.bank_name}
+                    onChange={(e) => setRegField("bank_name", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Account Number
+                  </label>
+                  <input
+                    required
+                    placeholder="e.g. 1234567890"
+                    className={inp}
+                    value={form.account_number}
+                    onChange={(e) => setRegField("account_number", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    IFSC Code
+                  </label>
+                  <input
+                    required
+                    placeholder="e.g. HDFC0001234"
+                    className={inp}
+                    value={form.ifsc_code}
+                    onChange={(e) => setRegField("ifsc_code", e.target.value)}
                   />
                 </div>
               </div>

@@ -19,11 +19,17 @@ import {
   Clock3,
   ImagePlus,
   Eye,
+  Trash2,
+  Edit3,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
+import { ViewProductModal } from "@/modals/ViewProductModal";
+import { UpdateProductModal } from "@/modals/UpdateProductModal";
+import { DeleteProductModal } from "@/modals/DeleteProductModal";
+import { AddProductModal } from "@/modals/AddProductModal";
 import { useAuth } from "@/context/auth-store";
-import { addProduct } from "@/services/api";
+import { addProduct, getVendorProducts, getVendorStats } from "@/services/api";
 import { CATEGORIES } from "@/data/seed";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
@@ -50,6 +56,9 @@ type ProductForm = {
   original_price: string;
   discount: string;
   description: string;
+  stock_quantity: string;
+  created_by_type: string;
+  created_by_id: string;
 };
 
 export default function VendorDashboard() {
@@ -104,6 +113,9 @@ function DashboardContent({
   const queryClient = useQueryClient();
 
   const [showAdd, setShowAdd] = useState(false);
+  const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [updateProduct, setUpdateProduct] = useState<Product | null>(null);
+  const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
 
   const {
     data: products = [],
@@ -111,17 +123,12 @@ function DashboardContent({
   } = useQuery<Product[]>({
     queryKey: ["vendor-products", vendorId],
 
-    queryFn: async () => {
-      const res = await fetch(
-        `https://egnaromart.com/api/get-products.php?vendorId=${vendorId}`
-      );
+    queryFn: () => getVendorProducts(vendorId),
+  });
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch products");
-      }
-
-      return res.json();
-    },
+  const { data: stats } = useQuery({
+    queryKey: ["vendor-stats", vendorId],
+    queryFn: () => getVendorStats(vendorId),
   });
 
   const approvedCount = products.filter(
@@ -193,20 +200,20 @@ function DashboardContent({
 
             <StatCard
               icon={BadgeCheck}
-              title="Approved"
-              value={approvedCount}
+              title="Approved / Pending"
+              value={`${approvedCount} / ${pendingCount}`}
             />
 
             <StatCard
               icon={Clock3}
-              title="Pending"
-              value={pendingCount}
+              title="Total Orders"
+              value={stats?.total_orders || 0}
             />
 
             <StatCard
               icon={IndianRupee}
               title="Revenue"
-              value={0}
+              value={stats?.revenue || 0}
               currency
             />
           </div>
@@ -311,6 +318,27 @@ function DashboardContent({
                           {product.discount}% OFF
                         </div>
                       </div>
+
+                      <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/10 pt-4">
+                        <button
+                          onClick={() => setViewProduct(product)}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-white"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setUpdateProduct(product)}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 transition hover:bg-blue-500/20"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteProduct(product)}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10 text-red-400 transition hover:bg-red-500/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -332,6 +360,29 @@ function DashboardContent({
           }}
         />
       )}
+
+      {viewProduct && (
+        <ViewProductModal
+          product={viewProduct}
+          onClose={() => setViewProduct(null)}
+        />
+      )}
+
+      {updateProduct && (
+        <UpdateProductModal
+          product={updateProduct}
+          vendorId={vendorId}
+          onClose={() => setUpdateProduct(null)}
+        />
+      )}
+
+      {deleteProduct && (
+        <DeleteProductModal
+          product={deleteProduct}
+          vendorId={vendorId}
+          onClose={() => setDeleteProduct(null)}
+        />
+      )}
     </Shell>
   );
 }
@@ -339,7 +390,7 @@ function DashboardContent({
 type StatCardProps = {
   icon: LucideIcon;
   title: string;
-  value: number;
+  value: number | string;
   currency?: boolean;
 };
 
@@ -356,7 +407,7 @@ function StatCard({
       </div>
 
       <div className="text-4xl font-black text-white">
-        {currency ? inr(value) : value}
+        {currency ? inr(Number(value)) : value}
       </div>
 
       <div className="mt-2 text-gray-400">
@@ -365,450 +416,4 @@ function StatCard({
     </div>
   );
 }
-
-function AddProductModal({
-  vendorId,
-  onClose,
-}: {
-  vendorId: string;
-  onClose: () => void;
-}) {
-  const [previewImage, setPreviewImage] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const queryClient = useQueryClient();
-
-  const [form, setForm] = useState<ProductForm>({
-    vendorId,
-    name: "",
-    category: CATEGORIES[0]?.id || "electronics",
-    image: "",
-    price: "",
-    original_price: "",
-    discount: "",
-    description: "",
-  });
-
-  const mutation = useMutation({
-  mutationFn: async () => {
-    console.log("Submitting form:", form);
-
-    const response = await addProduct(form);
-
-    console.log("Server response:", response);
-
-    return response;
-  },
-
-  onSuccess: async () => {
-    toast.success("Product submitted for approval 🚀");
-
-    await queryClient.invalidateQueries({
-      queryKey: ["vendor-products", vendorId],
-    });
-
-    onClose();
-  },
-
-  onError: (err: any) => {
-    console.error(err);
-
-    toast.error(err.message || "Failed to submit product");
-  },
-});
-
-  async function handleImageUpload(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Local preview
-    const localPreview = URL.createObjectURL(file);
-    setPreviewImage(localPreview);
-
-    setUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-
-      const res = await fetch(
-        "https://egnaromart.com/api/upload-image.php",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      clearTimeout(timeout);
-
-      const data = await res.json();
-
-      if (data.success && (data.url || data.image)) {
-        setForm((prev) => ({
-          ...prev,
-          image: data.url || data.image,
-        }));
-
-        toast.success("Image uploaded successfully");
-      } else {
-        toast.error(data.message || "Image upload failed");
-        setPreviewImage("");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Upload failed");
-      setPreviewImage("");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const inputClass =
-    "w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-gray-500 focus:border-cyan-400";
-
-  
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 backdrop-blur-md">
-      <div className="flex min-h-full items-start justify-center py-8">
-        <div className="relative w-full max-w-5xl rounded-[36px] border border-white/10 bg-[#050816] shadow-2xl">
-          <div className="p-8 lg:p-10">
-            {/* HEADER */}
-            <div className="mb-8 flex items-start justify-between">
-              <div>
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
-                  <Sparkles className="h-4 w-4" />
-                  Add Product
-                </div>
-
-                <h1 className="text-4xl font-black text-white">
-                  New Product
-                </h1>
-
-                <p className="mt-3 text-gray-400">
-                  Submit product for admin approval.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 text-white transition hover:bg-white/10"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* FORM */}
-            <form
-  
-  className="grid gap-8 lg:grid-cols-2"
->
-              {/* LEFT */}
-              <div className="space-y-5">
-                <InputField
-                  label="Product Name"
-                  value={form.name}
-                  onChange={(v) =>
-                    setForm((p) => ({ ...p, name: v }))
-                  }
-                  placeholder="Enter product name"
-                  className={inputClass}
-                />
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Category
-                  </label>
-
-                  <select
-                    value={form.category}
-                    className={inputClass}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        category: e.target.value,
-                      }))
-                    }
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option
-                        key={cat.id}
-                        value={cat.id}
-                        className="bg-[#0f172a]"
-                      >
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <InputField
-                  label="Selling Price"
-                  type="number"
-                  value={form.price}
-                  onChange={(v) =>
-                    setForm((p) => ({ ...p, price: v }))
-                  }
-                  placeholder="₹ 0"
-                  className={inputClass}
-                />
-
-                <InputField
-                  label="Original Price"
-                  type="number"
-                  value={form.original_price}
-                  onChange={(v) =>
-                    setForm((p) => ({
-                      ...p,
-                      original_price: v,
-                    }))
-                  }
-                  placeholder="₹ 0"
-                  className={inputClass}
-                />
-
-                <InputField
-                  label="Discount %"
-                  type="number"
-                  value={form.discount}
-                  onChange={(v) =>
-                    setForm((p) => ({
-                      ...p,
-                      discount: v,
-                    }))
-                  }
-                  placeholder="10"
-                  className={inputClass}
-                />
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Product Description
-                  </label>
-
-                  <textarea
-                    rows={5}
-                    className={`${inputClass} resize-none`}
-                    placeholder="Write product description..."
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        description: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
-                {/* IMAGE */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Upload Product Image
-                  </label>
-
-                  <label className="flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-cyan-400/30 bg-cyan-400/5 px-5 py-6 transition hover:bg-cyan-400/10">
-                    <div className="flex flex-col items-center">
-                      {previewImage ? (
-                        <img
-                          src={previewImage}
-                          alt="preview"
-                          className="mb-3 h-28 w-28 rounded-2xl object-cover"
-                        />
-                      ) : (
-                        <ImagePlus className="mb-3 h-10 w-10 text-cyan-300" />
-                      )}
-
-                      <span className="font-semibold text-cyan-300">
-                        {uploading
-                          ? "Uploading..."
-                          : previewImage
-                          ? "Change Image"
-                          : "Choose Image"}
-                      </span>
-
-                      <span className="mt-1 text-xs text-gray-500">
-                        JPG / PNG / WEBP
-                      </span>
-                    </div>
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* RIGHT PREVIEW */}
-              <div>
-                <div className="sticky top-10 rounded-3xl border border-white/10 bg-[#0b1220] p-6">
-                  <div className="mb-5 flex items-center gap-2 text-cyan-300">
-                    <Eye className="h-5 w-5" />
-                    <span className="font-semibold">
-                      Live Product Preview
-                    </span>
-                  </div>
-
-                  <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#111827]">
-                    <div className="relative">
-                      {previewImage ? (
-                        <img
-                          src={previewImage}
-                          alt="preview"
-                          className="h-64 w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-64 items-center justify-center bg-[#1f2937] text-gray-500">
-                          No Image Selected
-                        </div>
-                      )}
-
-                      {form.discount && (
-                        <div className="absolute right-4 top-4 rounded-full bg-cyan-500 px-4 py-2 text-xs font-bold text-white">
-                          {form.discount}% OFF
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-6">
-                      <div className="mb-2 text-xs uppercase tracking-[0.2em] text-cyan-300">
-                        {form.category}
-                      </div>
-
-                      <h2 className="text-2xl font-black text-white">
-                        {form.name || "Product Name"}
-                      </h2>
-
-                      <p className="mt-3 text-sm text-gray-400">
-                        {form.description ||
-                          "Your product description preview will appear here."}
-                      </p>
-
-                      <div className="mt-5 flex items-center justify-between">
-                        <div>
-                          <div className="text-3xl font-black text-cyan-400">
-                            ₹{form.price || "0"}
-                          </div>
-
-                          <div className="text-sm text-gray-500 line-through">
-                            ₹{form.original_price || "0"}
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="rounded-2xl bg-cyan-500 px-5 py-3 font-semibold text-white"
-                        >
-                          Add to Cart
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SUBMIT BUTTON */}
-                  <button
-  type="button"
-  onClick={() => {
-    console.log("BUTTON CLICKED");
-
-    if (uploading) {
-      toast.error("Please wait until image upload is complete");
-      return;
-    }
-
-    if (!vendorId) {
-      toast.error("Vendor ID missing");
-      return;
-    }
-
-    if (!form.name.trim()) {
-      toast.error("Enter product name");
-      return;
-    }
-
-    if (!form.price) {
-      toast.error("Enter selling price");
-      return;
-    }
-
-    if (!form.original_price) {
-      toast.error("Enter original price");
-      return;
-    }
-
-    if (!form.discount) {
-      toast.error("Enter discount");
-      return;
-    }
-
-    if (!form.description.trim()) {
-      toast.error("Enter description");
-      return;
-    }
-
-    if (!form.image) {
-      toast.error("Upload product image");
-      return;
-    }
-
-    console.log("Submitting form:", form);
-
-    mutation.mutate();
-  }}
-  disabled={mutation.isPending || uploading}
-  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-300 to-cyan-400 px-8 py-4 font-bold text-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
->
-  {uploading
-    ? "Uploading Image..."
-    : mutation.isPending
-    ? "Submitting..."
-    : "Submit For Approval"}
-</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-type InputFieldProps = {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  className: string;
-  type?: string;
-};
-
-function InputField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  className,
-  type = "text",
-}: InputFieldProps) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-gray-300">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        className={className}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
+

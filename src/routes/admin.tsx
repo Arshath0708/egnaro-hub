@@ -13,6 +13,15 @@ import { useAuth } from "@/context/auth-store";
 import { toast } from "sonner";
 import { VendorRequestsModal } from "@/modals/VendorRequestsModal";
 import { ProductRequestsModal } from "@/modals/ProductRequestsModal";
+import { AddProductModal } from "@/modals/AddProductModal";
+import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { UpdateProductModal } from "@/modals/UpdateProductModal";
+import { ViewProductModal } from "@/modals/ViewProductModal";
+import { ViewVendorModal } from "@/modals/ViewVendorModal";
+import { adminDeleteProduct } from "@/services/api";
+import { useMutation } from "@tanstack/react-query";
 
 type Order = {
   id: number;
@@ -153,14 +162,40 @@ function AdminPanel({
 }: {
   onLogout: () => void;
 }) {
-  const [totalVendors, setTotalVendors] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [allVendors, setAllVendors] = useState<any[]>([]);
 
   const [pendingVendors, setPendingVendors] = useState(0);
 
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [productModalOpen, setProductModalOpen] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [viewingProduct, setViewingProduct] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [viewingVendor, setViewingVendor] = useState<any>(null);
+  const { admin } = useAuth();
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await adminDeleteProduct(id);
+      return res;
+    },
+    onSuccess: () => {
+      toast.success("Product deleted successfully");
+      loadStats();
+    },
+    onError: () => {
+      toast.error("Failed to delete product");
+    }
+  });
+
+  const handleDeleteProduct = (id: number) => {
+    if (confirm("Are you sure you want to delete this product?")) {
+      deleteProductMutation.mutate(id);
+    }
+  };
 
   async function safeFetch(url: string) {
     try {
@@ -183,15 +218,10 @@ function AdminPanel({
   const loadStats = useCallback(async () => {
     try {
       const [
-        vendorsData,
         productsData,
         ordersData,
         pendingVendorData,
       ] = await Promise.all([
-        safeFetch(
-          "https://egnaromart.com/api/get-all-vendors.php"
-        ),
-
         safeFetch(
           "https://egnaromart.com/api/get-products.php"
         ),
@@ -205,16 +235,16 @@ function AdminPanel({
         ),
       ]);
 
-      setTotalVendors(
-        Array.isArray(vendorsData)
-          ? vendorsData.length
-          : 0
-      );
-
       setTotalProducts(
         Array.isArray(productsData)
           ? productsData.length
           : 0
+      );
+
+      setAllProducts(
+        Array.isArray(productsData)
+          ? productsData
+          : []
       );
 
       setOrders(
@@ -225,8 +255,14 @@ function AdminPanel({
 
       setPendingVendors(
         Array.isArray(pendingVendorData)
-          ? pendingVendorData.length
+          ? pendingVendorData.filter((v: any) => v.approved === 0).length
           : 0
+      );
+
+      setAllVendors(
+        Array.isArray(pendingVendorData)
+          ? pendingVendorData
+          : []
       );
     } catch (err) {
       console.error(err);
@@ -254,29 +290,34 @@ function AdminPanel({
             </p>
           </div>
 
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 font-semibold text-white transition-all hover:bg-red-600"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              onClick={() => setShowAddProduct(true)}
+              className="flex items-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 font-semibold text-white transition-all hover:bg-cyan-600"
+            >
+              <Plus className="h-4 w-4" />
+              Add Product
+            </button>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 font-semibold text-white transition-all hover:bg-red-600"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* STATS */}
 
-        <div className="mb-8 grid gap-5 md:grid-cols-4">
+        <div className="mb-8 grid gap-5 md:grid-cols-3">
           <StatCard
             icon={<Package />}
             count={totalProducts}
             label="Total Products"
           />
 
-          <StatCard
-            icon={<Users />}
-            count={totalVendors}
-            label="Total Vendors"
-          />
+
 
           <StatCard
             icon={<Truck />}
@@ -313,19 +354,140 @@ function AdminPanel({
 
         {/* ORDERS */}
 
-        <Section title="Orders">
-          <div className="space-y-4">
-            {orders.length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-500">
-                No orders yet
-              </p>
-            ) : (
-              orders.map((o) => (
-                <OrderRow key={o.id} order={o} />
-              ))
-            )}
-          </div>
-        </Section>
+        <Tabs defaultValue="orders" className="w-full">
+          <TabsList className="mb-6 grid w-full grid-cols-3 bg-white/5 p-1 rounded-2xl">
+            <TabsTrigger value="orders" className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]">Orders</TabsTrigger>
+            <TabsTrigger value="products" className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]">Product Management</TabsTrigger>
+            <TabsTrigger value="vendors" className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]">Vendor Management</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="orders">
+            <Section title="Orders">
+              <div className="space-y-4">
+                {orders.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-gray-500">
+                    No orders yet
+                  </p>
+                ) : (
+                  orders.map((o) => (
+                    <OrderRow key={o.id} order={o} />
+                  ))
+                )}
+              </div>
+            </Section>
+          </TabsContent>
+
+          <TabsContent value="products">
+            <Section title="Product Management">
+              <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-white/5">
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="text-gray-400">Product</TableHead>
+                      <TableHead className="text-gray-400">Category</TableHead>
+                      <TableHead className="text-gray-400">Created By</TableHead>
+                      <TableHead className="text-right text-gray-400">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allProducts.length === 0 ? (
+                      <TableRow className="border-white/10 hover:bg-transparent">
+                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                          No products found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allProducts.map((p) => (
+                        <TableRow key={p.id} className="border-white/10 hover:bg-white/[0.02]">
+                          <TableCell className="font-medium text-white">
+                            <div className="flex items-center gap-3">
+                              <img src={p.image} alt={p.name} className="h-10 w-10 rounded-lg object-cover bg-white/10" />
+                              <span>{p.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-300 capitalize">{p.category}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-white capitalize">{p.created_by_type}</span>
+                              <span className="text-xs text-gray-500">ID: {p.created_by_id}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => setViewingProduct(p)} className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 hover:bg-cyan-500/20 transition-colors">
+                                <Search className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => setEditingProduct(p)} className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => handleDeleteProduct(p.id)} className="rounded-lg bg-red-500/10 p-2 text-red-400 hover:bg-red-500/20 transition-colors">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </Section>
+          </TabsContent>
+
+          <TabsContent value="vendors">
+            <Section title="Vendor Management">
+              <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-white/5">
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="text-gray-400">Company Name</TableHead>
+                      <TableHead className="text-gray-400">Vendor Name</TableHead>
+                      <TableHead className="text-gray-400">Contact</TableHead>
+                      <TableHead className="text-gray-400">Status</TableHead>
+                      <TableHead className="text-right text-gray-400">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allVendors.length === 0 ? (
+                      <TableRow className="border-white/10 hover:bg-transparent">
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                          No vendors found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allVendors.map((v) => (
+                        <TableRow key={v.id} className="border-white/10 hover:bg-white/[0.02]">
+                          <TableCell className="font-medium text-white">{v.company_name}</TableCell>
+                          <TableCell className="text-gray-300">{v.vendor_name}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-300">{v.email}</span>
+                              <span className="text-xs text-gray-500">{v.phone}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {v.approved === 1 ? (
+                              <span className="rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-semibold text-green-400">Approved</span>
+                            ) : v.approved === 0 ? (
+                              <span className="rounded-full bg-yellow-500/20 px-2.5 py-1 text-xs font-semibold text-yellow-400">Pending</span>
+                            ) : (
+                              <span className="rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-semibold text-red-400">Rejected</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <button onClick={() => setViewingVendor(v)} className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 hover:bg-cyan-500/20 transition-colors">
+                              <Search className="h-4 w-4" />
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </Section>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* MODALS */}
@@ -345,6 +507,44 @@ function AdminPanel({
           onProductActioned={() => {
             loadStats();
           }}
+        />
+      )}
+
+      {showAddProduct && admin && (
+        <AddProductModal
+          vendorId="0"
+          createdByType="admin"
+          createdById={admin.id}
+          onClose={() => {
+            setShowAddProduct(false);
+            loadStats();
+          }}
+        />
+      )}
+
+      {viewingProduct && (
+        <ViewProductModal
+          product={viewingProduct}
+          onClose={() => setViewingProduct(null)}
+        />
+      )}
+
+      {editingProduct && (
+        <UpdateProductModal
+          product={editingProduct}
+          vendorId="0"
+          isAdmin={true}
+          onClose={() => {
+            setEditingProduct(null);
+            loadStats();
+          }}
+        />
+      )}
+
+      {viewingVendor && (
+        <ViewVendorModal
+          vendor={viewingVendor}
+          onClose={() => setViewingVendor(null)}
         />
       )}
     </Shell>
