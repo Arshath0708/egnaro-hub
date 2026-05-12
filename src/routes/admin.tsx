@@ -255,7 +255,9 @@ function AdminPanel({
 
       setPendingVendors(
         Array.isArray(pendingVendorData)
-          ? pendingVendorData.filter((v: any) => v.approved === 0).length
+          ? pendingVendorData.filter(
+  (v: any) => Number(v.approved) === 0
+).length
           : 0
       );
 
@@ -435,58 +437,300 @@ function AdminPanel({
           </TabsContent>
 
           <TabsContent value="vendors">
-            <Section title="Vendor Management">
-              <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-white/5">
-                    <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableHead className="text-gray-400">Company Name</TableHead>
-                      <TableHead className="text-gray-400">Vendor Name</TableHead>
-                      <TableHead className="text-gray-400">Contact</TableHead>
-                      <TableHead className="text-gray-400">Status</TableHead>
-                      <TableHead className="text-right text-gray-400">Actions</TableHead>
+
+  <Section title="Vendor Management">
+
+    {/* TOP STATS */}
+
+    <div className="mb-6 grid gap-4 md:grid-cols-2">
+
+      <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-5">
+        <p className="text-sm text-yellow-300">
+          Pending Requests
+        </p>
+
+        <h2 className="mt-2 text-3xl font-black text-white">
+          {
+            allVendors.filter(
+              (v) => Number(v.approved) === 0
+            ).length
+          }
+        </h2>
+      </div>
+
+      <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-5">
+        <p className="text-sm text-green-300">
+          Approved Vendors
+        </p>
+
+        <h2 className="mt-2 text-3xl font-black text-white">
+          {
+            allVendors.filter(
+              (v) => Number(v.approved) === 1
+            ).length
+          }
+        </h2>
+      </div>
+
+    </div>
+
+    {/* PENDING REQUESTS */}
+
+    <div className="mb-10">
+
+      <div className="mb-4 flex items-center justify-between">
+
+        <div>
+          <h3 className="text-xl font-bold text-white">
+            Pending Vendor Requests
+          </h3>
+
+          <p className="text-sm text-gray-400">
+            Vendors waiting for approval
+          </p>
+        </div>
+
+        <button
+          onClick={() => setVendorModalOpen(true)}
+          className="rounded-xl bg-[#FF6600] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e65c00]"
+        >
+          Open Requests
+        </button>
+
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+
+        <Table>
+
+          <TableHeader className="bg-white/5">
+
+            <TableRow className="border-white/10 hover:bg-transparent">
+
+              <TableHead className="text-gray-400">
+                Vendor
+              </TableHead>
+
+              <TableHead className="text-gray-400">
+                Company
+              </TableHead>
+
+              <TableHead className="text-gray-400">
+                Email
+              </TableHead>
+
+              <TableHead className="text-gray-400">
+                Status
+              </TableHead>
+
+            </TableRow>
+
+          </TableHeader>
+
+          <TableBody>
+
+            {
+              allVendors.filter(
+                (v) => Number(v.approved) === 0
+              ).length === 0 ? (
+
+                <TableRow className="border-white/10">
+
+                  <TableCell
+                    colSpan={4}
+                    className="py-8 text-center text-gray-500"
+                  >
+                    No pending requests
+                  </TableCell>
+
+                </TableRow>
+
+              ) : (
+
+                allVendors
+                  .filter(
+                    (v) => Number(v.approved) === 0
+                  )
+                  .map((vendor) => (
+
+                    <TableRow
+                      key={vendor.id}
+                      className="border-white/10 hover:bg-white/[0.03]"
+                    >
+
+                      <TableCell className="text-white font-medium">
+                        {vendor.vendor_name}
+                      </TableCell>
+
+                      <TableCell className="text-gray-300">
+                        {vendor.company_name}
+                      </TableCell>
+
+                      <TableCell className="text-gray-300">
+                        {vendor.email}
+                      </TableCell>
+
+                      <TableCell>
+
+                        <span className="rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-semibold text-yellow-400">
+                          Pending
+                        </span>
+
+                      </TableCell>
+
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allVendors.length === 0 ? (
-                      <TableRow className="border-white/10 hover:bg-transparent">
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          No vendors found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      allVendors.map((v) => (
-                        <TableRow key={v.id} className="border-white/10 hover:bg-white/[0.02]">
-                          <TableCell className="font-medium text-white">{v.company_name}</TableCell>
-                          <TableCell className="text-gray-300">{v.vendor_name}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="text-sm text-gray-300">{v.email}</span>
-                              <span className="text-xs text-gray-500">{v.phone}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {v.approved === 1 ? (
-                              <span className="rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-semibold text-green-400">Approved</span>
-                            ) : v.approved === 0 ? (
-                              <span className="rounded-full bg-yellow-500/20 px-2.5 py-1 text-xs font-semibold text-yellow-400">Pending</span>
-                            ) : (
-                              <span className="rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-semibold text-red-400">Rejected</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <button onClick={() => setViewingVendor(v)} className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 hover:bg-cyan-500/20 transition-colors">
-                              <Search className="h-4 w-4" />
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </Section>
-          </TabsContent>
+
+                  ))
+
+              )
+            }
+
+          </TableBody>
+
+        </Table>
+
+      </div>
+
+    </div>
+
+    {/* APPROVED VENDORS */}
+
+    <div>
+
+      <div className="mb-4">
+        <h3 className="text-xl font-bold text-white">
+          Approved Vendors
+        </h3>
+
+        <p className="text-sm text-gray-400">
+          Vendors approved by admin
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+
+        <Table>
+
+          <TableHeader className="bg-white/5">
+
+            <TableRow className="border-white/10 hover:bg-transparent">
+
+              <TableHead className="text-gray-400">
+                Vendor Name
+              </TableHead>
+
+              <TableHead className="text-gray-400">
+                Company
+              </TableHead>
+
+              <TableHead className="text-gray-400">
+                Contact
+              </TableHead>
+
+              <TableHead className="text-gray-400">
+                Status
+              </TableHead>
+
+              <TableHead className="text-right text-gray-400">
+                Actions
+              </TableHead>
+
+            </TableRow>
+
+          </TableHeader>
+
+          <TableBody>
+
+            {
+              allVendors.filter(
+                (v) => Number(v.approved) === 1
+              ).length === 0 ? (
+
+                <TableRow className="border-white/10">
+
+                  <TableCell
+                    colSpan={5}
+                    className="py-8 text-center text-gray-500"
+                  >
+                    No approved vendors
+                  </TableCell>
+
+                </TableRow>
+
+              ) : (
+
+                allVendors
+                  .filter(
+                    (v) => Number(v.approved) === 1
+                  )
+                  .map((vendor) => (
+
+                    <TableRow
+                      key={vendor.id}
+                      className="border-white/10 hover:bg-white/[0.03]"
+                    >
+
+                      <TableCell className="font-medium text-white">
+                        {vendor.vendor_name}
+                      </TableCell>
+
+                      <TableCell className="text-gray-300">
+                        {vendor.company_name}
+                      </TableCell>
+
+                      <TableCell>
+
+                        <div className="flex flex-col">
+
+                          <span className="text-sm text-gray-300">
+                            {vendor.email}
+                          </span>
+
+                          <span className="text-xs text-gray-500">
+                            {vendor.phone}
+                          </span>
+
+                        </div>
+
+                      </TableCell>
+
+                      <TableCell>
+
+                        <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-400">
+                          Approved
+                        </span>
+
+                      </TableCell>
+
+                      <TableCell className="text-right">
+
+                        <button
+                          onClick={() => setViewingVendor(vendor)}
+                          className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20"
+                        >
+                          <Search className="h-4 w-4" />
+                        </button>
+
+                      </TableCell>
+
+                    </TableRow>
+
+                  ))
+
+              )
+            }
+
+          </TableBody>
+
+        </Table>
+
+      </div>
+
+    </div>
+
+  </Section>
+
+</TabsContent>
         </Tabs>
       </div>
 

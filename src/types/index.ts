@@ -8,20 +8,36 @@ export type Category =
 
 export interface Product {
   id: string;
+
   name: string;
+
   price: number;
-  original: number;
+
+  original_price: number;
+
   discount: number;
+
   category: Category;
+
   image: string;
-  rating: number;
-  reviews: number;
+
   description: string;
-  specifications: Record<string, string>;
-  approved: boolean;
-  vendorId: string;
-  stock: number;
-  createdAt: string;
+
+  specifications?: Record<string, string>;
+
+  approved: boolean | number;
+
+  status?: string;
+
+  vendorId?: string;
+
+  stock?: number;
+
+  createdAt?: string;
+
+  average_rating: number;
+
+  total_reviews: number;
 }
 
 export interface Vendor {

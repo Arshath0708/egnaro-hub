@@ -31,8 +31,39 @@ async function request(endpoint: string, options?: RequestInit) {
 ========================= */
 
 export async function getProducts() {
-  return await request("/get-products.php");
+  const res = await fetch(
+    "https://egnaromart.com/api/get-products.php"
+  );
+
+  const data = await res.json();
+
+  return data.map((p: any) => ({
+    ...p,
+
+    id: String(p.id),
+
+    price: Number(p.price),
+
+    original_price: Number(
+      p.original_price || 0
+    ),
+
+    discount: Number(p.discount || 0),
+
+    approved:
+      p.approved === 1 ||
+      p.approved === "1",
+
+    average_rating: Number(
+      p.average_rating || 0
+    ),
+
+    total_reviews: Number(
+      p.total_reviews || 0
+    ),
+  }));
 }
+
 
 export async function getVendorProducts(vendorId: string) {
   const data = await request(`/get-vendor-products.php?vendor_id=${vendorId}`);
@@ -276,5 +307,44 @@ export async function loginCustomer(credentials: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(credentials),
   });
+  return res.json();
+}
+
+
+
+export async function getReviews(productId: number) {
+  const res = await fetch(
+    `${API_BASE}/get-reviews.php?product_id=${productId}`
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch reviews");
+  }
+
+  return res.json();
+}
+
+/* ADD REVIEW */
+
+export async function addReview(data: {
+  product_id: number;
+  customer_name: string;
+  rating: number;
+  review: string;
+}) {
+  const res = await fetch(`${API_BASE}/add-review.php`, {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+    },
+
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to submit review");
+  }
+
   return res.json();
 }

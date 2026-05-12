@@ -45,7 +45,7 @@ export default function ProductsPage() {   // ✅ default export
   });
 
   // Memoised filter + sort
-  const displayProducts = useMemo(() => {
+  
     let arr = [...products];
 
     if (currentCat) arr = arr.filter((p: any) => p.category === currentCat);
@@ -57,13 +57,58 @@ export default function ProductsPage() {   // ✅ default export
           p.description?.toLowerCase().includes(currentQ) ||
           p.category?.toLowerCase().includes(currentQ)
       );
+const displayProducts = useMemo(() => {
+  let arr = Array.isArray(products)
+    ? [...products]
+    : [];
 
-    if (currentSort === "price-asc") arr.sort((a: any, b: any) => a.price - b.price);
-    if (currentSort === "price-desc") arr.sort((a: any, b: any) => b.price - a.price);
-    if (currentSort === "discount") arr.sort((a: any, b: any) => b.discount - a.discount);
+  // SHOW ONLY APPROVED PRODUCTS
+  arr = arr.filter(
+    (p: any) =>
+      p &&
+      p.approved === true ||
+p.status === "approved"
+  );
 
-    return arr;
-  }, [products, currentCat, currentQ, currentSort]);
+  if (currentCat) {
+    arr = arr.filter(
+      (p: any) => p.category === currentCat
+    );
+  }
+
+  if (currentQ) {
+    arr = arr.filter(
+      (p: any) =>
+        p.name?.toLowerCase().includes(currentQ) ||
+        p.description?.toLowerCase().includes(currentQ) ||
+        p.category?.toLowerCase().includes(currentQ)
+    );
+  }
+
+  if (currentSort === "price-asc") {
+    arr.sort(
+      (a: any, b: any) =>
+        Number(a.price) - Number(b.price)
+    );
+  }
+
+  if (currentSort === "price-desc") {
+    arr.sort(
+      (a: any, b: any) =>
+        Number(b.price) - Number(a.price)
+    );
+  }
+
+  if (currentSort === "discount") {
+    arr.sort(
+      (a: any, b: any) =>
+        Number(b.discount || 0) -
+        Number(a.discount || 0)
+    );
+  }
+
+  return arr;
+}, [products, currentCat, currentQ, currentSort]);
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -236,4 +281,3 @@ const CategoryLink = memo(function CategoryLink({
     </li>
   );
 });
-

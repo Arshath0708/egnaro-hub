@@ -49,10 +49,22 @@ export function VendorRequestsModal({
       console.log("PARSED VENDORS:", data);
 
       if (Array.isArray(data)) {
-        setVendors(data);
-      } else {
-        setVendors([]);
-      }
+
+  // ONLY PENDING VENDORS
+
+  const pendingOnly = data.filter(
+    (v: Vendor) =>
+      Number(v.approved) === 0 ||
+      v.status === "pending"
+  );
+
+  setVendors(pendingOnly);
+
+} else {
+
+  setVendors([]);
+
+}
     } catch (err) {
       console.error(err);
       toast.error("Failed to load vendors");
@@ -71,7 +83,9 @@ export function VendorRequestsModal({
       prev.filter((v) => v.id !== id)
     );
 
-    onVendorActioned();
+    setTimeout(() => {
+  onVendorActioned();
+}, 300);
   }
 
   return (
@@ -189,6 +203,9 @@ const VendorCard = memo(
           );
 
           onAction(vendor.id);
+          await new Promise((resolve) =>
+  setTimeout(resolve, 500)
+);
         } else {
           toast.error(
             res?.message || "Action failed"
