@@ -1,3 +1,4 @@
+//seed.ts
 import type { Product, Vendor, Order, CategoryMeta } from "@/types";
 
 export const CATEGORIES: CategoryMeta[] = [

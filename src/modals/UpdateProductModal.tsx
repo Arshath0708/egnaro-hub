@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Sparkles, ImagePlus, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { updateProduct, adminUpdateProduct } from "@/services/api";
-import { CATEGORIES } from "@/data/seed";
+import { updateProduct, adminUpdateProduct, getCategories } from "@/services/api";
+
 
 export function UpdateProductModal({
   product,
@@ -20,11 +20,16 @@ export function UpdateProductModal({
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
+
   const [form, setForm] = useState({
     product_id: product.id,
     vendor_id: vendorId,
     name: product.name || "",
-    category: product.category || CATEGORIES[0]?.id || "electronics",
+    category: product.category || "",
     image: product.image || "",
     price: product.price || "",
     original_price: product.original_price || "",
@@ -33,6 +38,14 @@ export function UpdateProductModal({
     stock_quantity: product.stock_quantity || "",
     role: isAdmin ? 'admin' : 'vendor',
   });
+
+  useEffect(() => {
+    if (categories.length > 0 && !form.category && !product.category) {
+      setForm((prev) => ({ ...prev, category: String(categories[0].id) }));
+    }
+  }, [categories, form.category, product.category]);
+
+
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -144,7 +157,7 @@ export function UpdateProductModal({
                     className={inputClass}
                     onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                   >
-                    {CATEGORIES.map((cat) => (
+                    {categories.map((cat: any) => (
                       <option key={cat.id} value={cat.id} className="bg-[#0f172a]">
                         {cat.name}
                       </option>

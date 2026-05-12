@@ -30,7 +30,6 @@ import { DeleteProductModal } from "@/modals/DeleteProductModal";
 import { AddProductModal } from "@/modals/AddProductModal";
 import { useAuth } from "@/context/auth-store";
 import { addProduct, getVendorProducts, getVendorStats } from "@/services/api";
-import { CATEGORIES } from "@/data/seed";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
 

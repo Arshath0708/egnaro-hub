@@ -1,10 +1,9 @@
-export type Category =
-  | "electronics"
-  | "electricals"
-  | "hardware"
-  | "motor-pumps"
-  | "home-appliances"
-  | "industrial";
+//index.ts
+export interface Category {
+  id: string;
+  name: string;
+}
+
 
 export interface Product {
   id: string;

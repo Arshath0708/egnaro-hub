@@ -1,12 +1,18 @@
 const API_BASE = "https://egnaromart.com/api";
 
 async function request(endpoint: string, options?: RequestInit) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
+  
+  const headers: Record<string, string> = {
+    ...(options?.headers as Record<string, string>),
+  };
+
+  const res = await fetch(url, {
     ...options,
+    headers,
   });
+
+
 
   const text = await res.text();
 
@@ -31,38 +37,19 @@ async function request(endpoint: string, options?: RequestInit) {
 ========================= */
 
 export async function getProducts() {
-  const res = await fetch(
-    "https://egnaromart.com/api/get-products.php"
-  );
-
-  const data = await res.json();
-
+  const data = await request("/get-products.php");
   return data.map((p: any) => ({
     ...p,
-
     id: String(p.id),
-
     price: Number(p.price),
-
-    original_price: Number(
-      p.original_price || 0
-    ),
-
+    original_price: Number(p.original_price || 0),
     discount: Number(p.discount || 0),
-
-    approved:
-      p.approved === 1 ||
-      p.approved === "1",
-
-    average_rating: Number(
-      p.average_rating || 0
-    ),
-
-    total_reviews: Number(
-      p.total_reviews || 0
-    ),
+    approved: p.approved === 1 || p.approved === "1",
+    average_rating: Number(p.average_rating || 0),
+    total_reviews: Number(p.total_reviews || 0),
   }));
 }
+
 
 
 export async function getVendorProducts(vendorId: string) {
@@ -85,15 +72,7 @@ export async function getVendorStats(vendorId: string) {
 }
 
 export async function getPendingProducts() {
-  const res = await fetch(
-    "https://egnaromart.com/api/get-pending.php"
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch pending products");
-  }
-
-  return res.json();
+  return await request("/get-pending.php");
 }
 export type ProductForm = {
   vendorId: string;
@@ -110,41 +89,17 @@ export type ProductForm = {
 };
 
 export async function addProduct(form: ProductForm) {
-  try {
-    const res = await fetch(`${API_BASE}/add-product.php`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+  const data = await request("/add-product.php", {
+    method: "POST",
+    body: JSON.stringify(form),
+  });
 
-    const text = await res.text();
-
-    console.log("RAW RESPONSE:", text);
-
-    let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Invalid JSON response from server");
-    }
-
-    if (!res.ok) {
-      throw new Error(`HTTP Error ${res.status}`);
-    }
-
-    if (!data.success) {
-      throw new Error(data.error || "Failed to add product");
-    }
-
-    return data;
-  } catch (err: any) {
-    console.error("ADD PRODUCT ERROR:", err);
-
-    throw new Error(err.message || "Network error");
+  if (!data.success) {
+    console.error("ADD PRODUCT FAILED:", data);
+    throw new Error(data.error || data.message || "Failed to add product");
   }
+
+  return data;
 }
 
 export async function getProductById(productId: number) {
@@ -169,7 +124,8 @@ export async function adminDeleteProduct(productId: number) {
   return await request("/admin-delete-product.php", {
     method: "POST",
     body: JSON.stringify({
-      product_id: productId,
+      id: Number(productId),
+      product_id: Number(productId), // Send both for safety
     }),
   });
 }
@@ -178,7 +134,8 @@ export async function deleteProduct(productId: number, vendorId: string) {
   return await request("/delete-product.php", {
     method: "POST",
     body: JSON.stringify({
-      product_id: productId,
+      id: Number(productId),
+      product_id: Number(productId),
       vendor_id: vendorId,
       role: 'vendor'
     }),
@@ -226,14 +183,7 @@ export async function createOrder(data: any) {
 }
 
 export async function trackOrder(orderId: string) {
-  const res = await fetch(`${API_BASE}/get-order.php?order_id=${orderId}`, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`, // 🔑 optional
-    },
-  });
-
-  return res.json();
+  return await request(`/get-order.php?order_id=${orderId}`);
 }
 
 /* =========================
@@ -267,13 +217,10 @@ export async function approveVendor(id: number, status: string) {
 }
 
 export async function vendorLogin(data: any) {
-  const res = await fetch(`${API_BASE}/vendor-login.php`, {
+  return await request("/vendor-login.php", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-
-  return await res.json();
 }
 
 export async function getOrderById(orderId: string) {
@@ -290,38 +237,26 @@ export async function registerCustomer(form: {
   phone: string;
   password: string;
 }) {
-  const res = await fetch(`${API_BASE}/register.php`, {
+  return await request("/register.php", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(form),
   });
-  return res.json();
 }
 
 export async function loginCustomer(credentials: {
   email: string;
   password: string;
 }) {
-  const res = await fetch(`${API_BASE}/login.php`, {
+  return await request("/login.php", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(credentials),
   });
-  return res.json();
 }
 
 
 
 export async function getReviews(productId: number) {
-  const res = await fetch(
-    `${API_BASE}/get-reviews.php?product_id=${productId}`
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch reviews");
-  }
-
-  return res.json();
+  return await request(`/get-reviews.php?product_id=${productId}`);
 }
 
 /* ADD REVIEW */
@@ -332,19 +267,42 @@ export async function addReview(data: {
   rating: number;
   review: string;
 }) {
-  const res = await fetch(`${API_BASE}/add-review.php`, {
+  return await request("/add-review.php", {
     method: "POST",
-
-    headers: {
-      "Content-Type": "application/json",
-    },
-
     body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to submit review");
-  }
-
-  return res.json();
 }
+
+
+/* ================= CATEGORIES ================= */
+
+export async function getCategories() {
+  return await request("/get-categories.php");
+}
+
+export async function addCategory(name: string) {
+  return await request("/add-category.php", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function updateCategory(
+  id: number,
+  name: string
+) {
+  return await request("/update-category.php", {
+    method: "POST",
+    body: JSON.stringify({
+      id,
+      name,
+    }),
+  });
+}
+
+export async function deleteCategory(id: number) {
+  return await request("/delete-category.php", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}

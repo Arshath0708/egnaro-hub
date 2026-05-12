@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+//AddProductModal.tsx
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Sparkles, ImagePlus, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { addProduct } from "@/services/api";
+import { addProduct, getCategories } from "@/services/api";
 import type { ProductForm } from "@/services/api";
-import { CATEGORIES } from "@/data/seed";
+
 
 export function AddProductModal({
   vendorId,
@@ -21,10 +22,15 @@ export function AddProductModal({
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
+
   const [form, setForm] = useState<ProductForm>({
     vendorId,
     name: "",
-    category: CATEGORIES[0]?.id || "electronics",
+    category: "",
     image: "",
     price: "",
     original_price: "",
@@ -34,6 +40,14 @@ export function AddProductModal({
     created_by_type: createdByType,
     created_by_id: createdById || vendorId,
   });
+
+  useEffect(() => {
+    if (categories.length > 0 && !form.category) {
+      setForm((prev) => ({ ...prev, category: String(categories[0].id) }));
+    }
+  }, [categories, form.category]);
+
+
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -158,7 +172,7 @@ export function AddProductModal({
                     className={inputClass}
                     onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                   >
-                    {CATEGORIES.map((cat) => (
+                    {categories.map((cat: any) => (
                       <option key={cat.id} value={cat.id} className="bg-[#0f172a]">
                         {cat.name}
                       </option>

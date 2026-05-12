@@ -24,62 +24,41 @@ import {
 import { Shell } from "@/components/layout/Shell";
 import { Section } from "@/components/Section";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
-import { getProducts } from "@/services/api";
+import { getProducts, getCategories } from "@/services/api";
+
+const CATEGORY_META: Record<string, { image: string, accent: string }> = {
+  "electronics": {
+    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200",
+    accent: "from-blue-500/20 to-blue-500/5",
+  },
+  "electricals": {
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+    accent: "from-yellow-500/20 to-yellow-500/5",
+  },
+  "hardware": {
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1200",
+    accent: "from-orange-500/20 to-orange-500/5",
+  },
+  "motor pumps": {
+    image: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1200",
+    accent: "from-cyan-500/20 to-cyan-500/5",
+  },
+  "home appliances": {
+    image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200",
+    accent: "from-purple-500/20 to-purple-500/5",
+  },
+  "industrial": {
+    image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=1200",
+    accent: "from-emerald-500/20 to-emerald-500/5",
+  }
+};
+
 
 /* ───────────────────────────────────────────────────────────── */
 /* Static Data */
 /* ───────────────────────────────────────────────────────────── */
 
-const categories = [
-  {
-    id: "electronics",
-    name: "Electronics",
-    
-    image:
-      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200",
-    accent: "from-blue-500/20 to-blue-500/5",
-  },
-  {
-    id: "electricals",
-    name: "Electricals",
-    
-    image:
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-    accent: "from-yellow-500/20 to-yellow-500/5",
-  },
-  {
-    id: "hardware",
-    name: "Hardware",
-    
-    image:
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1200",
-    accent: "from-orange-500/20 to-orange-500/5",
-  },
-  {
-    id: "motor-pumps",
-    name: "Motor Pumps",
-    
-    image:
-      "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1200",
-    accent: "from-cyan-500/20 to-cyan-500/5",
-  },
-  {
-    id: "home-appliances",
-    name: "Home Appliances",
-    
-    image:
-      "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200",
-    accent: "from-purple-500/20 to-purple-500/5",
-  },
-  {
-    id: "industrial",
-    name: "Industrial",
-    
-    image:
-      "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=1200",
-    accent: "from-emerald-500/20 to-emerald-500/5",
-  },
-];
+
 
 const stats = [
   { value: "Trusted", label: "Businesses Across India", icon: Star },
@@ -106,6 +85,19 @@ export default function Home() {
     queryFn: getProducts,
   });
 
+  const { data: apiCategories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
+
+  const categories = apiCategories.map((cat: any) => ({
+    id: cat.id,
+    name: cat.name,
+    image: CATEGORY_META[cat.name.toLowerCase()]?.image || "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=1200",
+    accent: CATEGORY_META[cat.name.toLowerCase()]?.accent || "from-gray-500/20 to-gray-500/5",
+  }));
+
+
   const featured = products.slice(0, 8);
 
   const trending = [...products]
@@ -124,7 +116,7 @@ export default function Home() {
 
       <StatsStrip />
 
-      <CategoriesSection />
+      <CategoriesSection categories={categories} />
 
       {/* Featured */}
       <Section
@@ -258,7 +250,7 @@ function StatsStrip() {
 /* CATEGORIES */
 /* ───────────────────────────────────────────────────────────── */
 
-function CategoriesSection() {
+function CategoriesSection({ categories }: { categories: any[] }) {
   return (
     <Section
       eyebrow="Categories"
@@ -295,7 +287,7 @@ function CategoryCardLarge({
       transition={{ duration: 0.4, delay: index * 0.05 }}
     >
       <Link
-        to={`/products?category=${category.id}`}
+        to={`/products?category=${category.name}`}
         className="group relative block rounded-2xl overflow-hidden border border-glass-border h-56 gradient-card hover-lift"
       >
         <img
@@ -345,7 +337,7 @@ function CategoryCardSmall({
       transition={{ duration: 0.4, delay: index * 0.05 }}
     >
       <Link
-        to={`/products?category=${category.id}`}
+        to={`/products?category=${category.name}`}
         className="group relative block rounded-2xl overflow-hidden border border-glass-border aspect-[4/3] gradient-card hover-lift"
       >
         <img

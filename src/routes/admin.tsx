@@ -6,22 +6,44 @@ import {
   Users,
   Truck,
   ClipboardList,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
-import { useAuth } from "@/context/auth-store";
-import { toast } from "sonner";
+import { CategoriesModal } from "@/modals/CategoriesModal";
 import { VendorRequestsModal } from "@/modals/VendorRequestsModal";
 import { ProductRequestsModal } from "@/modals/ProductRequestsModal";
 import { AddProductModal } from "@/modals/AddProductModal";
-import { Plus, Search, Edit2, Trash2 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UpdateProductModal } from "@/modals/UpdateProductModal";
 import { ViewProductModal } from "@/modals/ViewProductModal";
 import { ViewVendorModal } from "@/modals/ViewVendorModal";
+
+import { useAuth } from "@/context/auth-store";
+
+import { toast } from "sonner";
+
 import { adminDeleteProduct } from "@/services/api";
+
 import { useMutation } from "@tanstack/react-query";
+
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Order = {
   id: number;
@@ -55,7 +77,9 @@ function AdminLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     try {
@@ -79,9 +103,15 @@ function AdminLogin() {
 
       if (data.success) {
         loginAdmin(data.admin);
-        toast.success(`Welcome ${data.admin.name}`);
+
+        toast.success(
+          `Welcome ${data.admin.name}`
+        );
       } else {
-        toast.error(data.message || "Invalid credentials");
+        toast.error(
+          data.message ||
+            "Invalid credentials"
+        );
       }
     } catch (err) {
       console.error(err);
@@ -111,7 +141,10 @@ function AdminLogin() {
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form
+            onSubmit={handleLogin}
+            className="space-y-5"
+          >
             <div>
               <label className="mb-2 block text-sm text-gray-300">
                 Email
@@ -122,7 +155,9 @@ function AdminLogin() {
                 required
                 placeholder="admin@egnaromart.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
                 className={inputClass}
               />
             </div>
@@ -137,7 +172,9 @@ function AdminLogin() {
                 required
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
                 className={inputClass}
               />
             </div>
@@ -146,7 +183,9 @@ function AdminLogin() {
               disabled={loading}
               className="w-full rounded-2xl bg-[#FF6600] py-3 font-semibold text-white transition-all hover:bg-[#e65c00]"
             >
-              {loading ? "Authenticating..." : "Access Dashboard"}
+              {loading
+                ? "Authenticating..."
+                : "Access Dashboard"}
             </button>
           </form>
         </div>
@@ -162,38 +201,82 @@ function AdminPanel({
 }: {
   onLogout: () => void;
 }) {
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [allProducts, setAllProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [allVendors, setAllVendors] = useState<any[]>([]);
+  const [totalProducts, setTotalProducts] =
+    useState(0);
 
-  const [pendingVendors, setPendingVendors] = useState(0);
+  const [allProducts, setAllProducts] =
+    useState<any[]>([]);
 
-  const [vendorModalOpen, setVendorModalOpen] = useState(false);
-  const [productModalOpen, setProductModalOpen] = useState(false);
-  const [showAddProduct, setShowAddProduct] = useState(false);
-  const [viewingProduct, setViewingProduct] = useState<any>(null);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [viewingVendor, setViewingVendor] = useState<any>(null);
+  const [orders, setOrders] = useState<
+    Order[]
+  >([]);
+
+  const [allVendors, setAllVendors] =
+    useState<any[]>([]);
+
+  const [pendingVendors, setPendingVendors] =
+    useState(0);
+
+  const [vendorModalOpen, setVendorModalOpen] =
+    useState(false);
+
+  const [productModalOpen, setProductModalOpen] =
+    useState(false);
+
+  const [categoriesModalOpen, setCategoriesModalOpen] =
+    useState(false);
+
+  const [showAddProduct, setShowAddProduct] =
+    useState(false);
+
+  const [viewingProduct, setViewingProduct] =
+    useState<any>(null);
+
+  const [editingProduct, setEditingProduct] =
+    useState<any>(null);
+
+  const [viewingVendor, setViewingVendor] =
+    useState<any>(null);
+
   const { admin } = useAuth();
 
-  const deleteProductMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await adminDeleteProduct(id);
-      return res;
-    },
-    onSuccess: () => {
-      toast.success("Product deleted successfully");
-      loadStats();
-    },
-    onError: () => {
-      toast.error("Failed to delete product");
-    }
-  });
+  const deleteProductMutation =
+    useMutation({
+      mutationFn: async (id: number) => {
+        const data =
+          await adminDeleteProduct(id);
 
-  const handleDeleteProduct = (id: number) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      deleteProductMutation.mutate(id);
+        if (!data.success) {
+          throw new Error(data.message || "Failed to delete");
+        }
+
+        return data;
+      },
+
+      onSuccess: () => {
+        toast.success(
+          "Product deleted successfully"
+        );
+
+        loadStats();
+      },
+
+      onError: () => {
+        toast.error(
+          "Failed to delete product"
+        );
+      },
+    });
+
+  const handleDeleteProduct = (
+    id: any
+  ) => {
+    if (
+      confirm(
+        "Are you sure you want to delete this product?"
+      )
+    ) {
+      deleteProductMutation.mutate(Number(id));
     }
   };
 
@@ -206,7 +289,11 @@ function AdminPanel({
       try {
         return JSON.parse(text);
       } catch {
-        console.error("Invalid JSON:", text);
+        console.error(
+          "Invalid JSON:",
+          text
+        );
+
         return [];
       }
     } catch (err) {
@@ -220,7 +307,7 @@ function AdminPanel({
       const [
         productsData,
         ordersData,
-        pendingVendorData,
+        vendorsData,
       ] = await Promise.all([
         safeFetch(
           "https://egnaromart.com/api/get-products.php"
@@ -254,16 +341,17 @@ function AdminPanel({
       );
 
       setPendingVendors(
-        Array.isArray(pendingVendorData)
-          ? pendingVendorData.filter(
-  (v: any) => Number(v.approved) === 0
-).length
+        Array.isArray(vendorsData)
+          ? vendorsData.filter(
+              (v: any) =>
+                Number(v.approved) === 0
+            ).length
           : 0
       );
 
       setAllVendors(
-        Array.isArray(pendingVendorData)
-          ? pendingVendorData
+        Array.isArray(vendorsData)
+          ? vendorsData
           : []
       );
     } catch (err) {
@@ -278,7 +366,6 @@ function AdminPanel({
   return (
     <Shell>
       <div className="mx-auto max-w-7xl px-4 py-10">
-
         {/* HEADER */}
 
         <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
@@ -288,18 +375,22 @@ function AdminPanel({
             </h1>
 
             <p className="mt-2 text-gray-400">
-              Manage vendors, products & orders
+              Manage vendors, products &
+              orders
             </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
-              onClick={() => setShowAddProduct(true)}
+              onClick={() =>
+                setShowAddProduct(true)
+              }
               className="flex items-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 font-semibold text-white transition-all hover:bg-cyan-600"
             >
               <Plus className="h-4 w-4" />
               Add Product
             </button>
+
             <button
               onClick={onLogout}
               className="flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 font-semibold text-white transition-all hover:bg-red-600"
@@ -319,8 +410,6 @@ function AdminPanel({
             label="Total Products"
           />
 
-
-
           <StatCard
             icon={<Truck />}
             count={orders.length}
@@ -336,32 +425,74 @@ function AdminPanel({
 
         {/* ACTION BUTTONS */}
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+        <div className="mb-8 grid gap-4 sm:grid-cols-3">
           <ActionButton
-            icon={<Users className="h-5 w-5" />}
+            icon={
+              <Users className="h-5 w-5" />
+            }
             label={`Vendor Requests (${pendingVendors})`}
-            description="Review and approve / reject pending vendor registrations"
+            description="Review and approve / reject vendor registrations"
             accent="from-[#0B3D2E] to-[#14532d]"
-            onClick={() => setVendorModalOpen(true)}
+            onClick={() =>
+              setVendorModalOpen(true)
+            }
           />
 
           <ActionButton
-            icon={<Package className="h-5 w-5" />}
+            icon={
+              <Package className="h-5 w-5" />
+            }
+            label="Manage Categories"
+            description="Create, update and delete categories"
+            accent="from-cyan-700 to-cyan-500"
+            onClick={() =>
+              setCategoriesModalOpen(true)
+            }
+          />
+
+          <ActionButton
+            icon={
+              <Package className="h-5 w-5" />
+            }
             label="Product Requests"
-            description="Review and approve / reject products submitted by vendors"
+            description="Review vendor submitted products"
             accent="from-[#1a0a00] to-[#3d1800]"
-            onClick={() => setProductModalOpen(true)}
+            onClick={() =>
+              setProductModalOpen(true)
+            }
           />
         </div>
 
-        {/* ORDERS */}
+        {/* TABS */}
 
-        <Tabs defaultValue="orders" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-3 bg-white/5 p-1 rounded-2xl">
-            <TabsTrigger value="orders" className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]">Orders</TabsTrigger>
-            <TabsTrigger value="products" className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]">Product Management</TabsTrigger>
-            <TabsTrigger value="vendors" className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]">Vendor Management</TabsTrigger>
+        <Tabs
+          defaultValue="orders"
+          className="w-full"
+        >
+          <TabsList className="mb-6 grid w-full grid-cols-3 rounded-2xl bg-white/5 p-1">
+            <TabsTrigger
+              value="orders"
+              className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]"
+            >
+              Orders
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="products"
+              className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]"
+            >
+              Product Management
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="vendors"
+              className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]"
+            >
+              Vendor Management
+            </TabsTrigger>
           </TabsList>
+
+          {/* ORDERS */}
 
           <TabsContent value="orders">
             <Section title="Orders">
@@ -372,57 +503,126 @@ function AdminPanel({
                   </p>
                 ) : (
                   orders.map((o) => (
-                    <OrderRow key={o.id} order={o} />
+                    <OrderRow
+                      key={o.id}
+                      order={o}
+                    />
                   ))
                 )}
               </div>
             </Section>
           </TabsContent>
 
+          {/* PRODUCTS */}
+
           <TabsContent value="products">
             <Section title="Product Management">
-              <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
                 <Table>
                   <TableHeader className="bg-white/5">
                     <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableHead className="text-gray-400">Product</TableHead>
-                      <TableHead className="text-gray-400">Category</TableHead>
-                      <TableHead className="text-gray-400">Created By</TableHead>
-                      <TableHead className="text-right text-gray-400">Actions</TableHead>
+                      <TableHead className="text-gray-400">
+                        Product
+                      </TableHead>
+
+                      <TableHead className="text-gray-400">
+                        Category
+                      </TableHead>
+
+                      <TableHead className="text-gray-400">
+                        Created By
+                      </TableHead>
+
+                      <TableHead className="text-right text-gray-400">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
+
                   <TableBody>
-                    {allProducts.length === 0 ? (
+                    {allProducts.length ===
+                    0 ? (
                       <TableRow className="border-white/10 hover:bg-transparent">
-                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                        <TableCell
+                          colSpan={4}
+                          className="py-8 text-center text-gray-500"
+                        >
                           No products found
                         </TableCell>
                       </TableRow>
                     ) : (
                       allProducts.map((p) => (
-                        <TableRow key={p.id} className="border-white/10 hover:bg-white/[0.02]">
+                        <TableRow
+                          key={p.id}
+                          className="border-white/10 hover:bg-white/[0.02]"
+                        >
                           <TableCell className="font-medium text-white">
                             <div className="flex items-center gap-3">
-                              <img src={p.image} alt={p.name} className="h-10 w-10 rounded-lg object-cover bg-white/10" />
-                              <span>{p.name}</span>
+                              <img
+                                src={p.image}
+                                alt={p.name}
+                                className="h-10 w-10 rounded-lg bg-white/10 object-cover"
+                              />
+
+                              <span>
+                                {p.name}
+                              </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-gray-300 capitalize">{p.category}</TableCell>
+
+                          <TableCell className="capitalize text-gray-300">
+                            {p.category}
+                          </TableCell>
+
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium text-white capitalize">{p.created_by_type}</span>
-                              <span className="text-xs text-gray-500">ID: {p.created_by_id}</span>
+                              <span className="text-sm font-medium capitalize text-white">
+                                {
+                                  p.created_by_type
+                                }
+                              </span>
+
+                              <span className="text-xs text-gray-500">
+                                ID:{" "}
+                                {
+                                  p.created_by_id
+                                }
+                              </span>
                             </div>
                           </TableCell>
+
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <button onClick={() => setViewingProduct(p)} className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 hover:bg-cyan-500/20 transition-colors">
+                              <button
+                                onClick={() =>
+                                  setViewingProduct(
+                                    p
+                                  )
+                                }
+                                className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 transition-colors hover:bg-cyan-500/20"
+                              >
                                 <Search className="h-4 w-4" />
                               </button>
-                              <button onClick={() => setEditingProduct(p)} className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+
+                              <button
+                                onClick={() =>
+                                  setEditingProduct(
+                                    p
+                                  )
+                                }
+                                className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 transition-colors hover:bg-emerald-500/20"
+                              >
                                 <Edit2 className="h-4 w-4" />
                               </button>
-                              <button onClick={() => handleDeleteProduct(p.id)} className="rounded-lg bg-red-500/10 p-2 text-red-400 hover:bg-red-500/20 transition-colors">
+
+                              <button
+                                onClick={() =>
+                                  handleDeleteProduct(
+                                    p.id
+                                  )
+                                }
+                                className="rounded-lg bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
@@ -436,361 +636,232 @@ function AdminPanel({
             </Section>
           </TabsContent>
 
+          {/* VENDORS */}
+
           <TabsContent value="vendors">
+            <Section title="Vendor Management">
+              <div className="mb-6 grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-5">
+                  <p className="text-sm text-yellow-300">
+                    Pending Requests
+                  </p>
 
-  <Section title="Vendor Management">
+                  <h2 className="mt-2 text-3xl font-black text-white">
+                    {
+                      allVendors.filter(
+                        (v) =>
+                          Number(
+                            v.approved
+                          ) === 0
+                      ).length
+                    }
+                  </h2>
+                </div>
 
-    {/* TOP STATS */}
+                <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-5">
+                  <p className="text-sm text-green-300">
+                    Approved Vendors
+                  </p>
 
-    <div className="mb-6 grid gap-4 md:grid-cols-2">
+                  <h2 className="mt-2 text-3xl font-black text-white">
+                    {
+                      allVendors.filter(
+                        (v) =>
+                          Number(
+                            v.approved
+                          ) === 1
+                      ).length
+                    }
+                  </h2>
+                </div>
+              </div>
 
-      <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-5">
-        <p className="text-sm text-yellow-300">
-          Pending Requests
-        </p>
+              {/* APPROVED VENDORS */}
 
-        <h2 className="mt-2 text-3xl font-black text-white">
-          {
-            allVendors.filter(
-              (v) => Number(v.approved) === 0
-            ).length
-          }
-        </h2>
-      </div>
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                <Table>
+                  <TableHeader className="bg-white/5">
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="text-gray-400">
+                        Vendor
+                      </TableHead>
 
-      <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-5">
-        <p className="text-sm text-green-300">
-          Approved Vendors
-        </p>
+                      <TableHead className="text-gray-400">
+                        Company
+                      </TableHead>
 
-        <h2 className="mt-2 text-3xl font-black text-white">
-          {
-            allVendors.filter(
-              (v) => Number(v.approved) === 1
-            ).length
-          }
-        </h2>
-      </div>
+                      <TableHead className="text-gray-400">
+                        Contact
+                      </TableHead>
 
-    </div>
+                      <TableHead className="text-gray-400">
+                        Status
+                      </TableHead>
 
-    {/* PENDING REQUESTS */}
-
-    <div className="mb-10">
-
-      <div className="mb-4 flex items-center justify-between">
-
-        <div>
-          <h3 className="text-xl font-bold text-white">
-            Pending Vendor Requests
-          </h3>
-
-          <p className="text-sm text-gray-400">
-            Vendors waiting for approval
-          </p>
-        </div>
-
-        <button
-          onClick={() => setVendorModalOpen(true)}
-          className="rounded-xl bg-[#FF6600] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e65c00]"
-        >
-          Open Requests
-        </button>
-
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-
-        <Table>
-
-          <TableHeader className="bg-white/5">
-
-            <TableRow className="border-white/10 hover:bg-transparent">
-
-              <TableHead className="text-gray-400">
-                Vendor
-              </TableHead>
-
-              <TableHead className="text-gray-400">
-                Company
-              </TableHead>
-
-              <TableHead className="text-gray-400">
-                Email
-              </TableHead>
-
-              <TableHead className="text-gray-400">
-                Status
-              </TableHead>
-
-            </TableRow>
-
-          </TableHeader>
-
-          <TableBody>
-
-            {
-              allVendors.filter(
-                (v) => Number(v.approved) === 0
-              ).length === 0 ? (
-
-                <TableRow className="border-white/10">
-
-                  <TableCell
-                    colSpan={4}
-                    className="py-8 text-center text-gray-500"
-                  >
-                    No pending requests
-                  </TableCell>
-
-                </TableRow>
-
-              ) : (
-
-                allVendors
-                  .filter(
-                    (v) => Number(v.approved) === 0
-                  )
-                  .map((vendor) => (
-
-                    <TableRow
-                      key={vendor.id}
-                      className="border-white/10 hover:bg-white/[0.03]"
-                    >
-
-                      <TableCell className="text-white font-medium">
-                        {vendor.vendor_name}
-                      </TableCell>
-
-                      <TableCell className="text-gray-300">
-                        {vendor.company_name}
-                      </TableCell>
-
-                      <TableCell className="text-gray-300">
-                        {vendor.email}
-                      </TableCell>
-
-                      <TableCell>
-
-                        <span className="rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-semibold text-yellow-400">
-                          Pending
-                        </span>
-
-                      </TableCell>
-
+                      <TableHead className="text-right text-gray-400">
+                        Actions
+                      </TableHead>
                     </TableRow>
+                  </TableHeader>
 
-                  ))
-
-              )
-            }
-
-          </TableBody>
-
-        </Table>
-
-      </div>
-
-    </div>
-
-    {/* APPROVED VENDORS */}
-
-    <div>
-
-      <div className="mb-4">
-        <h3 className="text-xl font-bold text-white">
-          Approved Vendors
-        </h3>
-
-        <p className="text-sm text-gray-400">
-          Vendors approved by admin
-        </p>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-
-        <Table>
-
-          <TableHeader className="bg-white/5">
-
-            <TableRow className="border-white/10 hover:bg-transparent">
-
-              <TableHead className="text-gray-400">
-                Vendor Name
-              </TableHead>
-
-              <TableHead className="text-gray-400">
-                Company
-              </TableHead>
-
-              <TableHead className="text-gray-400">
-                Contact
-              </TableHead>
-
-              <TableHead className="text-gray-400">
-                Status
-              </TableHead>
-
-              <TableHead className="text-right text-gray-400">
-                Actions
-              </TableHead>
-
-            </TableRow>
-
-          </TableHeader>
-
-          <TableBody>
-
-            {
-              allVendors.filter(
-                (v) => Number(v.approved) === 1
-              ).length === 0 ? (
-
-                <TableRow className="border-white/10">
-
-                  <TableCell
-                    colSpan={5}
-                    className="py-8 text-center text-gray-500"
-                  >
-                    No approved vendors
-                  </TableCell>
-
-                </TableRow>
-
-              ) : (
-
-                allVendors
-                  .filter(
-                    (v) => Number(v.approved) === 1
-                  )
-                  .map((vendor) => (
-
-                    <TableRow
-                      key={vendor.id}
-                      className="border-white/10 hover:bg-white/[0.03]"
-                    >
-
-                      <TableCell className="font-medium text-white">
-                        {vendor.vendor_name}
-                      </TableCell>
-
-                      <TableCell className="text-gray-300">
-                        {vendor.company_name}
-                      </TableCell>
-
-                      <TableCell>
-
-                        <div className="flex flex-col">
-
-                          <span className="text-sm text-gray-300">
-                            {vendor.email}
-                          </span>
-
-                          <span className="text-xs text-gray-500">
-                            {vendor.phone}
-                          </span>
-
-                        </div>
-
-                      </TableCell>
-
-                      <TableCell>
-
-                        <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-400">
-                          Approved
-                        </span>
-
-                      </TableCell>
-
-                      <TableCell className="text-right">
-
-                        <button
-                          onClick={() => setViewingVendor(vendor)}
-                          className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20"
+                  <TableBody>
+                    {allVendors.filter(
+                      (v) =>
+                        Number(
+                          v.approved
+                        ) === 1
+                    ).length === 0 ? (
+                      <TableRow className="border-white/10">
+                        <TableCell
+                          colSpan={5}
+                          className="py-8 text-center text-gray-500"
                         >
-                          <Search className="h-4 w-4" />
-                        </button>
+                          No approved vendors
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allVendors
+                        .filter(
+                          (v) =>
+                            Number(
+                              v.approved
+                            ) === 1
+                        )
+                        .map((vendor) => (
+                          <TableRow
+                            key={vendor.id}
+                            className="border-white/10 hover:bg-white/[0.03]"
+                          >
+                            <TableCell className="font-medium text-white">
+                              {
+                                vendor.vendor_name
+                              }
+                            </TableCell>
 
-                      </TableCell>
+                            <TableCell className="text-gray-300">
+                              {
+                                vendor.company_name
+                              }
+                            </TableCell>
 
-                    </TableRow>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-sm text-gray-300">
+                                  {
+                                    vendor.email
+                                  }
+                                </span>
 
-                  ))
+                                <span className="text-xs text-gray-500">
+                                  {
+                                    vendor.phone
+                                  }
+                                </span>
+                              </div>
+                            </TableCell>
 
-              )
-            }
+                            <TableCell>
+                              <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-400">
+                                Approved
+                              </span>
+                            </TableCell>
 
-          </TableBody>
-
-        </Table>
-
-      </div>
-
-    </div>
-
-  </Section>
-
-</TabsContent>
+                            <TableCell className="text-right">
+                              <button
+                                onClick={() =>
+                                  setViewingVendor(
+                                    vendor
+                                  )
+                                }
+                                className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20"
+                              >
+                                <Search className="h-4 w-4" />
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </Section>
+          </TabsContent>
         </Tabs>
+
+        {/* MODALS */}
+
+        {vendorModalOpen && (
+          <VendorRequestsModal
+            onClose={() =>
+              setVendorModalOpen(false)
+            }
+            onVendorActioned={() => {
+              loadStats();
+            }}
+          />
+        )}
+
+        {categoriesModalOpen && (
+          <CategoriesModal
+            onClose={() =>
+              setCategoriesModalOpen(false)
+            }
+          />
+        )}
+
+        {productModalOpen && (
+          <ProductRequestsModal
+            onClose={() =>
+              setProductModalOpen(false)
+            }
+            onProductActioned={() => {
+              loadStats();
+            }}
+          />
+        )}
+
+        {showAddProduct && admin && (
+          <AddProductModal
+            vendorId="0"
+            createdByType="admin"
+            createdById={admin.id}
+            onClose={() => {
+              setShowAddProduct(false);
+              loadStats();
+            }}
+          />
+        )}
+
+        {viewingProduct && (
+          <ViewProductModal
+            product={viewingProduct}
+            onClose={() =>
+              setViewingProduct(null)
+            }
+          />
+        )}
+
+        {editingProduct && (
+          <UpdateProductModal
+            product={editingProduct}
+            vendorId="0"
+            isAdmin={true}
+            onClose={() => {
+              setEditingProduct(null);
+              loadStats();
+            }}
+          />
+        )}
+
+        {viewingVendor && (
+          <ViewVendorModal
+            vendor={viewingVendor}
+            onClose={() =>
+              setViewingVendor(null)
+            }
+          />
+        )}
       </div>
-
-      {/* MODALS */}
-
-      {vendorModalOpen && (
-        <VendorRequestsModal
-          onClose={() => setVendorModalOpen(false)}
-          onVendorActioned={() => {
-            loadStats();
-          }}
-        />
-      )}
-
-      {productModalOpen && (
-        <ProductRequestsModal
-          onClose={() => setProductModalOpen(false)}
-          onProductActioned={() => {
-            loadStats();
-          }}
-        />
-      )}
-
-      {showAddProduct && admin && (
-        <AddProductModal
-          vendorId="0"
-          createdByType="admin"
-          createdById={admin.id}
-          onClose={() => {
-            setShowAddProduct(false);
-            loadStats();
-          }}
-        />
-      )}
-
-      {viewingProduct && (
-        <ViewProductModal
-          product={viewingProduct}
-          onClose={() => setViewingProduct(null)}
-        />
-      )}
-
-      {editingProduct && (
-        <UpdateProductModal
-          product={editingProduct}
-          vendorId="0"
-          isAdmin={true}
-          onClose={() => {
-            setEditingProduct(null);
-            loadStats();
-          }}
-        />
-      )}
-
-      {viewingVendor && (
-        <ViewVendorModal
-          vendor={viewingVendor}
-          onClose={() => setViewingVendor(null)}
-        />
-      )}
     </Shell>
   );
 }
@@ -891,100 +962,118 @@ const ORDER_STATUSES = [
   "Delivered",
 ];
 
-const OrderRow = memo(({ order }: { order: Order }) => {
-  const [status, setStatus] = useState(order.status || "Processing");
-  const [updating, setUpdating] = useState(false);
+const OrderRow = memo(
+  ({ order }: { order: Order }) => {
+    const [status, setStatus] = useState(
+      order.status || "Processing"
+    );
 
-  async function updateStatus(newStatus: string) {
-    try {
-      setUpdating(true);
+    const [updating, setUpdating] =
+      useState(false);
 
-      const res = await fetch(
-        "https://egnaromart.com/api/update-order-status.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            order_id: order.order_id,
-            status: newStatus,
-          }),
+    async function updateStatus(
+      newStatus: string
+    ) {
+      try {
+        setUpdating(true);
+
+        const res = await fetch(
+          "https://egnaromart.com/api/update-order-status.php",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              order_id: order.order_id,
+              status: newStatus,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        if (data.success) {
+          setStatus(newStatus);
+
+          toast.success(
+            "Order status updated"
+          );
+        } else {
+          toast.error(
+            data.message || "Failed"
+          );
         }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        setStatus(newStatus);
-        toast.success("Order status updated");
-      } else {
-        toast.error(data.message || "Failed");
+      } catch (err) {
+        console.error(err);
+        toast.error("Server error");
+      } finally {
+        setUpdating(false);
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Server error");
-    } finally {
-      setUpdating(false);
     }
-  }
 
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        
-        <div>
-          <h3 className="font-semibold text-white">
-            #{order.order_id}
-          </h3>
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 className="font-semibold text-white">
+              #{order.order_id}
+            </h3>
 
-          <p className="mt-2 text-sm text-gray-400">
-            {order.customer_name}
-          </p>
+            <p className="mt-2 text-sm text-gray-400">
+              {order.customer_name}
+            </p>
 
-          <p className="text-sm text-gray-500">
-            {order.phone}
-          </p>
+            <p className="text-sm text-gray-500">
+              {order.phone}
+            </p>
 
-          <p className="mt-2 font-bold text-[#FF6600]">
-            ₹{order.total}
-          </p>
+            <p className="mt-2 font-bold text-[#FF6600]">
+              ₹{order.total}
+            </p>
 
-          <p className="mt-2 text-sm text-gray-500">
-            {order.address}
-          </p>
+            <p className="mt-2 text-sm text-gray-500">
+              {order.address}
+            </p>
 
-          <div className="mt-3">
-            <span className="rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-300">
-              {status}
-            </span>
+            <div className="mt-3">
+              <span className="rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-300">
+                {status}
+              </span>
+            </div>
+          </div>
+
+          <div className="min-w-[220px]">
+            <label className="mb-2 block text-sm text-gray-400">
+              Update Status
+            </label>
+
+            <select
+              value={status}
+              disabled={updating}
+              onChange={(e) => {
+                const newStatus =
+                  e.target.value;
+
+                setStatus(newStatus);
+
+                updateStatus(newStatus);
+              }}
+              className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-white outline-none"
+            >
+              {ORDER_STATUSES.map((s) => (
+                <option
+                  key={s}
+                  value={s}
+                >
+                  {s}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-
-        {/* STATUS CONTROL */}
-        <div className="min-w-[220px]">
-          <label className="mb-2 block text-sm text-gray-400">
-            Update Status
-          </label>
-
-          <select
-            value={status}
-            disabled={updating}
-            onChange={(e) => {
-              const newStatus = e.target.value;
-              setStatus(newStatus);
-              updateStatus(newStatus);
-            }}
-            className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-white outline-none"
-          >
-            {ORDER_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
