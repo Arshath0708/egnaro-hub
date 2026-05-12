@@ -34,6 +34,25 @@ export async function getProducts() {
   return await request("/get-products.php");
 }
 
+export async function getVendorProducts(vendorId: string) {
+  const data = await request(`/get-vendor-products.php?vendor_id=${vendorId}`);
+  if (!data.success) {
+    throw new Error(data.message || "Failed to fetch vendor products");
+  }
+  return data.products || [];
+}
+
+export async function getVendorStats(vendorId: string) {
+  const data = await request(`/get-vendor-stats.php?vendor_id=${vendorId}`);
+  if (!data.success) {
+    throw new Error(data.message || "Failed to fetch vendor stats");
+  }
+  return {
+    revenue: data.revenue || 0,
+    total_orders: data.total_orders || 0,
+  };
+}
+
 export async function getPendingProducts() {
   const res = await fetch(
     "https://egnaromart.com/api/get-pending.php"
@@ -54,6 +73,9 @@ export type ProductForm = {
   original_price: string;
   discount: string;
   description: string;
+  stock_quantity: string;
+  created_by_type: string;
+  created_by_id: string;
 };
 
 export async function addProduct(form: ProductForm) {
@@ -94,6 +116,44 @@ export async function addProduct(form: ProductForm) {
   }
 }
 
+export async function getProductById(productId: number) {
+  return await request(`/get-product-by-id.php?product_id=${productId}`);
+}
+
+export async function updateProduct(data: any) {
+  return await request("/update-product.php", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateProduct(data: any) {
+  return await request("/admin-update-product.php", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteProduct(productId: number) {
+  return await request("/admin-delete-product.php", {
+    method: "POST",
+    body: JSON.stringify({
+      product_id: productId,
+    }),
+  });
+}
+
+export async function deleteProduct(productId: number, vendorId: string) {
+  return await request("/delete-product.php", {
+    method: "POST",
+    body: JSON.stringify({
+      product_id: productId,
+      vendor_id: vendorId,
+      role: 'vendor'
+    }),
+  });
+}
+
 export async function approveProduct(id: number) {
   // ✅ updates status/approved in products
   return await request("/admin-approve.php", {
@@ -110,9 +170,7 @@ export async function rejectProduct(id: number) {
   });
 }
 
-export async function getAllVendors() {
-  return await request("/get-all-vendors.php");
-}
+
 
 /* =========================
    VENDORS
@@ -164,6 +222,10 @@ export async function getOrders() {
 
 export async function getVendors() {
   return await request("/get-vendors.php");
+}
+
+export async function getVendorById(vendorId: number) {
+  return await request(`/get-vendor-by-id.php?vendor_id=${vendorId}`);
 }
 
 export async function approveVendor(id: number, status: string) {
