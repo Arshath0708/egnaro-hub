@@ -43,7 +43,7 @@ export function AddProductModal({
 
   useEffect(() => {
     if (categories.length > 0 && !form.category) {
-      setForm((prev) => ({ ...prev, category: String(categories[0].id) }));
+      setForm((prev) => ({ ...prev, category: categories[0].name }));
     }
   }, [categories, form.category]);
 
@@ -173,7 +173,7 @@ export function AddProductModal({
                     onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                   >
                     {categories.map((cat: any) => (
-                      <option key={cat.id} value={cat.id} className="bg-[#0f172a]">
+                      <option key={cat.id} value={cat.name} className="bg-[#0f172a]">
                         {cat.name}
                       </option>
                     ))}

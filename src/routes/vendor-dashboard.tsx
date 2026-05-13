@@ -44,6 +44,7 @@ type Product = {
   discount: number;
   description: string;
   approved: number;
+  stock_quantity: number;
 };
 
 type ProductForm = {
@@ -290,8 +291,13 @@ function DashboardContent({
                     </div>
 
                     <div className="p-6">
-                      <div className="mb-2 text-xs uppercase tracking-[0.2em] text-cyan-300">
-                        {product.category}
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="text-xs uppercase tracking-[0.2em] text-cyan-300">
+                          {product.category}
+                        </div>
+                        <div className="rounded-md bg-white/5 px-2 py-1 text-xs font-bold text-gray-400">
+                          Stock: {product.stock_quantity !== undefined ? product.stock_quantity : 0}
+                        </div>
                       </div>
 
                       <h3 className="line-clamp-1 text-xl font-bold">
@@ -415,4 +421,4 @@ function StatCard({
     </div>
   );
 }
-
+

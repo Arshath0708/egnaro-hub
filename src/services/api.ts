@@ -2,7 +2,7 @@ const API_BASE = "https://egnaromart.com/api";
 
 async function request(endpoint: string, options?: RequestInit) {
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
-  
+
   const headers: Record<string, string> = {
     ...(options?.headers as Record<string, string>),
   };
@@ -130,14 +130,14 @@ export async function adminDeleteProduct(productId: number) {
   });
 }
 
-export async function deleteProduct(productId: number, vendorId: string) {
+export async function deleteProduct(productId: number, vendorId: string, isAdmin?: boolean) {
   return await request("/delete-product.php", {
     method: "POST",
     body: JSON.stringify({
       id: Number(productId),
       product_id: Number(productId),
       vendor_id: vendorId,
-      role: 'vendor'
+      role: isAdmin ? 'admin' : 'vendor'
     }),
   });
 }
@@ -197,6 +197,14 @@ export async function updateOrderStatus(id: number, status: string) {
   });
 }
 
+export async function getAdminStats() {
+  const data = await request("/get-admin-stats.php");
+  if (!data.success) {
+    throw new Error(data.message || "Failed to fetch admin stats");
+  }
+  return data.stats;
+}
+
 export async function getOrders() {
   return await request("/get-orders.php");
 }
@@ -207,6 +215,39 @@ export async function getVendors() {
 
 export async function getVendorById(vendorId: number) {
   return await request(`/get-vendor-by-id.php?vendor_id=${vendorId}`);
+}
+
+export async function getHomeContent() {
+  return await request("/get-home-content.php");
+}
+
+export async function updateHomeContent(data: {
+  slide_number: number;
+  left_title: string;
+  left_subtext: string;
+  left_image: string;
+  right_title: string;
+  right_subtext: string;
+}) {
+  return await request("/update-home-content.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function uploadImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("image", file);
+  const res = await fetch(`${API_BASE}/upload-image.php`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  if (data.success && (data.url || data.image)) {
+    return data.url || data.image;
+  }
+  throw new Error(data.message || "Image upload failed");
 }
 
 export async function approveVendor(id: number, status: string) {
@@ -305,4 +346,4 @@ export async function deleteCategory(id: number) {
     method: "POST",
     body: JSON.stringify({ id }),
   });
-}
+}

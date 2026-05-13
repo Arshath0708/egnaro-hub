@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Building2, User, Mail, Phone, MapPin, CheckCircle, Clock, XCircle } from "lucide-react";
+import { X, Building2, User, Mail, Phone, MapPin, CheckCircle, Clock, XCircle, CreditCard, Landmark, Hash, Package, IndianRupee, ShoppingCart } from "lucide-react";
 import { getVendorById } from "@/services/api";
 import { toast } from "sonner";
 
@@ -10,7 +10,7 @@ export function ViewVendorModal({
   vendor: any;
   onClose: () => void;
 }) {
-  const [vendorDetails, setVendorDetails] = useState<any>(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,14 +18,12 @@ export function ViewVendorModal({
       try {
         const res = await getVendorById(vendor.id);
         if (res.success && res.vendor) {
-          setVendorDetails(res.vendor);
+          setData(res.vendor);
         } else {
           toast.error("Failed to fetch vendor details");
-          setVendorDetails(vendor); // fallback to initial data
         }
       } catch (err) {
         toast.error("Error fetching vendor details");
-        setVendorDetails(vendor);
       } finally {
         setLoading(false);
       }
@@ -33,12 +31,14 @@ export function ViewVendorModal({
     fetchVendor();
   }, [vendor]);
 
-  const displayVendor = vendorDetails || vendor;
+  // Use API details if available, fallback to initial vendor object
+  const details = data?.details || vendor;
+  const stats = data?.stats || null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 backdrop-blur-md">
       <div className="flex min-h-full items-start justify-center py-8">
-        <div className="relative w-full max-w-2xl rounded-[36px] border border-white/10 bg-[#050816] shadow-2xl">
+        <div className="relative w-full max-w-3xl rounded-[36px] border border-white/10 bg-[#050816] shadow-2xl">
           <div className="p-8 lg:p-10">
             {/* HEADER */}
             <div className="mb-8 flex items-start justify-between">
@@ -48,8 +48,12 @@ export function ViewVendorModal({
                   Vendor Profile
                 </div>
                 <h2 className="text-3xl font-black text-white md:text-4xl">
-                  {displayVendor.company_name}
+                  {details.company_name}
                 </h2>
+                <div className="mt-2 flex items-center gap-2 text-gray-400">
+                  <Clock className="h-4 w-4" />
+                  <span>Joined {new Date(details.created_at).toLocaleDateString()}</span>
+                </div>
               </div>
               <button
                 onClick={onClose}
@@ -60,54 +64,55 @@ export function ViewVendorModal({
             </div>
 
             {loading ? (
-              <div className="py-20 text-center text-gray-400">Loading details...</div>
+              <div className="flex h-64 flex-col items-center justify-center gap-4 py-20 text-center text-gray-400">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-500 border-t-transparent"></div>
+                <span>Loading comprehensive details...</span>
+              </div>
             ) : (
-              <div className="grid gap-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* CONTACT INFO */}
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <h3 className="mb-4 text-lg font-bold text-white">Contact Information</h3>
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+                    <User className="h-5 w-5 text-purple-400" />
+                    Contact Information
+                  </h3>
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-gray-300">
-                      <User className="h-5 w-5 text-purple-400" />
-                      <span>{displayVendor.vendor_name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-300">
-                      <Mail className="h-5 w-5 text-purple-400" />
-                      <span>{displayVendor.email}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-300">
-                      <Phone className="h-5 w-5 text-purple-400" />
-                      <span>{displayVendor.phone}</span>
-                    </div>
-                    {displayVendor.address && (
-                      <div className="flex items-start gap-3 text-gray-300">
-                        <MapPin className="mt-0.5 h-5 w-5 text-purple-400" />
-                        <span>{displayVendor.address}</span>
-                      </div>
-                    )}
+                    <DetailItem icon={<User />} label="Vendor Name" value={details.vendor_name} />
+                    <DetailItem icon={<Mail />} label="Email Address" value={details.email} />
+                    <DetailItem icon={<Phone />} label="Phone Number" value={details.phone} />
+                    <DetailItem icon={<MapPin />} label="Business Address" value={details.address} isAddress />
                   </div>
                 </div>
 
+                {/* BANK DETAILS */}
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <h3 className="mb-4 text-lg font-bold text-white">Account Status</h3>
-                  <div className="flex items-center gap-3">
-                    {displayVendor.approved === 1 ? (
-                      <div className="flex items-center gap-2 text-green-400">
-                        <CheckCircle className="h-5 w-5" />
-                        <span className="font-semibold">Approved</span>
-                      </div>
-                    ) : displayVendor.approved === 0 ? (
-                      <div className="flex items-center gap-2 text-yellow-400">
-                        <Clock className="h-5 w-5" />
-                        <span className="font-semibold">Pending Approval</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-red-400">
-                        <XCircle className="h-5 w-5" />
-                        <span className="font-semibold">Rejected</span>
-                      </div>
-                    )}
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+                    <CreditCard className="h-5 w-5 text-purple-400" />
+                    Bank Information
+                  </h3>
+                  <div className="space-y-4">
+                    <DetailItem icon={<Landmark />} label="Bank Name" value={details.bank_name || "N/A"} />
+                    <DetailItem icon={<Hash />} label="Account Number" value={details.account_number || "N/A"} />
+                    <DetailItem icon={<Hash />} label="IFSC Code" value={details.ifsc_code || "N/A"} />
+                    <div className="pt-2">
+                      <div className="mb-1 text-xs uppercase tracking-wider text-gray-500">Account Status</div>
+                      <StatusBadge status={details.status} />
+                    </div>
                   </div>
                 </div>
+
+                {/* STATS */}
+                {stats && (
+                  <div className="lg:col-span-2">
+                    <h3 className="mb-4 text-lg font-bold text-white">Performance Overview</h3>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                      <StatMini icon={<Package />} label="Total Products" value={stats.products.total} color="text-blue-400" bg="bg-blue-400/10" />
+                      <StatMini icon={<ShoppingCart />} label="Total Orders" value={stats.orders.total} color="text-orange-400" bg="bg-orange-400/10" />
+                      <StatMini icon={<IndianRupee />} label="Revenue" value={`₹${stats.orders.total_revenue.toLocaleString()}`} color="text-green-400" bg="bg-green-400/10" />
+                      <StatMini icon={<CheckCircle />} label="Approved" value={stats.products.approved} color="text-emerald-400" bg="bg-emerald-400/10" />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -116,3 +121,58 @@ export function ViewVendorModal({
     </div>
   );
 }
+
+function DetailItem({ icon, label, value, isAddress }: { icon: any, label: string, value: string, isAddress?: boolean }) {
+  return (
+    <div className="flex gap-3 text-gray-300">
+      <div className="mt-1 flex-shrink-0 text-purple-400">
+        {icon}
+      </div>
+      <div>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</div>
+        <div className={`text-sm ${isAddress ? "leading-relaxed" : ""}`}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function StatMini({ icon, label, value, color, bg }: { icon: any, label: string, value: string | number, color: string, bg: string }) {
+  return (
+    <div className={`rounded-2xl border border-white/5 ${bg} p-4`}>
+      <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${bg} ${color}`}>
+        {icon}
+      </div>
+      <div className="text-xl font-black text-white">{value}</div>
+      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{label}</div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const isApproved = status === "active" || status === "approved";
+  const isPending = status === "pending";
+
+  if (isApproved) {
+    return (
+      <div className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-3 py-1 text-xs font-bold text-green-400">
+        <CheckCircle className="h-3.5 w-3.5" />
+        Approved
+      </div>
+    );
+  }
+  if (isPending) {
+    return (
+      <div className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-bold text-yellow-400">
+        <Clock className="h-3.5 w-3.5" />
+        Pending
+      </div>
+    );
+  }
+  return (
+    <div className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 text-xs font-bold text-red-400">
+      <XCircle className="h-3.5 w-3.5" />
+      Rejected
+    </div>
+  );
+}
+

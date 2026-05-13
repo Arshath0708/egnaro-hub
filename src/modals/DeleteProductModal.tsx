@@ -7,27 +7,35 @@ import { deleteProduct } from "@/services/api";
 export function DeleteProductModal({
   product,
   vendorId,
+  isAdmin,
   onClose,
 }: {
   product: any;
   vendorId: string;
+  isAdmin?: boolean;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const response = await deleteProduct(product.id, vendorId);
+      const response = await deleteProduct(product.id, vendorId, isAdmin);
       return response;
     },
     onSuccess: async () => {
       toast.success("Product deleted successfully");
-      await queryClient.invalidateQueries({
-        queryKey: ["vendor-products", vendorId],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["vendor-stats", vendorId],
-      });
+      if (isAdmin) {
+        await queryClient.invalidateQueries({
+          queryKey: ["products"],
+        });
+      } else {
+        await queryClient.invalidateQueries({
+          queryKey: ["vendor-products", vendorId],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["vendor-stats", vendorId],
+        });
+      }
       onClose();
     },
     onError: (err: any) => {

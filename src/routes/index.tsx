@@ -24,7 +24,7 @@ import {
 import { Shell } from "@/components/layout/Shell";
 import { Section } from "@/components/Section";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
-import { getProducts, getCategories } from "@/services/api";
+import { getProducts, getCategories, getHomeContent } from "@/services/api";
 
 const CATEGORY_META: Record<string, { image: string, accent: string }> = {
   "electronics": {
@@ -272,11 +272,18 @@ function CategoriesSection({ categories }: { categories: any[] }) {
   );
 }
 
+type Category = {
+  id: number | string;
+  name: string;
+  image: string;
+  accent: string;
+};
+
 function CategoryCardLarge({
   category,
   index,
 }: {
-  category: (typeof categories)[0];
+  category: Category;
   index: number;
 }) {
   return (
@@ -322,11 +329,12 @@ function CategoryCardLarge({
   );
 }
 
+
 function CategoryCardSmall({
   category,
   index,
 }: {
-  category: (typeof categories)[0];
+  category: Category;
   index: number;
 }) {
   return (
@@ -406,50 +414,70 @@ function ProductGrid({
   );
 }
 
-/* ───────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────── */
 /* HERO */
-/* ───────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────── */
+
+const SLIDE_DEFAULTS = [
+  {
+    slide_number: 1,
+    left_title: "Premium products direct from manufacturers.",
+    left_subtext: "India's premium B2B marketplace for electronics, hardware, electricals and industrial products.",
+    left_image: "",
+    right_title: "Trusted by businesses across India",
+    right_subtext: "Verified products from trusted suppliers with transparent pricing and secure delivery.",
+    accent: "from-primary via-violet-400 to-cyan-400",
+    icon: Package,
+  },
+  {
+    slide_number: 2,
+    left_title: "Secure sourcing for every business.",
+    left_subtext: "Source genuine products from trusted manufacturers with transparent pricing and fast delivery.",
+    left_image: "",
+    right_title: "Verified suppliers only",
+    right_subtext: "Every vendor is manually verified. Guaranteed quality and authenticity on every order.",
+    accent: "from-emerald-400 via-cyan-400 to-blue-500",
+    icon: ShieldCheck,
+  },
+  {
+    slide_number: 3,
+    left_title: "Reliable logistics with tracked shipping.",
+    left_subtext: "Pan-India delivery network with secure payments and real-time order tracking.",
+    left_image: "",
+    right_title: "Fast delivery across India",
+    right_subtext: "Pan-India delivery network with real-time tracking and secure payment gateway.",
+    accent: "from-orange-400 via-yellow-400 to-red-500",
+    icon: Truck,
+  },
+];
 
 function Hero() {
   const ref = useRef<HTMLElement>(null);
-
   const [active, setActive] = useState(0);
+  const [slides, setSlides] = useState(SLIDE_DEFAULTS);
 
-  const slides = [
-    {
-      eyebrow: "Trusted by businesses across India",
-      title1: "Premium products",
-      title2: "direct from",
-      title3: "manufacturers.",
-      description:
-        "India's premium B2B marketplace for electronics, hardware, electricals and industrial products.",
-      accent: "from-primary via-violet-400 to-cyan-400",
-      stats: "Verified Products",
-      icon: Package,
-    },
-    {
-      eyebrow: "Verified suppliers only",
-      title1: "Secure sourcing",
-      title2: "for every",
-      title3: "business.",
-      description:
-        "Source genuine products from trusted manufacturers with transparent pricing and fast delivery.",
-      accent: "from-emerald-400 via-cyan-400 to-blue-500",
-      stats: "Trusted Vendors",
-      icon: ShieldCheck,
-    },
-    {
-      eyebrow: "Fast delivery across India",
-      title1: "Reliable logistics",
-      title2: "with tracked",
-      title3: "shipping.",
-      description:
-        "Pan-India delivery network with secure payments and real-time order tracking.",
-      accent: "from-orange-400 via-yellow-400 to-red-500",
-      stats: "Pan India Delivery",
-      icon: Truck,
-    },
-  ];
+  // Fetch dynamic content from admin CMS
+  useEffect(() => {
+    getHomeContent()
+      .then((res) => {
+        if (res.success && Array.isArray(res.slides) && res.slides.length > 0) {
+          const merged = SLIDE_DEFAULTS.map((def) => {
+            const api = res.slides.find((s: any) => Number(s.slide_number) === def.slide_number);
+            if (!api) return def;
+            return {
+              ...def,
+              left_title:   api.left_title   || def.left_title,
+              left_subtext: api.left_subtext || def.left_subtext,
+              left_image:   api.left_image   || def.left_image,
+              right_title:  api.right_title  || def.right_title,
+              right_subtext: api.right_subtext || def.right_subtext,
+            };
+          });
+          setSlides(merged);
+        }
+      })
+      .catch(() => { /* silent – use defaults */ });
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -458,22 +486,20 @@ function Hero() {
 
   const textY = useTransform(scrollYProgress, [0, 1], ["0%", "8%"]);
 
+  // Auto-advance
   useEffect(() => {
     const interval = setInterval(() => {
       setActive((prev) => (prev + 1) % slides.length);
     }, 5000);
-
     return () => clearInterval(interval);
-  }, []);
+  }, [slides.length]);
 
   const slide = slides[active];
-
   const SlideIcon = slide.icon;
 
   return (
     <section ref={ref} className="relative overflow-hidden py-24 lg:py-32">
       <div className="absolute inset-0 gradient-hero" />
-
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(var(--primary-rgb),0.12),transparent)]" />
 
       <motion.div
@@ -481,8 +507,10 @@ function Hero() {
         className="relative mx-auto max-w-7xl px-4"
       >
         <div className="grid items-center gap-16 lg:grid-cols-2">
-          {/* LEFT */}
+
+          {/* ── LEFT ── */}
           <div>
+            {/* Eyebrow / badge */}
             <motion.div
               key={`eyebrow-${active}`}
               initial={{ opacity: 0, y: 10 }}
@@ -490,48 +518,43 @@ function Hero() {
               transition={{ duration: 0.4 }}
               className="mb-6 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs font-semibold"
             >
-              {slide.eyebrow}
+              <SlideIcon className="h-3.5 w-3.5" />
+              {slide.right_title}
             </motion.div>
 
+            {/* Left title — supports multiline from DB */}
             <motion.h1
               key={`title-${active}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="font-display text-5xl font-black leading-[1.08] tracking-tight lg:text-[4.5rem]"
+              className="font-display text-4xl font-black leading-[1.1] tracking-tight lg:text-[3.5rem]"
             >
-              {slide.title1}
-
-              <br />
-
               <span
                 className={`bg-gradient-to-r ${slide.accent} bg-clip-text text-transparent`}
               >
-                {slide.title2}
+                {slide.left_title}
               </span>
-
-              <br />
-
-              {slide.title3}
             </motion.h1>
 
+            {/* Left subtext */}
             <motion.p
-              key={`description-${active}`}
+              key={`desc-${active}`}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.5, delay: 0.05 }}
               className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground"
             >
-              {slide.description}
+              {slide.left_subtext}
             </motion.p>
 
+            {/* CTA buttons */}
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 to="/products"
                 className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 font-bold gradient-primary text-primary-foreground"
               >
                 Shop Now
-
                 <ArrowRight className="h-4 w-4" />
               </Link>
 
@@ -540,11 +563,11 @@ function Hero() {
                 className="group inline-flex items-center gap-2 rounded-xl glass px-7 py-3.5 font-bold"
               >
                 <Store className="h-4 w-4" />
-
                 Become a Vendor
               </Link>
             </div>
 
+            {/* Slide dots */}
             <div className="mt-10 flex gap-3">
               {slides.map((_, index) => (
                 <button
@@ -552,17 +575,16 @@ function Hero() {
                   type="button"
                   onClick={() => setActive(index)}
                   className={`h-2 rounded-full transition-all duration-300 ${
-                    active === index
-                      ? "w-10 bg-primary"
-                      : "w-2 bg-white/20"
+                    active === index ? "w-10 bg-primary" : "w-2 bg-white/20"
                   }`}
                 />
               ))}
             </div>
           </div>
 
-          {/* RIGHT */}
+          {/* ── RIGHT ── */}
           <motion.div
+            key={`right-${active}`}
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.65 }}
@@ -570,27 +592,43 @@ function Hero() {
           >
             <div className="absolute -inset-6 rounded-[3rem] bg-gradient-to-r from-primary/20 via-violet-500/10 to-cyan-500/20 blur-3xl" />
 
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-2xl lg:p-10">
-              <div className="flex h-24 w-24 items-center justify-center rounded-3xl gradient-primary">
-                <SlideIcon className="h-10 w-10 text-white" />
-              </div>
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.04] shadow-2xl backdrop-blur-2xl">
+              {/* Hero image — shown if provided in CMS */}
+              {slide.left_image ? (
+                <div className="relative h-56 w-full overflow-hidden lg:h-72">
+                  <img
+                    src={slide.left_image}
+                    alt={slide.left_title}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                </div>
+              ) : (
+                /* Fallback icon card when no image is set */
+                <div className="flex h-56 items-center justify-center bg-gradient-to-br from-primary/10 to-transparent lg:h-72">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-3xl gradient-primary shadow-2xl">
+                    <SlideIcon className="h-10 w-10 text-white" />
+                  </div>
+                </div>
+              )}
 
-              <div className="mt-8">
+              {/* Right text block */}
+              <div className="p-8 lg:p-10">
                 <div className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-                  {slide.stats}
+                  {slide.right_title}
                 </div>
 
-                <div className="mt-4 text-4xl font-black">
-                  Reliable Growth
+                <div className="mt-3 text-2xl font-black leading-snug text-white">
+                  {slide.left_title}
                 </div>
 
                 <p className="mt-3 leading-relaxed text-muted-foreground">
-                  Secure payments, verified manufacturers, and fast delivery
-                  across India.
+                  {slide.right_subtext}
                 </p>
               </div>
             </div>
           </motion.div>
+
         </div>
       </motion.div>
     </section>
