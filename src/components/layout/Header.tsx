@@ -40,6 +40,8 @@ const NAV = [
 export function Header() {
   const count = useCart(cartCount);
   const isVendor = useAuth((s) => s.isVendor);
+  const user = useAuth((s) => s.user);
+  const logout = useAuth((s) => s.logout);
 
   const [open, setOpen] = useState(false);
 
@@ -57,30 +59,8 @@ export function Header() {
 
   const path = location.pathname;
 
-  const [user, setUser] = useState<{
-    name?: string;
-  } | null>(() => {
-    try {
-      const raw =
-        localStorage.getItem("user");
-
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
-
   // Sync auth on route change
   useEffect(() => {
-    try {
-      const raw =
-        localStorage.getItem("user");
-
-      setUser(raw ? JSON.parse(raw) : null);
-    } catch {
-      setUser(null);
-    }
-
     setOpen(false);
     setUserMenuOpen(false);
   }, [path]);
@@ -133,10 +113,7 @@ export function Header() {
   }, [userMenuOpen]);
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    setUser(null);
+    logout();
     setUserMenuOpen(false);
   }
 

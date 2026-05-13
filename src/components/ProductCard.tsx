@@ -14,11 +14,14 @@ export const ProductCard = memo(function ProductCard({
 }) {
   const add = useCart((s) => s.add);
 
-  function handleAdd() {
+  function handleAdd(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
     add(product.id.toString(), 1);
 
     toast.success("Added to cart", {
       description: product.name,
+      icon: <ShoppingCart className="h-4 w-4" />,
     });
   }
 
@@ -26,91 +29,136 @@ export const ProductCard = memo(function ProductCard({
   const reviews = Number(product.total_reviews || 0);
 
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl transition-all duration-300 hover:border-primary/40 hover:bg-white/[0.06]">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] transition-all duration-500 hover:-translate-y-2 hover:border-primary/50 hover:bg-white/[0.08] hover:shadow-[0_20px_40px_-15px_rgba(255,102,0,0.2)]">
       
-      <Link to={`/product/${product.id}`} className="block">
+      <Link to={`/product/${product.id}`} className="flex flex-1 flex-col">
         
-        {/* IMAGE */}
-        <div className="relative aspect-square overflow-hidden bg-black/20">
+        {/* IMAGE SECTION */}
+        <div className="relative aspect-[4/5] overflow-hidden bg-black/40">
           <img
             src={product.image}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/placeholder.png";
             }}
           />
 
-          {Number(product.discount) > 0 && (
-            <div className="absolute left-3 top-3 rounded-xl bg-[#FF6600] px-3 py-1 text-xs font-bold text-white shadow-lg">
-              {product.discount}% OFF
-            </div>
-          )}
+          {/* BADGES */}
+          <div className="absolute inset-x-3 top-3 flex justify-between items-start">
+            {Number(product.discount) > 0 ? (
+              <div className="rounded-full bg-primary px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md">
+                {product.discount}% OFF
+              </div>
+            ) : <div />}
+
+            {product.is_new && (
+              <div className="rounded-full bg-emerald-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md">
+                NEW
+              </div>
+            )}
+          </div>
+
+          {/* QUICK VIEW OVERLAY */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <span className="rounded-full bg-white px-5 py-2 text-xs font-bold text-black shadow-xl transform translate-y-4 transition-transform duration-300 group-hover:translate-y-0">
+              View Product
+            </span>
+          </div>
         </div>
 
-        {/* CONTENT */}
-        <div className="space-y-3 p-4">
+        {/* CONTENT SECTION */}
+        <div className="flex flex-1 flex-col p-5">
           
-          {/* RATING */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full bg-yellow-500/15 px-2 py-1">
-              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-
-              <span className="text-xs font-semibold text-white">
-                {rating.toFixed(1)}
+          {/* RATING & CATEGORY */}
+          <div className="mb-3 flex items-center justify-between">
+             <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5 rounded-full bg-yellow-400/10 px-2 py-0.5">
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                <span className="text-[11px] font-bold text-yellow-400">
+                  {rating.toFixed(1)}
+                </span>
+              </div>
+              <span className="text-[10px] font-medium text-gray-500">
+                ({reviews})
               </span>
             </div>
-
-            <span className="text-xs text-gray-400">
-              ({reviews} reviews)
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+              {product.category || "General"}
             </span>
           </div>
 
-          {/* TITLE */}
-          <h3 className="line-clamp-2 min-h-[48px] text-sm font-semibold text-white transition-colors group-hover:text-primary">
-            {product.name}
-          </h3>
+          {/* INFO */}
+          <div className="space-y-2">
+            <h3 className="line-clamp-1 text-base font-bold text-white transition-colors group-hover:text-primary">
+              {product.name}
+            </h3>
 
-          {/* PRICE */}
-          <div className="flex items-end gap-2">
-            <span className="text-xl font-black text-white">
-              {inr(Number(product.price))}
-            </span>
-
-            {Number(product.original_price) >
-              Number(product.price) && (
-              <span className="pb-0.5 text-sm text-gray-500 line-through">
-                {inr(Number(product.original_price))}
+            {/* DESCRIPTION PREVIEW */}
+            <div className="relative">
+              <p className="line-clamp-2 text-xs leading-relaxed text-gray-400">
+                {product.description || "Premium high-quality product from Egnaro Mart, designed for excellence and durability."}
+              </p>
+              <span className="mt-1 inline-block text-[10px] font-bold text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                See More →
               </span>
-            )}
+            </div>
+          </div>
+
+          {/* PRICE SECTION */}
+          <div className="mt-auto pt-4 flex items-center justify-between">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black text-white">
+                  {inr(Number(product.price))}
+                </span>
+                {Number(product.original_price) > Number(product.price) && (
+                  <span className="text-xs text-gray-500 line-through">
+                    {inr(Number(product.original_price))}
+                  </span>
+                )}
+              </div>
+              <p className="text-[9px] font-medium text-emerald-400">Free Delivery</p>
+            </div>
+
+            {/* ADD TO CART ICON BUTTON */}
+            <button
+              onClick={handleAdd}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-white shadow-lg transition-all active:scale-95 hover:bg-white hover:text-primary"
+            >
+              <ShoppingCart className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </Link>
-
-      {/* BUTTON */}
-      <div className="px-4 pb-4">
-        <button
-          onClick={handleAdd}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF6600] py-3 text-sm font-bold text-white transition-all hover:scale-[1.02] hover:bg-[#e65c00]"
-        >
-          <ShoppingCart className="h-4 w-4" />
-          Add to Cart
-        </button>
-      </div>
     </div>
   );
 });
 
 export function ProductCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] animate-pulse">
-      <div className="aspect-square bg-white/10" />
+    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] animate-pulse">
+      <div className="aspect-[4/5] bg-white/10" />
 
-      <div className="space-y-3 p-4">
-        <div className="h-4 w-24 rounded bg-white/10" />
-        <div className="h-5 w-full rounded bg-white/10" />
-        <div className="h-5 w-2/3 rounded bg-white/10" />
-        <div className="h-8 w-32 rounded bg-white/10" />
+      <div className="flex flex-1 flex-col p-5 space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="h-4 w-16 rounded-full bg-white/10" />
+          <div className="h-4 w-12 rounded-full bg-white/10" />
+        </div>
+        
+        <div className="space-y-2">
+          <div className="h-5 w-full rounded bg-white/10" />
+          <div className="h-4 w-2/3 rounded bg-white/10" />
+          <div className="h-4 w-1/2 rounded bg-white/10" />
+        </div>
+
+        <div className="mt-auto pt-4 flex justify-between items-center">
+          <div className="space-y-1">
+            <div className="h-6 w-24 rounded bg-white/10" />
+            <div className="h-3 w-16 rounded bg-white/10" />
+          </div>
+          <div className="h-11 w-11 rounded-2xl bg-white/10" />
+        </div>
       </div>
     </div>
   );

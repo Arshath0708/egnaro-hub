@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 
 import {
   CreditCard,
@@ -12,6 +12,7 @@ import {
 
 import { Shell } from "@/components/layout/Shell";
 import { useCart } from "@/context/cart-store";
+import { useAuth } from "@/context/auth-store";
 import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
@@ -45,8 +46,10 @@ const EMPTY_FORM: FormState = {
 
 export default function CheckoutPage() {
   const nav = useNavigate();
+  const location = useLocation();
 
   const { items, clear } = useCart();
+  const { isLoggedIn, user, token } = useAuth();
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -55,6 +58,22 @@ export default function CheckoutPage() {
   >("upi");
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+
+  // AUTH PROTECTION
+  useEffect(() => {
+    if (!isLoggedIn) {
+      toast.error("Please login to place your order");
+      nav(`/login?redirect=${location.pathname}`);
+    } else if (user) {
+      // PRE-FILL FORM
+      setForm(prev => ({
+        ...prev,
+        fullName: user.name || "",
+        email: user.email || "",
+        phone: user.phone || ""
+      }));
+    }
+  }, [isLoggedIn, nav, location.pathname, user]);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -136,6 +155,12 @@ Please find my payment screenshot attached.
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!isLoggedIn || !token) {
+      toast.error("Session expired. Please login again.");
+      nav(`/login?redirect=${location.pathname}`);
+      return;
+    }
+
     if (submitting) return;
 
     setSubmitting(true);
@@ -173,6 +198,7 @@ Please find my payment screenshot attached.
             notes: form.notes,
 
             gst: form.gst,
+            user_id: user?.id
           }),
         }
       );

@@ -97,7 +97,7 @@ export interface Order {
 }
 
 export interface CategoryMeta {
-  id: Category;
+  id: string;
   name: string;
   icon: string;
   description: string;

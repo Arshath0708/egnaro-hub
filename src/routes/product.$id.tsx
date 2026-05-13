@@ -8,9 +8,13 @@ import {
   ChevronLeft,
   Minus,
   Plus,
+  ChevronRight,
+  MessageSquare,
+  User,
+  Calendar,
 } from "lucide-react";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Shell } from "@/components/layout/Shell";
 import { getProducts, getReviews, addReview } from "@/services/api";
 import { inr } from "@/lib/format";
@@ -45,6 +49,7 @@ export default function ProductDetail() {
   const add = useCart((s) => s.add);
 
   const [qty, setQty] = useState(1);
+  const [showReviews, setShowReviews] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
   const [reviewText, setReviewText] = useState("");
@@ -69,11 +74,28 @@ export default function ProductDetail() {
 
   const {
     data: reviews = [],
+    isLoading: isLoadingReviews,
     refetch: refetchReviews,
   } = useQuery<Review[]>({
     queryKey: ["reviews", id],
     queryFn: () => getReviews(Number(id)),
   });
+
+  const ratingStats = useMemo(() => {
+    const stats = {
+      5: 0,
+      4: 0,
+      3: 0,
+      2: 0,
+      1: 0,
+    };
+    reviews.forEach((r) => {
+      if (stats[r.rating as keyof typeof stats] !== undefined) {
+        stats[r.rating as keyof typeof stats]++;
+      }
+    });
+    return stats;
+  }, [reviews]);
 
   /* ADD REVIEW */
 
@@ -335,205 +357,266 @@ export default function ProductDetail() {
             {/* SPECIFICATIONS */}
 
             <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h3 className="mb-4 text-xl font-bold">
-                Specifications
-              </h3>
+              <h3 className="mb-4 text-xl font-bold">Specifications</h3>
 
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 {product.specifications ? (
-                  Object.entries(product.specifications).map(
-                    ([k, v]) => (
-                      <div key={k} className="contents">
-                        <dt className="text-muted-foreground">
-                          {k}
-                        </dt>
-
-                        <dd className="font-medium">
-                          {v}
-                        </dd>
-                      </div>
-                    )
-                  )
+                  Object.entries(product.specifications).map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="text-muted-foreground">{k}</dt>
+                      <dd className="font-medium">{v}</dd>
+                    </div>
+                  ))
                 ) : (
                   <>
-                    <dt className="text-muted-foreground">
-                      Category
-                    </dt>
-
+                    <dt className="text-muted-foreground">Category</dt>
                     <dd>{product.category}</dd>
-
-                    <dt className="text-muted-foreground">
-                      Product ID
-                    </dt>
-
+                    <dt className="text-muted-foreground">Product ID</dt>
                     <dd>#{product.id}</dd>
                   </>
                 )}
               </dl>
             </div>
+
+            {/* SEE REVIEWS BUTTON */}
+            <div className="mt-8 flex justify-center md:justify-start">
+              <button
+                onClick={() => setShowReviews(!showReviews)}
+                className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold transition-all hover:bg-white/10 hover:text-primary"
+              >
+                {showReviews ? "Hide Reviews" : "See Reviews"}
+                <ChevronRight
+                  className={`h-4 w-4 transition-transform duration-300 ${
+                    showReviews ? "rotate-90" : "group-hover:translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
           </motion.div>
         </div>
 
         {/* REVIEWS SECTION */}
-
-        <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-2xl font-bold">
-                Ratings & Reviews
-              </h3>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Verified customer feedback
-              </p>
-            </div>
-
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1">
-                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-
-                <span className="text-2xl font-black">
-                  {Number(product.average_rating || 0).toFixed(1)}
-                </span>
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                {reviews.length} reviews
-              </div>
-            </div>
-          </div>
-
-          {/* ADD REVIEW FORM */}
-
-          {/* WRITE REVIEW */}
-<div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-  <h4 className="mb-4 text-xl font-bold">
-    Write a Review
-  </h4>
-
-  <form
-    onSubmit={async (e) => {
-      e.preventDefault();
-
-      if (!customerName || !reviewText) {
-        toast.error("Please fill all fields");
-        return;
-      }
-
-      try {
-        const res = await addReview({
-          product_id: product.id,
-          customer_name: customerName,
-          rating,
-          review: reviewText,
-        });
-
-        if (res.success) {
-          toast.success("Review submitted successfully");
-
-          setCustomerName("");
-          setReviewText("");
-          setRating(5);
-
-          window.location.reload();
-        } else {
-          toast.error(res.error || "Failed to submit review");
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Something went wrong");
-      }
-    }}
-    className="space-y-4"
-  >
-    {/* CUSTOMER NAME */}
-    <input
-      type="text"
-      placeholder="Your name"
-      value={customerName}
-      onChange={(e) => setCustomerName(e.target.value)}
-      className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none"
-      required
-    />
-
-    {/* RATING */}
-    <select
-      value={rating}
-      onChange={(e) => setRating(Number(e.target.value))}
-      className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none"
-    >
-      <option value={5}>5 Stars</option>
-      <option value={4}>4 Stars</option>
-      <option value={3}>3 Stars</option>
-      <option value={2}>2 Stars</option>
-      <option value={1}>1 Star</option>
-    </select>
-
-    {/* REVIEW TEXT */}
-    <textarea
-      placeholder="Write your review..."
-      value={reviewText}
-      onChange={(e) => setReviewText(e.target.value)}
-      rows={4}
-      className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none"
-      required
-    />
-
-    {/* SUBMIT BUTTON */}
-    <button
-      type="submit"
-      className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 py-3 font-bold text-black transition hover:scale-[1.01]"
-    >
-      Submit Review
-    </button>
-  </form>
-</div>
-          {/* REVIEWS LIST */}
-
-          <div className="space-y-4">
-            {reviews.length === 0 ? (
-              <div className="text-muted-foreground">
-                No reviews yet
-              </div>
-            ) : (
-              reviews.map((review, index) => (
-                <div
-                  key={index}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold">
-                        {review.customer_name}
-                      </div>
-
-                      <div className="mt-1 flex items-center gap-1">
-                        {Array.from({
-                          length: review.rating,
-                        }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                          />
-                        ))}
+        <AnimatePresence>
+          {showReviews && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="mt-16 rounded-[2.5rem] border border-white/10 bg-white/[0.02] p-8 backdrop-blur-sm md:p-12">
+                <div className="grid gap-12 lg:grid-cols-12">
+                  {/* LEFT: SUMMARY */}
+                  <div className="lg:col-span-4">
+                    <h3 className="mb-6 text-3xl font-black">Customer Reviews</h3>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-white/10 to-transparent p-6 text-center">
+                        <span className="text-5xl font-black text-primary">
+                          {Number(product.average_rating || 0).toFixed(1)}
+                        </span>
+                        <div className="mt-2 flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < Math.round(product.average_rating || 0)
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-white/20"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="mt-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          {reviews.length} total reviews
+                        </span>
                       </div>
                     </div>
 
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(
-                        review.created_at
-                      ).toLocaleDateString()}
+                    <div className="mt-8 space-y-3">
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const count = ratingStats[star as keyof typeof ratingStats];
+                        const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                        return (
+                          <div key={star} className="flex items-center gap-3">
+                            <span className="w-12 text-sm font-medium text-muted-foreground">{star} star</span>
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/5">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percentage}%` }}
+                                transition={{ duration: 1, delay: 0.2 }}
+                                className="h-full bg-gradient-to-r from-yellow-400 to-yellow-500 shadow-[0_0_8px_rgba(250,204,21,0.4)]"
+                              />
+                            </div>
+                            <span className="w-10 text-right text-xs font-bold text-muted-foreground">{Math.round(percentage)}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* WRITE A REVIEW FORM */}
+                    <div className="mt-12 rounded-3xl border border-white/5 bg-white/[0.03] p-6">
+                      <h4 className="mb-4 flex items-center gap-2 text-lg font-bold">
+                        <MessageSquare className="h-5 w-5 text-primary" />
+                        Write a Review
+                      </h4>
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!customerName || !reviewText) {
+                            toast.error("Please fill all fields");
+                            return;
+                          }
+                          try {
+                            const res = await addReview({
+                              product_id: Number(product.id),
+                              customer_name: customerName,
+                              rating,
+                              review: reviewText,
+                            });
+                            if (res.success) {
+                              toast.success("Review submitted!");
+                              setCustomerName("");
+                              setReviewText("");
+                              setRating(5);
+                              refetchReviews();
+                            } else {
+                              toast.error(res.error || "Failed to submit review");
+                            }
+                          } catch (err) {
+                            toast.error("Something went wrong");
+                          }
+                        }}
+                        className="space-y-4"
+                      >
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder="Full Name"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm outline-none focus:border-primary/50"
+                            required
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 px-2">
+                          <span className="text-xs font-semibold text-muted-foreground">Rating:</span>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => setRating(s)}
+                                className="transition-transform hover:scale-125"
+                              >
+                                <Star
+                                  className={`h-5 w-5 ${
+                                    s <= rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <textarea
+                          placeholder="What did you like or dislike?"
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
+                          rows={4}
+                          className="w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-sm outline-none focus:border-primary/50"
+                          required
+                        />
+
+                        <button
+                          type="submit"
+                          className="w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 py-4 text-sm font-black text-black transition hover:scale-[1.02] hover:shadow-glow"
+                        >
+                          Submit Review
+                        </button>
+                      </form>
                     </div>
                   </div>
 
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {review.review}
-                  </p>
+                  {/* RIGHT: REVIEWS LIST */}
+                  <div className="lg:col-span-8">
+                    <div className="mb-6 flex items-center justify-between">
+                      <h4 className="text-xl font-bold">Top Reviews</h4>
+                      <div className="text-sm text-muted-foreground">Sort by: Recent</div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {isLoadingReviews ? (
+                        <div className="space-y-4">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-32 animate-pulse rounded-3xl bg-white/5" />
+                          ))}
+                        </div>
+                      ) : reviews.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="mb-4 rounded-full bg-white/5 p-6">
+                            <MessageSquare className="h-10 w-10 text-muted-foreground" />
+                          </div>
+                          <p className="text-lg font-medium text-muted-foreground">No reviews yet</p>
+                          <p className="text-sm text-muted-foreground/60">Be the first to share your thoughts!</p>
+                        </div>
+                      ) : (
+                        reviews.map((review, index) => (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            key={index}
+                            className="glass group rounded-[2rem] p-6 transition-all hover:bg-white/[0.04]"
+                          >
+                            <div className="mb-4 flex items-start justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent font-bold text-black">
+                                  {review.customer_name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="font-bold">{review.customer_name}</div>
+                                  <div className="flex items-center gap-1">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`h-3 w-3 ${
+                                          i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(review.created_at).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </div>
+                            </div>
+
+                            <p className="leading-relaxed text-muted-foreground/90">{review.review}</p>
+                            
+                            <div className="mt-4 flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                              <button className="transition hover:text-primary">Helpful</button>
+                              <button className="transition hover:text-primary">Report</button>
+                            </div>
+                          </motion.div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </Shell>
   );

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { AlertCircle, Mail, KeyRound, Lock, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { loginCustomer } from "@/services/api";
 import { toast } from "sonner";
+import { useAuth } from "@/context/auth-store";
 
 const API = "https://egnaromart.com/api";
 
@@ -36,20 +37,33 @@ function loadReset(key: string) {
 
 /* ═══════════════════════════════════════════════════════════
    STEP 0 — LOGIN
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function LoginForm({ onForgot }: { onForgot: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const login = useAuth((s) => s.login);
+  const isLoggedIn = useAuth((s) => s.isLoggedIn);
+
+  const redirectTo = searchParams.get("redirect") || "/track-order";
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate(redirectTo);
+    }
+  }, [isLoggedIn, navigate, redirectTo]);
 
   const mutation = useMutation({
     mutationFn: () => loginCustomer({ email, password }),
     onSuccess: (data) => {
       if (data.success) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        navigate("/track-order");
+        login(data.token, data.user);
+        toast.success("Welcome back!");
+        navigate(redirectTo);
       } else {
         setErrorMsg(data.message ?? "Login failed.");
       }

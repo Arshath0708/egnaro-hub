@@ -182,8 +182,10 @@ export async function createOrder(data: any) {
   });
 }
 
-export async function trackOrder(orderId: string) {
-  return await request(`/get-order.php?order_id=${orderId}`);
+export async function trackOrder(orderId: string, token?: string) {
+  return await request(`/get-order.php?order_id=${orderId}`, {
+    headers: token ? { "Authorization": `Bearer ${token}` } : {}
+  });
 }
 
 /* =========================

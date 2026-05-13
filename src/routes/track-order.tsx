@@ -1,5 +1,6 @@
 import { memo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   Search,
   Package,
@@ -13,12 +14,15 @@ import {
   Home,
   AlertTriangle,
   Clock3,
+  Lock,
+  LogIn,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
 import { trackOrder } from "@/services/api";
 import { inr, dateTime, dateShort } from "@/lib/format";
 import type { Order, OrderStatus } from "@/types";
+import { useAuth } from "@/context/auth-store";
 
 const STEPS: {
   id: OrderStatus;
@@ -95,17 +99,24 @@ function buildOrder(raw: any): Order {
       raw.created_at ??
       new Date().toISOString(),
 
-    items: raw.items ?? [],
+    items: Array.isArray(raw.items)
+      ? raw.items
+      : typeof raw.items === "string"
+      ? JSON.parse(raw.items)
+      : [],
 
-    history:
-      raw.history ?? [
-        {
-          status: normalizeStatus(raw.status),
-          at:
-            raw.created_at ??
-            new Date().toISOString(),
-        },
-      ],
+    history: Array.isArray(raw.history)
+      ? raw.history
+      : typeof raw.history === "string"
+      ? JSON.parse(raw.history)
+      : [
+          {
+            status: normalizeStatus(raw.status),
+            at:
+              raw.created_at ??
+              new Date().toISOString(),
+          },
+        ],
 
     customer: {
       fullName: raw.customer_name ?? "Customer",
@@ -124,21 +135,28 @@ function buildOrder(raw: any): Order {
 
 export default function TrackOrder() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { token, isLoggedIn } = useAuth();
 
   const [order, setOrder] = useState<
-    Order | null | "none"
+    Order | null | "none" | "login"
   >(null);
 
   const mutation = useMutation({
     mutationFn: () =>
       trackOrder(
-        inputRef.current?.value.trim() ?? ""
+        inputRef.current?.value.trim() ?? "",
+        token ?? undefined
       ),
 
     onSuccess: (data: any) => {
       const res = Array.isArray(data)
         ? data[0]
         : data;
+
+      if (res?.message === "Missing token" || res?.message === "Invalid or expired token") {
+        setOrder("login");
+        return;
+      }
 
       if (
         !res ||
@@ -175,9 +193,10 @@ export default function TrackOrder() {
             onSubmit={(e) => {
               e.preventDefault();
 
-              if (
-                !inputRef.current?.value.trim()
-              ) {
+              if (!inputRef.current?.value.trim()) return;
+
+              if (!isLoggedIn) {
+                setOrder("login");
                 return;
               }
 
@@ -208,6 +227,29 @@ export default function TrackOrder() {
           </form>
         </div>
 
+        {/* Login Required */}
+        {order === "login" && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-8 text-center">
+            <Lock className="mx-auto mb-3 h-12 w-12 text-primary" />
+
+            <h2 className="text-xl font-bold">
+              Login Required
+            </h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Please login to your account to track your order details.
+            </p>
+
+            <Link
+              to="/login?redirect=/track-order"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-primary/90"
+            >
+              <LogIn className="h-4 w-4" />
+              Login to Account
+            </Link>
+          </div>
+        )}
+
         {/* Not found */}
         {order === "none" && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
@@ -225,7 +267,7 @@ export default function TrackOrder() {
         )}
 
         {/* Order details */}
-        {order && order !== "none" && (
+        {order && order !== "none" && order !== "login" && (
           <OrderDetails order={order} />
         )}
       </div>

@@ -3,7 +3,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 
 import {
   ArrowRight,
@@ -28,28 +28,40 @@ import { getProducts, getCategories, getHomeContent } from "@/services/api";
 
 const CATEGORY_META: Record<string, { image: string, accent: string }> = {
   "electronics": {
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200",
-    accent: "from-blue-500/20 to-blue-500/5",
+    image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=1200",
+    accent: "from-blue-600/20 to-blue-600/5",
+  },
+  "mobiles": {
+    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1200",
+    accent: "from-indigo-600/20 to-indigo-600/5",
   },
   "electricals": {
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-    accent: "from-yellow-500/20 to-yellow-500/5",
+    image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=1200",
+    accent: "from-yellow-600/20 to-yellow-600/5",
   },
   "hardware": {
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1200",
-    accent: "from-orange-500/20 to-orange-500/5",
+    image: "https://images.unsplash.com/photo-1530124566582-a618bc2615ad?q=80&w=1200",
+    accent: "from-orange-600/20 to-orange-600/5",
   },
   "motor pumps": {
-    image: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1200",
-    accent: "from-cyan-500/20 to-cyan-500/5",
+    image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=1200",
+    accent: "from-cyan-600/20 to-cyan-600/5",
   },
   "home appliances": {
-    image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200",
-    accent: "from-purple-500/20 to-purple-500/5",
+    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200",
+    accent: "from-purple-600/20 to-purple-600/5",
   },
   "industrial": {
-    image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=1200",
-    accent: "from-emerald-500/20 to-emerald-500/5",
+    image: "https://images.unsplash.com/photo-1513828583688-c52646db42da?q=80&w=1200",
+    accent: "from-emerald-600/20 to-emerald-600/5",
+  },
+  "groceries": {
+    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1200",
+    accent: "from-green-600/20 to-green-600/5",
+  },
+  "accessories": {
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200",
+    accent: "from-rose-600/20 to-rose-600/5",
   }
 };
 
@@ -98,15 +110,20 @@ export default function Home() {
   }));
 
 
-  const featured = products.slice(0, 8);
+  const featured = products.slice(0, 4);
+  const hasMoreFeatured = products.length > 4;
 
-  const trending = [...products]
-    .sort((a: any, b: any) => (b.reviews || 0) - (a.reviews || 0))
-    .slice(0, 4);
+  const trendingAll = useMemo(() => 
+    [...products].sort((a: any, b: any) => (b.total_reviews || 0) - (a.total_reviews || 0)),
+  [products]);
+  const trending = trendingAll.slice(0, 4);
+  const hasMoreTrending = trendingAll.length > 4;
 
-  const deals = [...products]
-    .sort((a: any, b: any) => (b.discount || 0) - (a.discount || 0))
-    .slice(0, 4);
+  const dealsAll = useMemo(() => 
+    [...products].sort((a: any, b: any) => (b.discount || 0) - (a.discount || 0)),
+  [products]);
+  const deals = dealsAll.slice(0, 4);
+  const hasMoreDeals = dealsAll.length > 4;
 
   return (
     <Shell>
@@ -127,20 +144,21 @@ export default function Home() {
         <ProductGrid
           isLoading={isLoading}
           products={featured}
-          skeletons={8}
+          skeletons={4}
           cols={4}
         />
 
-        <div className="mt-10 flex justify-center">
-          <Link
-            to="/products"
-            className="group inline-flex items-center gap-2 glass px-6 py-3 rounded-xl text-sm font-semibold hover:shadow-glow transition-all duration-300"
-          >
-            Browse all products
-
-            <MoveRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
-        </div>
+        {hasMoreFeatured && (
+          <div className="mt-12 flex justify-center">
+            <Link
+              to="/products"
+              className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-8 py-3.5 text-sm font-bold transition-all hover:bg-white/10 hover:shadow-glow"
+            >
+              View More Featured
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        )}
       </Section>
 
       {/* Trending */}
@@ -155,6 +173,18 @@ export default function Home() {
           skeletons={4}
           cols={4}
         />
+
+        {hasMoreTrending && (
+          <div className="mt-12 flex justify-center">
+            <Link
+              to="/products"
+              className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-8 py-3.5 text-sm font-bold transition-all hover:bg-white/10 hover:shadow-glow"
+            >
+              View More Trending
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        )}
       </Section>
 
       <DealsBanner />
@@ -171,6 +201,18 @@ export default function Home() {
           skeletons={4}
           cols={4}
         />
+
+        {hasMoreDeals && (
+          <div className="mt-12 flex justify-center">
+            <Link
+              to="/products?sort=discount"
+              className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-8 py-3.5 text-sm font-bold transition-all hover:bg-white/10 hover:shadow-glow"
+            >
+              View More Deals
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        )}
       </Section>
 
       <WhyChooseUs />
@@ -295,33 +337,29 @@ function CategoryCardLarge({
     >
       <Link
         to={`/products?category=${category.name}`}
-        className="group relative block rounded-2xl overflow-hidden border border-glass-border h-56 gradient-card hover-lift"
+        className="group relative block rounded-3xl overflow-hidden border border-glass-border h-64 gradient-card hover-lift shadow-2xl"
       >
         <img
           src={category.image}
           alt={category.name}
-          className="absolute inset-0 h-full w-full object-cover opacity-40 group-hover:opacity-60 transition-all duration-700 group-hover:scale-105"
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-all duration-1000 group-hover:scale-110"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
 
         <div
-          className={`absolute inset-0 bg-gradient-to-br ${category.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+          className={`absolute inset-0 bg-gradient-to-br ${category.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
         />
 
-        <div className="absolute inset-0 p-7 flex flex-col justify-end">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary mb-2">
-            
-          </div>
-
-          <div className="font-display text-2xl font-bold">
+        <div className="absolute inset-0 p-8 flex flex-col justify-end">
+          <div className="font-display text-2xl font-black tracking-tight text-white">
             {category.name}
           </div>
 
-          <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-2 group-hover:translate-x-0">
-            Shop now
-
-            <ChevronRight className="h-3.5 w-3.5" />
+          <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-3 group-hover:translate-x-0">
+            DISCOVER COLLECTION
+            <ChevronRight className="h-4 w-4" />
           </div>
         </div>
       </Link>
@@ -346,27 +384,29 @@ function CategoryCardSmall({
     >
       <Link
         to={`/products?category=${category.name}`}
-        className="group relative block rounded-2xl overflow-hidden border border-glass-border aspect-[4/3] gradient-card hover-lift"
+        className="group relative block rounded-2xl overflow-hidden border border-glass-border aspect-square gradient-card hover-lift shadow-lg"
       >
         <img
           src={category.image}
           alt={category.name}
-          className="absolute inset-0 h-full w-full object-cover opacity-40 group-hover:opacity-60 transition-all duration-700 group-hover:scale-110"
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-all duration-1000 group-hover:scale-110"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
         <div
-          className={`absolute inset-0 bg-gradient-to-t ${category.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+          className={`absolute inset-0 bg-gradient-to-t ${category.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
         />
 
-        <div className="absolute bottom-0 left-0 p-4">
-          <div className="font-display font-semibold text-sm">
+        <div className="absolute bottom-0 left-0 p-5 w-full">
+          <div className="font-display font-bold text-base text-white">
             {category.name}
           </div>
 
-          <div className="text-[10px] text-muted-foreground mt-0.5">
-            
+          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-y-1 group-hover:translate-y-0">
+            EXPLORE
+            <ChevronRight className="h-3 w-3" />
           </div>
         </div>
       </Link>
