@@ -64,6 +64,7 @@ type Order = {
   address: string;
   total: number;
   status: string;
+  items?: string | any[];
 };
 
 const inputClass =
@@ -1040,65 +1041,90 @@ const OrderRow = memo(
         setUpdating(false);
       }
     }
+    const parsedItems = Array.isArray(order.items)
+      ? order.items
+      : typeof order.items === "string"
+      ? JSON.parse(order.items)
+      : [];
 
     return (
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="font-semibold text-white">
-              #{order.order_id}
-            </h3>
-
-            <p className="mt-2 text-sm text-gray-400">
-              {order.customer_name}
-            </p>
-
-            <p className="text-sm text-gray-500">
-              {order.phone}
-            </p>
-
-            <p className="mt-2 font-bold text-[#FF6600]">
-              ₹{order.total}
-            </p>
-
-            <p className="mt-2 text-sm text-gray-500">
-              {order.address}
-            </p>
-
-            <div className="mt-3">
-              <span className="rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-300">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-lg font-black text-white">
+                #{order.order_id}
+              </h3>
+              <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-400">
                 {status}
               </span>
             </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* CUSTOMER INFO */}
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Customer</p>
+                <p className="text-sm font-semibold text-white">{order.customer_name}</p>
+                <p className="text-xs text-gray-400">{order.phone}</p>
+                <p className="text-xs text-gray-500 leading-relaxed max-w-xs">{order.address}</p>
+              </div>
+
+              {/* ORDER ITEMS */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Products Ordered</p>
+                <div className="space-y-2">
+                  {parsedItems.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-2 transition-colors hover:bg-white/5">
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="h-10 w-10 rounded-lg bg-black/20 object-cover border border-white/5" 
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-xs font-bold text-white">{item.name}</p>
+                        <p className="text-[10px] text-gray-500">Qty: {item.quantity} × ₹{item.price}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {parsedItems.length === 0 && (
+                    <p className="text-xs text-gray-600 italic">No item data available</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">Grand Total:</span>
+                <span className="text-lg font-black text-primary">₹{Number(order.total).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="min-w-[220px]">
-            <label className="mb-2 block text-sm text-gray-400">
-              Update Status
+          <div className="min-w-[240px] rounded-2xl bg-white/[0.02] p-4 border border-white/5">
+            <label className="mb-3 block text-[10px] font-bold uppercase tracking-widest text-gray-500">
+              Update Order Status
             </label>
 
             <select
               value={status}
               disabled={updating}
               onChange={(e) => {
-                const newStatus =
-                  e.target.value;
-
+                const newStatus = e.target.value;
                 setStatus(newStatus);
-
                 updateStatus(newStatus);
               }}
-              className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-white outline-none"
+              className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer"
             >
               {ORDER_STATUSES.map((s) => (
-                <option
-                  key={s}
-                  value={s}
-                >
+                <option key={s} value={s}>
                   {s}
                 </option>
               ))}
             </select>
+            <p className="mt-3 text-[10px] text-gray-600 italic">
+              Changes reflect instantly in the user's tracking portal.
+            </p>
           </div>
         </div>
       </div>

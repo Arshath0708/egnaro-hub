@@ -193,8 +193,8 @@ Please find my payment screenshot attached.
 
             payment_method: payment,
 
-            order_items: JSON.stringify(orderItems),
-
+            order_items: orderItems,
+            items: orderItems, // Send both to be safe
             notes: form.notes,
 
             gst: form.gst,
