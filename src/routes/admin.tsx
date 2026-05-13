@@ -10,6 +10,8 @@ import {
   Search,
   Edit2,
   Trash2,
+  IndianRupee,
+  LayoutTemplate,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -18,14 +20,23 @@ import { VendorRequestsModal } from "@/modals/VendorRequestsModal";
 import { ProductRequestsModal } from "@/modals/ProductRequestsModal";
 import { AddProductModal } from "@/modals/AddProductModal";
 import { UpdateProductModal } from "@/modals/UpdateProductModal";
+import { UpdateVendorProductModal } from "@/modals/UpdateVendorProductModal";
+import { DeleteProductModal } from "@/modals/DeleteProductModal";
 import { ViewProductModal } from "@/modals/ViewProductModal";
 import { ViewVendorModal } from "@/modals/ViewVendorModal";
+import { HomeContentModal } from "@/modals/HomeContentModal";
 
 import { useAuth } from "@/context/auth-store";
 
 import { toast } from "sonner";
 
-import { adminDeleteProduct } from "@/services/api";
+import { 
+  adminDeleteProduct,
+  getProducts,
+  getOrders,
+  getVendors,
+  getAdminStats
+} from "@/services/api";
 
 import { useMutation } from "@tanstack/react-query";
 
@@ -201,9 +212,6 @@ function AdminPanel({
 }: {
   onLogout: () => void;
 }) {
-  const [totalProducts, setTotalProducts] =
-    useState(0);
-
   const [allProducts, setAllProducts] =
     useState<any[]>([]);
 
@@ -238,69 +246,16 @@ function AdminPanel({
   const [viewingVendor, setViewingVendor] =
     useState<any>(null);
 
+  const [dashboardStats, setDashboardStats] =
+    useState<any>(null);
+
   const { admin } = useAuth();
 
-  const deleteProductMutation =
-    useMutation({
-      mutationFn: async (id: number) => {
-        const data =
-          await adminDeleteProduct(id);
+  const [deletingProduct, setDeletingProduct] =
+    useState<any>(null);
 
-        if (!data.success) {
-          throw new Error(data.message || "Failed to delete");
-        }
-
-        return data;
-      },
-
-      onSuccess: () => {
-        toast.success(
-          "Product deleted successfully"
-        );
-
-        loadStats();
-      },
-
-      onError: () => {
-        toast.error(
-          "Failed to delete product"
-        );
-      },
-    });
-
-  const handleDeleteProduct = (
-    id: any
-  ) => {
-    if (
-      confirm(
-        "Are you sure you want to delete this product?"
-      )
-    ) {
-      deleteProductMutation.mutate(Number(id));
-    }
-  };
-
-  async function safeFetch(url: string) {
-    try {
-      const res = await fetch(url);
-
-      const text = await res.text();
-
-      try {
-        return JSON.parse(text);
-      } catch {
-        console.error(
-          "Invalid JSON:",
-          text
-        );
-
-        return [];
-      }
-    } catch (err) {
-      console.error(err);
-      return [];
-    }
-  }
+  const [contentModalOpen, setContentModalOpen] =
+    useState(false);
 
   const loadStats = useCallback(async () => {
     try {
@@ -308,25 +263,13 @@ function AdminPanel({
         productsData,
         ordersData,
         vendorsData,
+        statsRes,
       ] = await Promise.all([
-        safeFetch(
-          "https://egnaromart.com/api/get-products.php"
-        ),
-
-        safeFetch(
-          "https://egnaromart.com/api/get-orders.php"
-        ),
-
-        safeFetch(
-          "https://egnaromart.com/api/get-vendors.php"
-        ),
+        getProducts(),
+        getOrders(),
+        getVendors(),
+        getAdminStats(),
       ]);
-
-      setTotalProducts(
-        Array.isArray(productsData)
-          ? productsData.length
-          : 0
-      );
 
       setAllProducts(
         Array.isArray(productsData)
@@ -354,6 +297,10 @@ function AdminPanel({
           ? vendorsData
           : []
       );
+
+      if (statsRes) {
+        setDashboardStats(statsRes);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -403,29 +350,43 @@ function AdminPanel({
 
         {/* STATS */}
 
-        <div className="mb-8 grid gap-5 md:grid-cols-3">
+        <div className="mb-8 grid gap-5 md:grid-cols-4">
           <StatCard
             icon={<Package />}
-            count={totalProducts}
-            label="Total Products"
+            count={
+              dashboardStats?.products
+                ? `${dashboardStats.products.total} (${dashboardStats.products.by_vendor}V / ${dashboardStats.products.by_admin}A)`
+                : "0 (0V / 0A)"
+            }
+            label="Products (Total/V/A)"
           />
 
           <StatCard
             icon={<Truck />}
-            count={orders.length}
-            label="Orders"
+            count={dashboardStats?.orders?.total || 0}
+            label="Total Orders"
           />
 
           <StatCard
-            icon={<ClipboardList />}
-            count={pendingVendors}
-            label="Pending Vendors"
+            icon={<IndianRupee />}
+            count={
+              dashboardStats?.orders?.total_revenue !== undefined
+                ? `₹${dashboardStats.orders.total_revenue.toLocaleString('en-IN')}`
+                : "₹0"
+            }
+            label="Total Revenue"
+          />
+
+          <StatCard
+            icon={<Users />}
+            count={dashboardStats?.vendors?.total || 0}
+            label="Total Vendors"
           />
         </div>
 
         {/* ACTION BUTTONS */}
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <ActionButton
             icon={
               <Users className="h-5 w-5" />
@@ -459,6 +420,18 @@ function AdminPanel({
             accent="from-[#1a0a00] to-[#3d1800]"
             onClick={() =>
               setProductModalOpen(true)
+            }
+          />
+
+          <ActionButton
+            icon={
+              <LayoutTemplate className="h-5 w-5" />
+            }
+            label="Content Management"
+            description="Edit hero section slides and banners"
+            accent="from-violet-900 to-violet-700"
+            onClick={() =>
+              setContentModalOpen(true)
             }
           />
         </div>
@@ -530,7 +503,19 @@ function AdminPanel({
                       </TableHead>
 
                       <TableHead className="text-gray-400">
+                        Reviews
+                      </TableHead>
+
+                      <TableHead className="text-gray-400">
                         Created By
+                      </TableHead>
+
+                      <TableHead className="text-gray-400">
+                        Selling Price
+                      </TableHead>
+
+                      <TableHead className="text-gray-400">
+                        Stock
                       </TableHead>
 
                       <TableHead className="text-right text-gray-400">
@@ -544,7 +529,7 @@ function AdminPanel({
                     0 ? (
                       <TableRow className="border-white/10 hover:bg-transparent">
                         <TableCell
-                          colSpan={4}
+                          colSpan={7}
                           className="py-8 text-center text-gray-500"
                         >
                           No products found
@@ -576,19 +561,34 @@ function AdminPanel({
 
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium capitalize text-white">
-                                {
-                                  p.created_by_type
-                                }
+                              <span className="text-sm font-bold text-yellow-500">
+                                ⭐ {p.average_rating || 0}
                               </span>
-
                               <span className="text-xs text-gray-500">
-                                ID:{" "}
-                                {
-                                  p.created_by_id
-                                }
+                                ({p.total_reviews || 0} reviews)
                               </span>
                             </div>
+                          </TableCell>
+
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium capitalize text-white">
+                                {p.created_by_type || "Vendor"}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {p.creator_name || "Unknown"}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="text-white">
+                            <span className="font-bold text-[#FF6600]">
+                              ₹{p.price}
+                            </span>
+                          </TableCell>
+
+                          <TableCell className="font-medium text-gray-300">
+                            {p.stock_quantity !== undefined ? p.stock_quantity : 0}
                           </TableCell>
 
                           <TableCell className="text-right">
@@ -617,8 +617,8 @@ function AdminPanel({
 
                               <button
                                 onClick={() =>
-                                  handleDeleteProduct(
-                                    p.id
+                                  setDeletingProduct(
+                                    p
                                   )
                                 }
                                 className="rounded-lg bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"
@@ -842,15 +842,25 @@ function AdminPanel({
         )}
 
         {editingProduct && (
-          <UpdateProductModal
-            product={editingProduct}
-            vendorId="0"
-            isAdmin={true}
-            onClose={() => {
-              setEditingProduct(null);
-              loadStats();
-            }}
-          />
+          editingProduct.created_by_type === 'vendor' ? (
+            <UpdateVendorProductModal
+              product={editingProduct}
+              onClose={() => {
+                setEditingProduct(null);
+                loadStats();
+              }}
+            />
+          ) : (
+            <UpdateProductModal
+              product={editingProduct}
+              vendorId="0"
+              isAdmin={true}
+              onClose={() => {
+                setEditingProduct(null);
+                loadStats();
+              }}
+            />
+          )
         )}
 
         {viewingVendor && (
@@ -859,6 +869,24 @@ function AdminPanel({
             onClose={() =>
               setViewingVendor(null)
             }
+          />
+        )}
+
+        {deletingProduct && (
+          <DeleteProductModal
+            product={deletingProduct}
+            vendorId={deletingProduct.created_by_id || "0"}
+            isAdmin={true}
+            onClose={() => {
+              setDeletingProduct(null);
+              loadStats();
+            }}
+          />
+        )}
+
+        {contentModalOpen && (
+          <HomeContentModal
+            onClose={() => setContentModalOpen(false)}
           />
         )}
       </div>
@@ -934,7 +962,7 @@ function StatCard({
 }: {
   icon: React.ReactNode;
   label: string;
-  count: number;
+  count: number | string;
 }) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-6 backdrop-blur-2xl">
@@ -942,7 +970,7 @@ function StatCard({
         {icon}
       </div>
 
-      <div className="text-4xl font-black text-white">
+      <div className="text-3xl font-black text-white">
         {count}
       </div>
 

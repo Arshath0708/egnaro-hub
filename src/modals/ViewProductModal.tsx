@@ -47,10 +47,10 @@ export function ViewProductModal({
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-400">
                         <Star className="h-3 w-3 fill-current" />
-                        {product.rating || "4.8"}
+                        {product.average_rating || 0}
                       </div>
                       <div className="text-xs text-gray-400">
-                        ({product.reviews || "120"} reviews)
+                        ({product.total_reviews || 0} reviews)
                       </div>
                     </div>
                   </div>
