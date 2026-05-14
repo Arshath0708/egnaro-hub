@@ -13,7 +13,7 @@ import {
 import { Shell } from "@/components/layout/Shell";
 import { useCart } from "@/context/cart-store";
 import { useAuth } from "@/context/auth-store";
-import { getProducts } from "@/services/api";
+import { getProducts, getUser, manageAddress } from "@/services/api";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -52,6 +52,7 @@ export default function CheckoutPage() {
   const { isLoggedIn, user, token } = useAuth();
 
   const [submitting, setSubmitting] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(false);
 
   const [payment, setPayment] = useState<
     "cod" | "upi" | "card"
@@ -80,6 +81,53 @@ export default function CheckoutPage() {
     queryFn: getProducts,
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: userData } = useQuery({
+    queryKey: ["userProfile", token],
+    queryFn: () => getUser(token!),
+    enabled: !!token,
+  });
+
+  const userProfile = userData?.user;
+  const addresses = userProfile?.addresses || [];
+
+  const [addressPrefilled, setAddressPrefilled] = useState(false);
+
+  useEffect(() => {
+    if (userProfile && !addressPrefilled) {
+      setForm(prev => {
+        const next = {
+          ...prev,
+          fullName: userProfile.fullName || prev.fullName,
+          phone: userProfile.phone || prev.phone,
+          email: userProfile.email || prev.email,
+        };
+
+        if (addresses.length > 0) {
+          const defaultAddr = addresses[userProfile.default_address_index || 0];
+          if (defaultAddr) {
+            next.address = defaultAddr.street || "";
+            next.city = defaultAddr.city || "";
+            next.state = defaultAddr.state || "";
+            next.pincode = defaultAddr.pincode || "";
+          }
+        }
+
+        return next;
+      });
+      setAddressPrefilled(true);
+    }
+  }, [userProfile, addressPrefilled, addresses]);
+
+  const handleSelectAddress = (addr: any) => {
+    setForm(prev => ({
+      ...prev,
+      address: addr.street || "",
+      city: addr.city || "",
+      state: addr.state || "",
+      pincode: addr.pincode || "",
+    }));
+  };
 
   const setField = useCallback(
     <K extends keyof FormState>(key: K, value: string) => {
@@ -166,6 +214,9 @@ Please find my payment screenshot attached.
     setSubmitting(true);
 
     try {
+      const firstProduct = detailed[0]?.product;
+      const vendorId = firstProduct?.created_by_type === "vendor" ? firstProduct?.created_by_id : 0;
+
       const orderItems = detailed.map((i) => ({
         id: i.product.id,
         name: i.product.name,
@@ -198,7 +249,8 @@ Please find my payment screenshot attached.
             notes: form.notes,
 
             gst: form.gst,
-            user_id: user?.id
+            user_id: user?.id,
+            vendor_id: Number(vendorId)
           }),
         }
       );
@@ -207,6 +259,20 @@ Please find my payment screenshot attached.
 
       if (data.success) {
         toast.success("Order placed successfully 🎉");
+
+        if (saveAddress && isLoggedIn && token) {
+          try {
+            await manageAddress(token, "add", {
+              label: "Saved from Checkout",
+              street: form.address,
+              city: form.city,
+              state: form.state,
+              pincode: form.pincode
+            });
+          } catch (e) {
+            console.error("Failed to save address", e);
+          }
+        }
 
         clear();
 
@@ -262,6 +328,29 @@ Please find my payment screenshot attached.
                   </p>
                 </div>
               </div>
+
+              {addresses.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="mb-3 text-sm font-bold text-muted-foreground">Saved Addresses</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {addresses.map((addr: any, idx: number) => {
+                      const isSelected = form.address === addr.street && form.pincode === addr.pincode;
+                      return (
+                        <div 
+                          key={idx} 
+                          onClick={() => handleSelectAddress(addr)}
+                          className={`cursor-pointer rounded-xl border p-4 transition-all ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:border-primary/50"}`}
+                        >
+                          <div className="mb-1 font-bold">{addr.label}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-2">
+                            {addr.street}, {addr.city}, {addr.state} - {addr.pincode}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Full Name *">
@@ -373,6 +462,21 @@ Please find my payment screenshot attached.
                     placeholder="Any special instructions..."
                   />
                 </Field>
+
+                {isLoggedIn && (
+                  <div className="sm:col-span-2 mt-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="saveAddress"
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="saveAddress" className="text-sm font-medium text-muted-foreground cursor-pointer select-none">
+                      Save this address to my account for future orders
+                    </label>
+                  </div>
+                )}
               </div>
             </section>
 

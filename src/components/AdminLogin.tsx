@@ -1,126 +1,101 @@
-import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { AlertCircle, Mail, KeyRound, Lock, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
-import { loginCustomer } from "@/services/api";
+import { useState } from "react";
+import { Shield, Mail, KeyRound, Lock, ArrowLeft, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth-store";
+import { Shell } from "@/components/layout/Shell";
 
 const API = "https://egnaromart.com/api";
 
-const inp =
-  "w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600]/50 transition-all";
+const inputClass =
+  "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-400 outline-none backdrop-blur-xl transition-all focus:border-[#FF6600]";
 
-// ─── Step type ───────────────────────────────────────────
 type Step = "login" | "forgot-email" | "forgot-otp" | "forgot-newpw";
 
-export default function Login() {
-  const [searchParams] = useSearchParams();
-  const [step, setStep] = useState<Step>(
-    (searchParams.get("step") as Step) || "login"
-  );
+export default function AdminLogin() {
+  const [step, setStep] = useState<Step>("login");
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#050816] px-4">
-      {step === "login" && <LoginForm onForgot={() => setStep("forgot-email")} />}
-      {step === "forgot-email" && <EmailStep onNext={() => setStep("forgot-otp")} onBack={() => setStep("login")} />}
-      {step === "forgot-otp" && <OtpStep onNext={() => setStep("forgot-newpw")} onBack={() => setStep("forgot-email")} />}
-      {step === "forgot-newpw" && <NewPwStep onDone={() => setStep("login")} />}
-    </div>
+    <Shell>
+      <div className="flex min-h-screen items-center justify-center px-4 py-20">
+        {step === "login" && <LoginForm onForgot={() => setStep("forgot-email")} />}
+        {step === "forgot-email" && <EmailStep onNext={() => setStep("forgot-otp")} onBack={() => setStep("login")} />}
+        {step === "forgot-otp" && <OtpStep onNext={() => setStep("forgot-newpw")} onBack={() => setStep("forgot-email")} />}
+        {step === "forgot-newpw" && <NewPwStep onDone={() => setStep("login")} />}
+      </div>
+    </Shell>
   );
 }
 
 // ─── Shared state passed between steps via sessionStorage ─
 function saveReset(key: string, value: string) {
-  sessionStorage.setItem("reset_" + key, value);
+  sessionStorage.setItem("admin_reset_" + key, value);
 }
 function loadReset(key: string) {
-  return sessionStorage.getItem("reset_" + key) || "";
+  return sessionStorage.getItem("admin_reset_" + key) || "";
 }
 
 /* ═══════════════════════════════════════════════════════════
    STEP 0 — LOGIN
    ═══════════════════════════════════════════════════════════ */
 function LoginForm({ onForgot }: { onForgot: () => void }) {
+  const loginAdmin = useAuth((s) => s.loginAdmin);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const login = useAuth((s) => s.login);
-  const isLoggedIn = useAuth((s) => s.isLoggedIn);
+  const [loading, setLoading] = useState(false);
 
-  const redirectTo = searchParams.get("redirect") || "/track-order";
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (isLoggedIn) {
-      navigate(redirectTo);
-    }
-  }, [isLoggedIn, navigate, redirectTo]);
-
-  const mutation = useMutation({
-    mutationFn: () => loginCustomer({ email, password }),
-    onSuccess: (data) => {
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const res = await fetch(`${API}/admin-login.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
       if (data.success) {
-        login(data.token, data.user);
-        toast.success("Welcome back!");
-        navigate(redirectTo);
+        loginAdmin(data.admin);
+        toast.success(`Welcome ${data.admin.name}`);
       } else {
-        setErrorMsg(data.message ?? "Login failed.");
+        toast.error(data.message || "Invalid credentials");
       }
-    },
-    onError: () => setErrorMsg("Something went wrong."),
-  });
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <Card>
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FF6600]/10">
-          <Lock className="h-7 w-7 text-[#FF6600]" />
+      <div className="mb-6 flex justify-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#0B3D2E] to-[#14532d] shadow-xl">
+          <Shield className="h-10 w-10 text-white" />
         </div>
-        <h1 className="text-2xl font-black text-white">Welcome Back</h1>
-        <p className="mt-1 text-sm text-gray-400">Sign in to your Egnaro Mart account</p>
+      </div>
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-black text-white">Admin Portal</h1>
+        <p className="mt-2 text-sm text-gray-400">Egnaro Mart Control Center</p>
       </div>
 
-      {errorMsg && <ErrorBanner msg={errorMsg} />}
-
-      <form
-        autoComplete="on"
-        onSubmit={(e) => { e.preventDefault(); setErrorMsg(null); mutation.mutate(); }}
-        className="space-y-4"
-      >
-        <Field label="Email Address">
-          <input type="email" autoComplete="email" placeholder="you@example.com"
-            value={email} required onChange={(e) => { setEmail(e.target.value); setErrorMsg(null); }}
-            className={inp} />
+      <form onSubmit={handleLogin} className="space-y-5">
+        <Field label="Email">
+          <input type="email" required placeholder="admin@egnaromart.com"
+            value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
         </Field>
-
         <Field label="Password">
-          <input type="password" autoComplete="current-password" placeholder="••••••••"
-            value={password} required onChange={(e) => { setPassword(e.target.value); setErrorMsg(null); }}
-            className={inp} />
+          <input type="password" required placeholder="••••••••"
+            value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
         </Field>
-
         <div className="flex justify-end">
           <button type="button" onClick={onForgot}
             className="text-xs text-[#FF6600] hover:underline">
             Forgot Password?
           </button>
         </div>
-
-        <button type="submit" disabled={mutation.isPending}
-          className="w-full rounded-xl bg-[#FF6600] py-3 text-sm font-bold text-white transition hover:bg-[#e65c00] disabled:opacity-60 flex items-center justify-center gap-2">
-          {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          {mutation.isPending ? "Signing In..." : "Sign In"}
-        </button>
+        <PrimaryButton loading={loading} label="Access Dashboard" loadingLabel="Authenticating..." />
       </form>
-
-      <p className="mt-6 text-center text-sm text-gray-400">
-        Don't have an account?{" "}
-        <Link to="/register" className="font-semibold text-[#FF6600]">Create one</Link>
-      </p>
     </Card>
   );
 }
@@ -138,7 +113,7 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/send-otp.php`, {
+      const res = await fetch(`${API}/admin-send-otp.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -162,16 +137,15 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
     <Card>
       <BackButton onClick={onBack} />
       <StepHeader icon={<Mail className="h-7 w-7 text-[#FF6600]" />}
-        title="Reset Password" subtitle="Enter your registered email to receive a 6-digit OTP." />
+        title="Admin Reset Password" subtitle="Enter your registered admin email to receive a 6-digit OTP." />
 
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleSend} className="space-y-4">
         <Field label="Email Address">
-          <input type="email" placeholder="you@example.com" value={email} required
-            onChange={(e) => setEmail(e.target.value)} className={inp} />
+          <input type="email" placeholder="admin@egnaromart.com" value={email} required
+            onChange={(e) => setEmail(e.target.value)} className={inputClass} />
         </Field>
-
         <PrimaryButton loading={loading} label="Send OTP" loadingLabel="Sending..." />
       </form>
     </Card>
@@ -192,7 +166,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/verify-otp.php`, {
+      const res = await fetch(`${API}/admin-verify-otp.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
@@ -214,7 +188,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
 
   async function handleResend() {
     try {
-      await fetch(`${API}/send-otp.php`, {
+      await fetch(`${API}/admin-send-otp.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -239,10 +213,9 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
             type="text" inputMode="numeric" maxLength={6} placeholder="123456"
             value={otp} required
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            className={`${inp} text-center text-2xl tracking-[0.5em] font-bold`}
+            className={`${inputClass} text-center text-2xl tracking-[0.5em] font-bold`}
           />
         </Field>
-
         <PrimaryButton loading={loading} label="Verify OTP" loadingLabel="Verifying..." />
       </form>
 
@@ -277,15 +250,15 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/reset-password.php`, {
+      const res = await fetch(`${API}/admin-reset-password.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, new_password: pw }),
       });
       const data = await res.json();
       if (data.success) {
-        sessionStorage.removeItem("reset_email");
-        sessionStorage.removeItem("reset_otp");
+        sessionStorage.removeItem("admin_reset_email");
+        sessionStorage.removeItem("admin_reset_otp");
         setSuccess(true);
         toast.success("Password reset successfully!");
       } else {
@@ -306,9 +279,9 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
             <CheckCircle2 className="h-8 w-8 text-green-400" />
           </div>
           <h2 className="text-2xl font-black text-white">All Done!</h2>
-          <p className="mt-2 text-sm text-gray-400">Your password has been reset successfully.</p>
+          <p className="mt-2 text-sm text-gray-400">Your admin password has been reset successfully.</p>
           <button onClick={onDone}
-            className="mt-6 w-full rounded-xl bg-[#FF6600] py-3 text-sm font-bold text-white transition hover:bg-[#e65c00]">
+            className="mt-6 w-full rounded-2xl bg-[#FF6600] py-3 font-semibold text-white transition-all hover:bg-[#e65c00]">
             Back to Sign In
           </button>
         </div>
@@ -319,24 +292,22 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
   return (
     <Card>
       <StepHeader icon={<Lock className="h-7 w-7 text-[#FF6600]" />}
-        title="New Password" subtitle="Choose a strong password for your account." />
+        title="New Password" subtitle="Choose a strong password for your admin account." />
 
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleReset} className="space-y-4">
         <Field label="New Password">
           <input type="password" placeholder="••••••••" value={pw} required minLength={6}
-            onChange={(e) => { setPw(e.target.value); setError(null); }} className={inp} />
+            onChange={(e) => { setPw(e.target.value); setError(null); }} className={inputClass} />
         </Field>
-
         <Field label="Confirm Password">
           <input type="password" placeholder="••••••••" value={confirm} required
-            onChange={(e) => { setConfirm(e.target.value); setError(null); }} className={inp} />
+            onChange={(e) => { setConfirm(e.target.value); setError(null); }} className={inputClass} />
           {confirm && pw !== confirm && (
             <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
           )}
         </Field>
-
         <PrimaryButton loading={loading} label="Reset Password" loadingLabel="Resetting..." />
       </form>
     </Card>
@@ -348,7 +319,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
 ═══════════════════════════════════════════════════════════ */
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-2xl">
+    <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-2xl">
       {children}
     </div>
   );
@@ -369,7 +340,7 @@ function StepHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: s
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-semibold text-gray-400">{label}</label>
+      <label className="mb-1.5 block text-sm text-gray-300">{label}</label>
       {children}
     </div>
   );
@@ -387,7 +358,7 @@ function ErrorBanner({ msg }: { msg: string }) {
 function PrimaryButton({ loading, label, loadingLabel }: { loading: boolean; label: string; loadingLabel: string }) {
   return (
     <button type="submit" disabled={loading}
-      className="w-full rounded-xl bg-[#FF6600] py-3 text-sm font-bold text-white transition hover:bg-[#e65c00] disabled:opacity-60 flex items-center justify-center gap-2">
+      className="w-full rounded-2xl bg-[#FF6600] py-3 font-semibold text-white transition-all hover:bg-[#e65c00] disabled:opacity-60 flex items-center justify-center gap-2">
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
       {loading ? loadingLabel : label}
     </button>

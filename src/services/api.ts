@@ -183,8 +183,16 @@ export async function createOrder(data: any) {
 }
 
 export async function trackOrder(orderId: string, token?: string) {
-  return await request(`/get-order.php?order_id=${orderId}`, {
+  // If orderId is provided, we fetch a single order. If it's a phone number, get-order.php handles it.
+  const query = orderId.match(/^\d{10}$/) ? `phone=${orderId}` : `order_id=${orderId}`;
+  return await request(`/get-order.php?${query}`, {
     headers: token ? { "Authorization": `Bearer ${token}` } : {}
+  });
+}
+
+export async function getUserOrders(token: string) {
+  return await request(`/get-order.php`, {
+    headers: { "Authorization": `Bearer ${token}` }
   });
 }
 
@@ -192,10 +200,10 @@ export async function trackOrder(orderId: string, token?: string) {
    ADMIN
 ========================= */
 
-export async function updateOrderStatus(id: number, status: string) {
+export async function updateOrderStatus(order_id: string, status: string, estimated_days?: string) {
   return await request("/update-order-status.php", {
     method: "POST",
-    body: JSON.stringify({ id, status }),
+    body: JSON.stringify({ order_id, status, estimated_days }),
   });
 }
 
@@ -293,6 +301,28 @@ export async function loginCustomer(credentials: {
   return await request("/login.php", {
     method: "POST",
     body: JSON.stringify(credentials),
+  });
+}
+
+export async function getUser(token: string) {
+  return await request("/get-user.php", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateProfile(token: string, fullName: string, phone: string) {
+  return await request("/update-user.php", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ fullName, phone }),
+  });
+}
+
+export async function manageAddress(token: string, action: string, data: any = {}) {
+  return await request("/manage-address.php", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action, ...data }),
   });
 }
 

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
+import AdminLogin from "@/components/AdminLogin";
 import { CategoriesModal } from "@/modals/CategoriesModal";
 import { VendorRequestsModal } from "@/modals/VendorRequestsModal";
 import { ProductRequestsModal } from "@/modals/ProductRequestsModal";
@@ -80,132 +81,6 @@ export default function AdminPage() {
   return <AdminPanel onLogout={logoutAdmin} />;
 }
 
-/* ================= LOGIN ================= */
-
-function AdminLogin() {
-  const loginAdmin = useAuth((s) => s.loginAdmin);
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleLogin(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
-    e.preventDefault();
-
-    try {
-      setLoading(true);
-
-      const res = await fetch(
-        "https://egnaromart.com/api/admin-login.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        loginAdmin(data.admin);
-
-        toast.success(
-          `Welcome ${data.admin.name}`
-        );
-      } else {
-        toast.error(
-          data.message ||
-            "Invalid credentials"
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Server error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <Shell>
-      <div className="flex min-h-screen items-center justify-center px-4 py-20">
-        <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-white/[0.04] p-8 shadow-2xl backdrop-blur-2xl">
-          <div className="mb-6 flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#0B3D2E] to-[#14532d] shadow-xl">
-              <Shield className="h-10 w-10 text-white" />
-            </div>
-          </div>
-
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-black text-white">
-              Admin Portal
-            </h1>
-
-            <p className="mt-2 text-sm text-gray-400">
-              Egnaro Mart Control Center
-            </p>
-          </div>
-
-          <form
-            onSubmit={handleLogin}
-            className="space-y-5"
-          >
-            <div>
-              <label className="mb-2 block text-sm text-gray-300">
-                Email
-              </label>
-
-              <input
-                type="email"
-                required
-                placeholder="admin@egnaromart.com"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-gray-300">
-                Password
-              </label>
-
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                className={inputClass}
-              />
-            </div>
-
-            <button
-              disabled={loading}
-              className="w-full rounded-2xl bg-[#FF6600] py-3 font-semibold text-white transition-all hover:bg-[#e65c00]"
-            >
-              {loading
-                ? "Authenticating..."
-                : "Access Dashboard"}
-            </button>
-          </form>
-        </div>
-      </div>
-    </Shell>
-  );
-}
-
 /* ================= ADMIN PANEL ================= */
 
 function AdminPanel({
@@ -257,6 +132,10 @@ function AdminPanel({
 
   const [contentModalOpen, setContentModalOpen] =
     useState(false);
+
+  const [showRevenueModal, setShowRevenueModal] = useState(false);
+  const [showVendorsBreakdownModal, setShowVendorsBreakdownModal] = useState(false);
+  const [showProductsBreakdownModal, setShowProductsBreakdownModal] = useState(false);
 
   const loadStats = useCallback(async () => {
     try {
@@ -354,12 +233,16 @@ function AdminPanel({
         <div className="mb-8 grid gap-5 md:grid-cols-4">
           <StatCard
             icon={<Package />}
-            count={
-              dashboardStats?.products
-                ? `${dashboardStats.products.total} (${dashboardStats.products.by_vendor}V / ${dashboardStats.products.by_admin}A)`
-                : "0 (0V / 0A)"
+            count={dashboardStats?.products?.total || 0}
+            label="Total Products"
+            action={
+              <button
+                onClick={() => setShowProductsBreakdownModal(true)}
+                className="rounded-full bg-white/10 px-3 py-1 text-xs text-white transition-all hover:bg-white/20"
+              >
+                View Split
+              </button>
             }
-            label="Products (Total/V/A)"
           />
 
           <StatCard
@@ -371,17 +254,33 @@ function AdminPanel({
           <StatCard
             icon={<IndianRupee />}
             count={
-              dashboardStats?.orders?.total_revenue !== undefined
-                ? `₹${dashboardStats.orders.total_revenue.toLocaleString('en-IN')}`
+              dashboardStats?.orders?.revenue?.overall !== undefined
+                ? `₹${dashboardStats.orders.revenue.overall.toLocaleString('en-IN')}`
                 : "₹0"
             }
             label="Total Revenue"
+            action={
+              <button
+                onClick={() => setShowRevenueModal(true)}
+                className="rounded-full bg-white/10 px-3 py-1 text-xs text-white transition-all hover:bg-white/20"
+              >
+                View Split
+              </button>
+            }
           />
 
           <StatCard
             icon={<Users />}
             count={dashboardStats?.vendors?.total || 0}
             label="Total Vendors"
+            action={
+              <button
+                onClick={() => setShowVendorsBreakdownModal(true)}
+                className="rounded-full bg-white/10 px-3 py-1 text-xs text-white transition-all hover:bg-white/20"
+              >
+                View Details
+              </button>
+            }
           />
         </div>
 
@@ -890,6 +789,27 @@ function AdminPanel({
             onClose={() => setContentModalOpen(false)}
           />
         )}
+
+        {showRevenueModal && dashboardStats && (
+          <RevenueBreakdownModal
+            stats={dashboardStats.orders?.revenue}
+            onClose={() => setShowRevenueModal(false)}
+          />
+        )}
+
+        {showVendorsBreakdownModal && dashboardStats && (
+          <VendorsBreakdownModal
+            stats={dashboardStats.vendors}
+            onClose={() => setShowVendorsBreakdownModal(false)}
+          />
+        )}
+
+        {showProductsBreakdownModal && dashboardStats && (
+          <ProductsBreakdownModal
+            stats={dashboardStats.products}
+            onClose={() => setShowProductsBreakdownModal(false)}
+          />
+        )}
       </div>
     </Shell>
   );
@@ -960,10 +880,12 @@ function StatCard({
   icon,
   label,
   count,
+  action,
 }: {
   icon: React.ReactNode;
   label: string;
   count: number | string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-6 backdrop-blur-2xl">
@@ -975,8 +897,9 @@ function StatCard({
         {count}
       </div>
 
-      <div className="mt-2 text-gray-400">
-        {label}
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-gray-400">{label}</span>
+        {action}
       </div>
     </div>
   );
@@ -997,11 +920,16 @@ const OrderRow = memo(
       order.status || "Processing"
     );
 
+    const [estimatedDays, setEstimatedDays] = useState(
+      (order as any).estimated_days || ""
+    );
+
     const [updating, setUpdating] =
       useState(false);
 
     async function updateStatus(
-      newStatus: string
+      newStatus: string,
+      newEstimatedDays?: string
     ) {
       try {
         setUpdating(true);
@@ -1017,6 +945,7 @@ const OrderRow = memo(
             body: JSON.stringify({
               order_id: order.order_id,
               status: newStatus,
+              estimated_days: newEstimatedDays,
             }),
           }
         );
@@ -1024,10 +953,11 @@ const OrderRow = memo(
         const data = await res.json();
 
         if (data.success) {
-          setStatus(newStatus);
+          setStatus(data.status || newStatus);
+          if (data.estimated_days) setEstimatedDays(data.estimated_days);
 
           toast.success(
-            "Order status updated"
+            "Order updated successfully"
           );
         } else {
           toast.error(
@@ -1052,9 +982,16 @@ const OrderRow = memo(
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-lg font-black text-white">
-                #{order.order_id}
-              </h3>
+              <div>
+                <h3 className="font-display text-lg font-black text-white">
+                  #{order.order_id}
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Placed: {(order as any).created_at ? new Date((order as any).created_at).toLocaleDateString('en-IN') : 'N/A'} 
+                  <span className="mx-2">•</span> 
+                  Estimated Delivery: {estimatedDays || 'Pending'}
+                </p>
+              </div>
               <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-400">
                 {status}
               </span>
@@ -1114,7 +1051,7 @@ const OrderRow = memo(
                 setStatus(newStatus);
                 updateStatus(newStatus);
               }}
-              className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer"
+              className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer mb-4"
             >
               {ORDER_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -1122,6 +1059,26 @@ const OrderRow = memo(
                 </option>
               ))}
             </select>
+
+            <label className="mb-3 block text-[10px] font-bold uppercase tracking-widest text-gray-500">
+              Change Delivery Date
+            </label>
+            <input
+              type="text"
+              value={estimatedDays}
+              disabled={updating}
+              onChange={(e) => setEstimatedDays(e.target.value)}
+              placeholder="e.g. 21 May 2026"
+              className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all mb-2"
+            />
+            <button
+              disabled={updating}
+              onClick={() => updateStatus(status, estimatedDays)}
+              className="w-full rounded-xl bg-cyan-500/20 py-2 text-xs font-bold text-cyan-400 transition hover:bg-cyan-500/30 disabled:opacity-50"
+            >
+              Save Date
+            </button>
+
             <p className="mt-3 text-[10px] text-gray-600 italic">
               Changes reflect instantly in the user's tracking portal.
             </p>
@@ -1131,3 +1088,104 @@ const OrderRow = memo(
     );
   }
 );
+
+function RevenueBreakdownModal({ stats, onClose }: { stats: any; onClose: () => void }) {
+  if (!stats) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 text-gray-400 hover:text-white"
+        >
+          ✕
+        </button>
+        <h2 className="mb-6 text-2xl font-bold text-white">Revenue Split</h2>
+        <div className="space-y-4">
+          <div className="flex justify-between rounded-xl bg-white/5 p-4">
+            <span className="text-gray-400">Total Revenue</span>
+            <span className="font-bold text-white">₹{stats.overall?.toLocaleString('en-IN') || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4">
+            <span className="text-cyan-400">Egnaro Mart (Admin)</span>
+            <span className="font-bold text-cyan-400">₹{stats.admin?.toLocaleString('en-IN') || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-[#0B3D2E] p-4">
+            <span className="text-[#FF6600]">Vendors</span>
+            <span className="font-bold text-[#FF6600]">₹{stats.vendor?.toLocaleString('en-IN') || 0}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VendorsBreakdownModal({ stats, onClose }: { stats: any; onClose: () => void }) {
+  if (!stats) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 text-gray-400 hover:text-white"
+        >
+          ✕
+        </button>
+        <h2 className="mb-6 text-2xl font-bold text-white">Vendors Detail</h2>
+        <div className="space-y-4">
+          <div className="flex justify-between rounded-xl bg-white/5 p-4">
+            <span className="text-gray-400">Total Vendors</span>
+            <span className="font-bold text-white">{stats.total || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-green-500/10 p-4">
+            <span className="text-green-400">Active</span>
+            <span className="font-bold text-green-400">{stats.active || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-orange-500/10 p-4">
+            <span className="text-orange-400">Pending</span>
+            <span className="font-bold text-orange-400">{stats.pending || 0}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductsBreakdownModal({ stats, onClose }: { stats: any; onClose: () => void }) {
+  if (!stats) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 text-gray-400 hover:text-white"
+        >
+          ✕
+        </button>
+        <h2 className="mb-6 text-2xl font-bold text-white">Products Split</h2>
+        <div className="space-y-4">
+          <div className="flex justify-between rounded-xl bg-white/5 p-4">
+            <span className="text-gray-400">Total Products</span>
+            <span className="font-bold text-white">{stats.total || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-[#0B3D2E] p-4">
+            <span className="text-[#FF6600]">By Vendors</span>
+            <span className="font-bold text-[#FF6600]">{stats.by_vendor || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4">
+            <span className="text-cyan-400">By Admin</span>
+            <span className="font-bold text-cyan-400">{stats.by_admin || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-green-500/10 p-4">
+            <span className="text-green-400">Approved</span>
+            <span className="font-bold text-green-400">{stats.approved || 0}</span>
+          </div>
+          <div className="flex justify-between rounded-xl bg-orange-500/10 p-4">
+            <span className="text-orange-400">Pending</span>
+            <span className="font-bold text-orange-400">{stats.pending_approval || 0}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
