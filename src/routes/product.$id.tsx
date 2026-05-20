@@ -81,6 +81,12 @@ export default function ProductDetail() {
     queryFn: () => getReviews(Number(id)),
   });
 
+  const calculatedAverage = useMemo(() => {
+    if (reviews.length === 0) return Number(product?.average_rating || 0);
+    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+    return sum / reviews.length;
+  }, [reviews, product?.average_rating]);
+
   const ratingStats = useMemo(() => {
     const stats = {
       5: 0,
@@ -227,7 +233,7 @@ export default function ProductDetail() {
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
 
                 <span className="font-semibold">
-                  {Number(product.average_rating || 0).toFixed(1)}
+                  {calculatedAverage.toFixed(1)}
                 </span>
               </div>
 
@@ -275,8 +281,8 @@ export default function ProductDetail() {
 
             {/* QUANTITY */}
 
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex items-center rounded-2xl border border-white/10 bg-white/5">
+            <div className="mt-8 flex flex-col gap-4 xl:flex-row xl:items-center">
+              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 sm:w-auto">
                 <button
                   onClick={() =>
                     setQty((q) => Math.max(1, q - 1))
@@ -298,24 +304,35 @@ export default function ProductDetail() {
                 </button>
               </div>
 
-              {/* ADD TO CART */}
+              <div className="flex flex-1 gap-3">
+                {/* ADD TO CART */}
+                <button
+                  onClick={() => {
+                    add(product.id.toString(), qty);
 
-              <button
-                onClick={() => {
-                  add(product.id.toString(), qty);
+                    toast.success("Added to cart 🛒", {
+                      description: product.name,
+                    });
+                  }}
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-4 font-bold text-foreground transition hover:bg-white/10 hover:scale-[1.02]"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    Add to Cart
+                  </div>
+                </button>
 
-                  toast.success("Added to cart 🛒", {
-                    description: product.name,
-                  });
-                }}
-                className="flex-1 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-yellow-300 py-4 font-bold text-black shadow-[0_10px_40px_rgba(0,255,255,0.25)] transition hover:scale-[1.02]"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-
-                  Add to Cart
-                </div>
-              </button>
+                {/* BUY NOW */}
+                <button
+                  onClick={() => {
+                    add(product.id.toString(), qty);
+                    nav("/checkout");
+                  }}
+                  className="flex-1 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-yellow-300 py-4 font-bold text-black shadow-[0_10px_40px_rgba(0,255,255,0.25)] transition hover:scale-[1.02]"
+                >
+                  Buy Now
+                </button>
+              </div>
             </div>
 
             {/* FEATURES */}
@@ -414,14 +431,14 @@ export default function ProductDetail() {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-white/10 to-transparent p-6 text-center">
                         <span className="text-5xl font-black text-primary">
-                          {Number(product.average_rating || 0).toFixed(1)}
+                          {calculatedAverage.toFixed(1)}
                         </span>
                         <div className="mt-2 flex items-center gap-0.5">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
                               className={`h-4 w-4 ${
-                                i < Math.round(product.average_rating || 0)
+                                i < Math.round(calculatedAverage)
                                   ? "fill-yellow-400 text-yellow-400"
                                   : "text-white/20"
                               }`}

@@ -35,7 +35,8 @@ import { toast } from "sonner";
 
 type Product = {
   id: number;
-  vendorId: string;
+  created_by_type: string;
+  created_by_id: string;
   name: string;
   category: string;
   image: string;

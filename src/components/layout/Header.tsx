@@ -34,7 +34,7 @@ const NAV = [
   { to: "/products", label: "Shop" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
-  { to: "/track-order", label: "Track Order" },
+  { to: "/track-order", label: "My Account" },
 ] as const;
 
 export function Header() {
@@ -217,7 +217,7 @@ export function Header() {
                     }
                   >
                     <User className="h-3.5 w-3.5" />
-                    My Orders
+                    My Account
                   </Link>
 
                   <div className="border-t border-border" />
@@ -314,7 +314,7 @@ export function Header() {
                 to="/track-order"
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
               >
-                My Orders
+                My Account
               </Link>
 
               <button
