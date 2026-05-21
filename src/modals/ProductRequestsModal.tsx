@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { X, Check, Loader2, Package } from "lucide-react";
 import { getPendingProducts, approveProduct, rejectProduct } from "@/services/api";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ interface Props {
 export function ProductRequestsModal({ onClose, onProductActioned }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [fetching, setFetching] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     getPendingProducts()
@@ -33,6 +35,7 @@ export function ProductRequestsModal({ onClose, onProductActioned }: Props) {
 
   function removeProduct(id: number) {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    queryClient.invalidateQueries({ queryKey: ["products"] });
     onProductActioned();
   }
 

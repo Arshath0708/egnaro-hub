@@ -22,7 +22,7 @@ import { Shell } from "@/components/layout/Shell";
 import { trackOrder, getUserOrders, getUser, updateProfile, manageAddress } from "@/services/api";
 import { inr, dateTime, dateShort } from "@/lib/format";
 import type { Order, OrderStatus } from "@/types";
-import { useAuth } from "@/context/auth-store";
+import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 
 const STEPS: {
   id: OrderStatus;
@@ -136,7 +136,8 @@ function buildOrder(raw: any): Order {
 
 export default function TrackOrder() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { token, isLoggedIn } = useAuth();
+  const token = useAuth((s) => s.token);
+  const isLoggedIn = useAuth(selectIsLoggedIn);
 
   const [activeTab, setActiveTab] = useState<"orders" | "account">("orders");
 
@@ -383,7 +384,7 @@ export default function TrackOrder() {
 }
 
 const AccountTab = memo(function AccountTab() {
-  const { token } = useAuth();
+  const token = useAuth((s) => s.token);
   const { data, refetch, isLoading } = useQuery({
     queryKey: ["userProfile", token],
     queryFn: () => getUser(token!),

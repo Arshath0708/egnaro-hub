@@ -8,11 +8,14 @@ import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
 
 export default function CartPage() {   
-  const { items, setQty, remove } = useCart();
+  const items = useCart((s) => s.items);
+  const setQty = useCart((s) => s.setQty);
+  const remove = useCart((s) => s.remove);
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products", "all"],
+    queryKey: ["products"],
     queryFn: () => getProducts(),
+    staleTime: 1000 * 60 * 5,
   });
 
   const detailed = items

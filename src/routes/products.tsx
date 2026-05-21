@@ -10,6 +10,13 @@ import {
 } from "react-router-dom";
 
 import { useQuery } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   Search,
@@ -208,10 +215,8 @@ export default function ProductsPage() {
     );
   }
 
-  function handleSortChange(
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) {
-    params.set("sort", e.target.value);
+  function handleSortChange(value: string) {
+    params.set("sort", value);
 
     navigate(
       `/products?${params.toString()}`
@@ -347,9 +352,7 @@ const Sidebar = memo(
     categories: any[];
     currentCat?: string;
     currentSort: string;
-    onSortChange: (
-      e: React.ChangeEvent<HTMLSelectElement>
-    ) => void;
+    onSortChange: (value: string) => void;
   }) {
     return (
       <aside className="space-y-6">
@@ -399,20 +402,18 @@ const Sidebar = memo(
             Sort by
           </div>
 
-          <select
-            value={currentSort}
-            onChange={onSortChange}
-            className="w-full rounded-lg border border-glass-border bg-secondary px-3 py-2 text-sm outline-none"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option
-                key={o.value}
-                value={o.value}
-              >
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <Select value={currentSort} onValueChange={onSortChange}>
+            <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-[#FF6600]">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </aside>
     );

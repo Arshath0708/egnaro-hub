@@ -5,6 +5,13 @@ import { X, Sparkles, ImagePlus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { addProduct, getCategories } from "@/services/api";
 import type { ProductForm } from "@/services/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 export function AddProductModal({
@@ -38,12 +45,13 @@ export function AddProductModal({
     description: "",
     stock_quantity: "",
     created_by_type: createdByType,
-    created_by_id: createdById || vendorId,
+    created_by_id: createdById || "",
   });
 
+  // Set default category when categories list finishes loading
   useEffect(() => {
     if (categories.length > 0 && !form.category) {
-      setForm((prev) => ({ ...prev, category: categories[0].name }));
+      setForm((p) => ({ ...p, category: categories[0].name }));
     }
   }, [categories, form.category]);
 
@@ -62,11 +70,10 @@ export function AddProductModal({
           ? "Product added successfully 🚀"
           : "Product submitted for approval 🚀"
       );
-      if (createdByType === "admin") {
-        await queryClient.invalidateQueries({
-          queryKey: ["products"],
-        });
-      } else {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+      });
+      if (vendorId) {
         await queryClient.invalidateQueries({
           queryKey: ["vendor-products", vendorId],
         });
@@ -167,17 +174,21 @@ export function AddProductModal({
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-300">Category</label>
-                  <select
+                  <Select
                     value={form.category}
-                    className={inputClass}
-                    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                    onValueChange={(val) => setForm((p) => ({ ...p, category: val }))}
                   >
-                    {categories.map((cat: any) => (
-                      <option key={cat.id} value={cat.name} className="bg-[#0f172a]">
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:ring-1 focus:ring-[#FF6600] outline-none">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <InputField

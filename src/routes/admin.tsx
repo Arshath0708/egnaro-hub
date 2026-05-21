@@ -27,7 +27,7 @@ import { ViewProductModal } from "@/modals/ViewProductModal";
 import { ViewVendorModal } from "@/modals/ViewVendorModal";
 import { HomeContentModal } from "@/modals/HomeContentModal";
 
-import { useAuth } from "@/context/auth-store";
+import { useAuth, selectIsAdmin } from "@/context/auth-store";
 
 import { toast } from "sonner";
 
@@ -39,7 +39,7 @@ import {
   getAdminStats
 } from "@/services/api";
 
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   Tabs,
@@ -72,7 +72,8 @@ const inputClass =
   "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-400 outline-none backdrop-blur-xl transition-all focus:border-[#FF6600]";
 
 export default function AdminPage() {
-  const { isAdmin, logoutAdmin } = useAuth();
+  const isAdmin = useAuth(selectIsAdmin);
+  const logoutAdmin = useAuth((s) => s.logoutAdmin);
 
   if (!isAdmin) {
     return <AdminLogin />;
@@ -88,18 +89,34 @@ function AdminPanel({
 }: {
   onLogout: () => void;
 }) {
-  const [allProducts, setAllProducts] =
-    useState<any[]>([]);
+  const queryClient = useQueryClient();
 
-  const [orders, setOrders] = useState<
-    Order[]
-  >([]);
+  // Queries
+  const { data: productsData = [] } = useQuery({
+    queryKey: ["admin-products"],
+    queryFn: getProducts,
+  });
 
-  const [allVendors, setAllVendors] =
-    useState<any[]>([]);
+  const { data: ordersData = [] } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: getOrders,
+  });
 
-  const [pendingVendors, setPendingVendors] =
-    useState(0);
+  const { data: vendorsData = [] } = useQuery({
+    queryKey: ["admin-vendors"],
+    queryFn: getVendors,
+  });
+
+  const { data: statsRes } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: getAdminStats,
+  });
+
+  const allProducts = Array.isArray(productsData) ? productsData : [];
+  const orders = Array.isArray(ordersData) ? ordersData : [];
+  const allVendors = Array.isArray(vendorsData) ? vendorsData : [];
+  const pendingVendors = allVendors.filter((v: any) => Number(v.approved) === 0).length;
+  const dashboardStats = statsRes || null;
 
   const [vendorModalOpen, setVendorModalOpen] =
     useState(false);
@@ -122,10 +139,7 @@ function AdminPanel({
   const [viewingVendor, setViewingVendor] =
     useState<any>(null);
 
-  const [dashboardStats, setDashboardStats] =
-    useState<any>(null);
-
-  const { admin } = useAuth();
+  const admin = useAuth((s) => s.admin);
 
   const [deletingProduct, setDeletingProduct] =
     useState<any>(null);
@@ -137,58 +151,12 @@ function AdminPanel({
   const [showVendorsBreakdownModal, setShowVendorsBreakdownModal] = useState(false);
   const [showProductsBreakdownModal, setShowProductsBreakdownModal] = useState(false);
 
-  const loadStats = useCallback(async () => {
-    try {
-      const [
-        productsData,
-        ordersData,
-        vendorsData,
-        statsRes,
-      ] = await Promise.all([
-        getProducts(),
-        getOrders(),
-        getVendors(),
-        getAdminStats(),
-      ]);
-
-      setAllProducts(
-        Array.isArray(productsData)
-          ? productsData
-          : []
-      );
-
-      setOrders(
-        Array.isArray(ordersData)
-          ? ordersData
-          : []
-      );
-
-      setPendingVendors(
-        Array.isArray(vendorsData)
-          ? vendorsData.filter(
-              (v: any) =>
-                Number(v.approved) === 0
-            ).length
-          : 0
-      );
-
-      setAllVendors(
-        Array.isArray(vendorsData)
-          ? vendorsData
-          : []
-      );
-
-      if (statsRes) {
-        setDashboardStats(statsRes);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+  const loadStats = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+  }, [queryClient]);
 
   return (
     <Shell>
@@ -342,24 +310,24 @@ function AdminPanel({
           defaultValue="orders"
           className="w-full"
         >
-          <TabsList className="mb-6 grid w-full grid-cols-3 rounded-2xl bg-white/5 p-1">
+          <TabsList className="mb-6 flex flex-col sm:grid sm:grid-cols-3 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10">
             <TabsTrigger
               value="orders"
-              className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]"
+              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white"
             >
               Orders
             </TabsTrigger>
 
             <TabsTrigger
               value="products"
-              className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]"
+              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white"
             >
               Product Management
             </TabsTrigger>
 
             <TabsTrigger
               value="vendors"
-              className="rounded-xl data-[state=active]:bg-[#0B3D2E] data-[state=active]:text-[#FF6600]"
+              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white"
             >
               Vendor Management
             </TabsTrigger>
@@ -390,7 +358,7 @@ function AdminPanel({
 
           <TabsContent value="products">
             <Section title="Product Management">
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+              <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-white/5 scrollbar-thin">
                 <Table>
                   <TableHeader className="bg-white/5">
                     <TableRow className="border-white/10 hover:bg-transparent">
@@ -578,7 +546,7 @@ function AdminPanel({
 
               {/* APPROVED VENDORS */}
 
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+              <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-white/5 scrollbar-thin">
                 <Table>
                   <TableHeader className="bg-white/5">
                     <TableRow className="border-white/10 hover:bg-transparent">
@@ -916,6 +884,7 @@ const ORDER_STATUSES = [
 
 const OrderRow = memo(
   ({ order }: { order: Order }) => {
+    const queryClient = useQueryClient();
     const [status, setStatus] = useState(
       order.status || "Processing"
     );
@@ -955,6 +924,8 @@ const OrderRow = memo(
         if (data.success) {
           setStatus(data.status || newStatus);
           if (data.estimated_days) setEstimatedDays(data.estimated_days);
+          queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
 
           toast.success(
             "Order updated successfully"

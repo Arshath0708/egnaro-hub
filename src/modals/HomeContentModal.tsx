@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, LayoutTemplate, ImagePlus, Loader2, Save, Monitor, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { getHomeContent, updateHomeContent, uploadImage } from "@/services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const SLIDES = [
   { number: 1, label: "Slide 1 — Products" },
@@ -32,39 +33,49 @@ const inputClass =
   "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition-all focus:border-[#FF6600]";
 
 export function HomeContentModal({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient();
   const [activeSlide, setActiveSlide] = useState(1);
   const [slides, setSlides] = useState<SlideData[]>([
     defaultSlide(1),
     defaultSlide(2),
     defaultSlide(3),
   ]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Fetch current content on mount
+  // Fetch current content using useQuery
+  const { data: homeContentRes, isLoading: loading } = useQuery({
+    queryKey: ["home-content"],
+    queryFn: getHomeContent,
+  });
+
+  // Keep local slide drafts in sync when query completes/refetches
   useEffect(() => {
-    async function load() {
-      try {
-        const res = await getHomeContent();
-        if (res.success && Array.isArray(res.slides)) {
-          const merged = SLIDES.map((s) => {
-            const found = res.slides.find((r: any) => Number(r.slide_number) === s.number);
-            return found ? { ...defaultSlide(s.number), ...found } : defaultSlide(s.number);
-          });
-          setSlides(merged);
-        }
-      } catch {
-        toast.error("Failed to load home content");
-      } finally {
-        setLoading(false);
-      }
+    if (homeContentRes?.success && Array.isArray(homeContentRes.slides)) {
+      const merged = SLIDES.map((s) => {
+        const found = homeContentRes.slides.find((r: any) => Number(r.slide_number) === s.number);
+        return found ? { ...defaultSlide(s.number), ...found } : defaultSlide(s.number);
+      });
+      setSlides(merged);
     }
-    load();
-  }, []);
+  }, [homeContentRes]);
 
   const current = slides.find((s) => s.slide_number === activeSlide)!;
+
+  const saveMutation = useMutation({
+    mutationFn: (slide: SlideData) => updateHomeContent(slide),
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success(`Slide ${activeSlide} saved successfully`);
+        queryClient.invalidateQueries({ queryKey: ["home-content"] });
+      } else {
+        toast.error(res.message || "Save failed");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to save slide content");
+    },
+  });
 
   function update(field: keyof SlideData, value: string) {
     setSlides((prev) =>
@@ -88,21 +99,11 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const res = await updateHomeContent(current);
-      if (res.success) {
-        toast.success(`Slide ${activeSlide} saved successfully`);
-      } else {
-        toast.error(res.message || "Save failed");
-      }
-    } catch {
-      toast.error("Failed to save slide content");
-    } finally {
-      setSaving(false);
-    }
+  function handleSave() {
+    saveMutation.mutate(current);
   }
+
+  const saving = saveMutation.isPending;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 backdrop-blur-md">

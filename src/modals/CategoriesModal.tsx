@@ -1,19 +1,19 @@
-//CategoriesModal.tsx
-import { useEffect, useState } from "react";
-import {
-  addCategory,
-  deleteCategory,
-  getCategories,
-  updateCategory,
-} from "@/services/api";
-
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Plus,
   Trash2,
   Pencil,
   X,
+  Loader2,
 } from "lucide-react";
+import {
+  getCategories,
+  addCategory,
+  updateCategory,
+  deleteCategory,
+} from "@/services/api";
 
 type Category = {
   id: number;
@@ -27,9 +27,7 @@ interface Props {
 export function CategoriesModal({
   onClose,
 }: Props) {
-  const [categories, setCategories] = useState<
-    Category[]
-  >([]);
+  const queryClient = useQueryClient();
 
   const [newCategory, setNewCategory] =
     useState("");
@@ -40,82 +38,78 @@ export function CategoriesModal({
   const [editingName, setEditingName] =
     useState("");
 
-  async function loadCategories() {
-    try {
-      const data = await getCategories();
+  const [deletingCategory, setDeletingCategory] =
+    useState<Category | null>(null);
 
-      if (Array.isArray(data)) {
-        setCategories(data);
-      }
-    } catch {
-      toast.error("Failed to load categories");
-    }
-  }
+  const { data: apiCategories = [], isLoading } = useQuery<Category[]>({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
+  const categories = Array.isArray(apiCategories) ? apiCategories : [];
 
-  async function handleAdd() {
-    if (!newCategory.trim()) return;
-
-    try {
-      const res = await addCategory(
-        newCategory
-      );
-
+  const addMutation = useMutation({
+    mutationFn: (name: string) => addCategory(name),
+    onSuccess: (res) => {
       if (res.success) {
         toast.success("Category added");
-
         setNewCategory("");
-
-        loadCategories();
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
       } else {
-        toast.error(res.message);
+        toast.error(res.message || "Failed");
       }
-    } catch {
-      toast.error("Failed");
-    }
-  }
+    },
+    onError: () => {
+      toast.error("Failed to add category");
+    },
+  });
 
-  async function handleUpdate(id: number) {
-    try {
-      const res = await updateCategory(
-        id,
-        editingName
-      );
-
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) => updateCategory(id, name),
+    onSuccess: (res) => {
       if (res.success) {
         toast.success("Updated");
-
         setEditingId(null);
-
-        loadCategories();
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+      } else {
+        toast.error(res.message || "Failed");
       }
-    } catch {
-      toast.error("Failed");
-    }
-  }
+    },
+    onError: () => {
+      toast.error("Failed to update category");
+    },
+  });
 
-  async function handleDelete(id: number) {
-    if (
-      !confirm(
-        "Delete this category?"
-      )
-    )
-      return;
-
-    try {
-      const res = await deleteCategory(id);
-
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteCategory(id),
+    onSuccess: (res) => {
       if (res.success) {
         toast.success("Deleted");
-
-        loadCategories();
+        setDeletingCategory(null);
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+      } else {
+        toast.error(res.message || "Failed");
       }
-    } catch {
-      toast.error("Failed");
-    }
+    },
+    onError: () => {
+      toast.error("Failed to delete category");
+    },
+  });
+
+  const isPending = addMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+
+  function handleAdd() {
+    if (!newCategory.trim()) return;
+    addMutation.mutate(newCategory);
+  }
+
+  function handleUpdate(id: number) {
+    if (!editingName.trim()) return;
+    updateMutation.mutate({ id, name: editingName });
+  }
+
+  function handleDelete(cat: Category) {
+    setDeletingCategory(cat);
   }
 
   return (
@@ -210,7 +204,7 @@ export function CategoriesModal({
 
                 <button
                   onClick={() =>
-                    handleDelete(cat.id)
+                    handleDelete(cat)
                   }
                   className="rounded-lg bg-red-600 p-2 text-white"
                 >
@@ -221,6 +215,52 @@ export function CategoriesModal({
           ))}
         </div>
       </div>
+
+      {/* Sleek Custom Delete Category Modal Overlay */}
+      {deletingCategory && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-[36px] border border-red-500/20 bg-[#050816] p-8 text-center shadow-2xl animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setDeletingCategory(null)}
+              className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white transition hover:bg-white/10"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
+              <Trash2 className="h-10 w-10 text-red-500 animate-bounce" />
+            </div>
+
+            <h2 className="text-3xl font-black text-white">Delete Category</h2>
+            <p className="mt-3 text-gray-400">
+              Are you sure you want to delete <span className="font-bold text-white">{deletingCategory.name}</span>? This action cannot be undone.
+            </p>
+
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={() => setDeletingCategory(null)}
+                className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-4 font-bold text-white transition hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  deleteMutation.mutate(deletingCategory.id);
+                }}
+                disabled={deleteMutation.isPending}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 py-4 font-bold text-white transition hover:bg-red-600 disabled:opacity-60"
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-5 w-5" />
+                )}
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

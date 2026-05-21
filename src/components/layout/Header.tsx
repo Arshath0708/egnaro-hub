@@ -25,7 +25,7 @@ import {
   useCart,
   cartCount,
 } from "@/context/cart-store";
-import { useAuth } from "@/context/auth-store";
+import { useAuth, selectIsVendor } from "@/context/auth-store";
 
 import logo from "@/assets/logo.jpeg";
 
@@ -39,7 +39,7 @@ const NAV = [
 
 export function Header() {
   const count = useCart(cartCount);
-  const isVendor = useAuth((s) => s.isVendor);
+  const isVendor = useAuth(selectIsVendor);
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
 

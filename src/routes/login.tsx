@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { AlertCircle, Mail, KeyRound, Lock, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, Mail, KeyRound, Lock, ArrowLeft, CheckCircle2, Loader2, Eye, EyeOff } from "lucide-react";
 import { loginCustomer } from "@/services/api";
 import { toast } from "sonner";
-import { useAuth } from "@/context/auth-store";
+import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 
 const API = "https://egnaromart.com/api";
 
@@ -44,12 +44,13 @@ function loadReset(key: string) {
 function LoginForm({ onForgot }: { onForgot: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const login = useAuth((s) => s.login);
-  const isLoggedIn = useAuth((s) => s.isLoggedIn);
+  const isLoggedIn = useAuth(selectIsLoggedIn);
 
   const redirectTo = searchParams.get("redirect") || "/track-order";
 
@@ -98,9 +99,18 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
         </Field>
 
         <Field label="Password">
-          <input type="password" autoComplete="current-password" placeholder="••••••••"
-            value={password} required onChange={(e) => { setPassword(e.target.value); setErrorMsg(null); }}
-            className={inp} />
+          <div className="relative">
+            <input type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="••••••••"
+              value={password} required onChange={(e) => { setPassword(e.target.value); setErrorMsg(null); }}
+              className={`${inp} pr-10`} />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </div>
         </Field>
 
         <div className="flex justify-end">
@@ -262,6 +272,8 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
 function NewPwStep({ onDone }: { onDone: () => void }) {
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -325,13 +337,31 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
 
       <form onSubmit={handleReset} className="space-y-4">
         <Field label="New Password">
-          <input type="password" placeholder="••••••••" value={pw} required minLength={6}
-            onChange={(e) => { setPw(e.target.value); setError(null); }} className={inp} />
+          <div className="relative">
+            <input type={showNewPw ? "text" : "password"} placeholder="••••••••" value={pw} required minLength={6}
+              onChange={(e) => { setPw(e.target.value); setError(null); }} className={`${inp} pr-10`} />
+            <button
+              type="button"
+              onClick={() => setShowNewPw(!showNewPw)}
+              className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+            >
+              {showNewPw ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </div>
         </Field>
 
         <Field label="Confirm Password">
-          <input type="password" placeholder="••••••••" value={confirm} required
-            onChange={(e) => { setConfirm(e.target.value); setError(null); }} className={inp} />
+          <div className="relative">
+            <input type={showConfirmPw ? "text" : "password"} placeholder="••••••••" value={confirm} required
+              onChange={(e) => { setConfirm(e.target.value); setError(null); }} className={`${inp} pr-10`} />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPw(!showConfirmPw)}
+              className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+            >
+              {showConfirmPw ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </div>
           {confirm && pw !== confirm && (
             <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
           )}
