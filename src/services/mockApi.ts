@@ -93,7 +93,7 @@ export const api = {
   },
 
   async submitVendorProduct(
-    input: Omit<Product, "id" | "approved" | "createdAt" | "rating" | "reviews">
+    input: Omit<Product, "id" | "approved" | "createdAt" | "average_rating" | "total_reviews">
   ): Promise<Product> {
     await delay();
     const db = load();
@@ -101,8 +101,8 @@ export const api = {
       ...input,
       id: id("p"),
       approved: false,
-      rating: 0,
-      reviews: 0,
+      average_rating: 0,
+      total_reviews: 0,
       createdAt: new Date().toISOString(),
     };
     db.products.push(p);
@@ -154,6 +154,8 @@ export const api = {
     const oid = `EM${Date.now().toString().slice(-7)}`;
     const order: Order = {
       id: oid,
+      order_id: oid,
+      address: input.customer.address,
       items: orderItems,
       total,
       status: "processing",

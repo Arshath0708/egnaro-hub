@@ -16,7 +16,7 @@ export interface Product {
 
   discount: number;
 
-  category: Category;
+  category: string;
 
   image: string;
 

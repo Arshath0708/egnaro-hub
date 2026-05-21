@@ -12,7 +12,7 @@ import {
 
 import { Shell } from "@/components/layout/Shell";
 import { useCart } from "@/context/cart-store";
-import { useAuth } from "@/context/auth-store";
+import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 import { getProducts, getUser, manageAddress } from "@/services/api";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
@@ -48,8 +48,11 @@ export default function CheckoutPage() {
   const nav = useNavigate();
   const location = useLocation();
 
-  const { items, clear } = useCart();
-  const { isLoggedIn, user, token } = useAuth();
+  const items = useCart((s) => s.items);
+  const clear = useCart((s) => s.clear);
+  const isLoggedIn = useAuth(selectIsLoggedIn);
+  const user = useAuth((s) => s.user);
+  const token = useAuth((s) => s.token);
 
   const [submitting, setSubmitting] = useState(false);
   const [saveAddress, setSaveAddress] = useState(false);
@@ -86,6 +89,7 @@ export default function CheckoutPage() {
     queryKey: ["userProfile", token],
     queryFn: () => getUser(token!),
     enabled: !!token,
+    staleTime: 5 * 60 * 1000,
   });
 
   const userProfile = userData?.user;

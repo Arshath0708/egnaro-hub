@@ -20,9 +20,6 @@ interface AuthState {
   user: UserData | null;
   vendorId: string | null;
   admin: AdminData | null;
-  isAdmin: boolean;
-  isVendor: boolean;
-  isLoggedIn: boolean;
 
   login: (token: string, user: UserData) => void;
   logout: () => void;
@@ -30,6 +27,7 @@ interface AuthState {
   logoutVendor: () => void;
   loginAdmin: (admin: AdminData) => void;
   logoutAdmin: () => void;
+  logoutAll: () => void;
 }
 
 export const useAuth = create<AuthState>()(
@@ -39,46 +37,53 @@ export const useAuth = create<AuthState>()(
       user: null,
       vendorId: null,
       admin: null,
-      isAdmin: false,
-      isVendor: false,
-      isLoggedIn: false,
 
       login: (token, user) =>
         set({
           token,
           user,
-          isLoggedIn: true,
         }),
 
       logout: () =>
         set({
           token: null,
           user: null,
-          isLoggedIn: false,
+          vendorId: null,
+          admin: null,
         }),
 
       loginVendor: (vendorId) =>
         set({
           vendorId,
-          isVendor: true,
         }),
 
       logoutVendor: () =>
         set({
+          token: null,
+          user: null,
           vendorId: null,
-          isVendor: false,
+          admin: null,
         }),
 
       loginAdmin: (admin) =>
         set({
           admin,
-          isAdmin: true,
         }),
 
       logoutAdmin: () =>
         set({
+          token: null,
+          user: null,
+          vendorId: null,
           admin: null,
-          isAdmin: false,
+        }),
+
+      logoutAll: () =>
+        set({
+          token: null,
+          user: null,
+          vendorId: null,
+          admin: null,
         }),
     }),
 
@@ -87,3 +92,7 @@ export const useAuth = create<AuthState>()(
     }
   )
 );
+
+export const selectIsLoggedIn = (s: AuthState) => !!s.token && !!s.user;
+export const selectIsVendor   = (s: AuthState) => !!s.vendorId;
+export const selectIsAdmin    = (s: AuthState) => !!s.admin;

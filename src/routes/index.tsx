@@ -95,11 +95,13 @@ export default function Home() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
     queryFn: getProducts,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const { data: apiCategories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
   const categories = apiCategories.map((cat: any) => ({
@@ -494,30 +496,31 @@ const SLIDE_DEFAULTS = [
 function Hero() {
   const ref = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
-  const [slides, setSlides] = useState(SLIDE_DEFAULTS);
 
-  // Fetch dynamic content from admin CMS
-  useEffect(() => {
-    getHomeContent()
-      .then((res) => {
-        if (res.success && Array.isArray(res.slides) && res.slides.length > 0) {
-          const merged = SLIDE_DEFAULTS.map((def) => {
-            const api = res.slides.find((s: any) => Number(s.slide_number) === def.slide_number);
-            if (!api) return def;
-            return {
-              ...def,
-              left_title:   api.left_title   || def.left_title,
-              left_subtext: api.left_subtext || def.left_subtext,
-              left_image:   api.left_image   || def.left_image,
-              right_title:  api.right_title  || def.right_title,
-              right_subtext: api.right_subtext || def.right_subtext,
-            };
-          });
-          setSlides(merged);
-        }
-      })
-      .catch(() => { /* silent – use defaults */ });
-  }, []);
+  // Fetch dynamic content from admin CMS with 10 mins cache
+  const { data: homeContentRes } = useQuery({
+    queryKey: ["home-content"],
+    queryFn: getHomeContent,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const slides = useMemo(() => {
+    if (homeContentRes?.success && Array.isArray(homeContentRes.slides) && homeContentRes.slides.length > 0) {
+      return SLIDE_DEFAULTS.map((def) => {
+        const api = homeContentRes.slides.find((s: any) => Number(s.slide_number) === def.slide_number);
+        if (!api) return def;
+        return {
+          ...def,
+          left_title:   api.left_title   || def.left_title,
+          left_subtext: api.left_subtext || def.left_subtext,
+          left_image:   api.left_image   || def.left_image,
+          right_title:  api.right_title  || def.right_title,
+          right_subtext: api.right_subtext || def.right_subtext,
+        };
+      });
+    }
+    return SLIDE_DEFAULTS;
+  }, [homeContentRes]);
 
   const { scrollYProgress } = useScroll({
     target: ref,

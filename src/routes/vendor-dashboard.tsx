@@ -28,7 +28,7 @@ import { ViewProductModal } from "@/modals/ViewProductModal";
 import { UpdateProductModal } from "@/modals/UpdateProductModal";
 import { DeleteProductModal } from "@/modals/DeleteProductModal";
 import { AddProductModal } from "@/modals/AddProductModal";
-import { useAuth } from "@/context/auth-store";
+import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { addProduct, getVendorProducts, getVendorStats } from "@/services/api";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
@@ -64,7 +64,7 @@ type ProductForm = {
 
 export default function VendorDashboard() {
   const vendorId = useAuth((s) => s.vendorId);
-  const isVendor = useAuth((s) => s.isVendor);
+  const isVendor = useAuth(selectIsVendor);
   const logout = useAuth((s) => s.logoutVendor);
 
   if (!isVendor || !vendorId) {

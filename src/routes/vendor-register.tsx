@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, LogIn, ShieldCheck, Lock, Mail, KeyRound, Loader2, ArrowLeft, Clock, RefreshCw } from "lucide-react";
+import { CheckCircle2, LogIn, ShieldCheck, Lock, Mail, KeyRound, Loader2, ArrowLeft, Clock, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { addVendor } from "@/services/api";
-import { useAuth } from "@/context/auth-store";
+import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { toast } from "sonner";
 
 const API = "https://egnaromart.com/api";
@@ -39,7 +39,7 @@ type ResetStep =
 export default function VendorRegister() {
   const navigate = useNavigate();
   const loginVendor = useAuth((s) => s.loginVendor);
-  const isVendor = useAuth((s) => s.isVendor);
+  const isVendor = useAuth(selectIsVendor);
 
   useEffect(() => {
     if (isVendor) navigate("/vendor-dashboard");
@@ -50,6 +50,10 @@ export default function VendorRegister() {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState<RegisterForm>(EMPTY_REGISTER);
   const [loginData, setLoginData] = useState<LoginForm>(EMPTY_LOGIN);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   // Forgot-password state — initialised from localStorage to survive page reload
   const storedEmail = localStorage.getItem("vendor_reset_email") || "";
@@ -221,6 +225,10 @@ export default function VendorRegister() {
     setResetEmail("");
     setNewPw("");
     setConfirmPw("");
+    setShowPassword(false);
+    setShowLoginPassword(false);
+    setShowNewPw(false);
+    setShowConfirmPw(false);
     localStorage.removeItem("vendor_reset_email");
   }
 
@@ -322,9 +330,16 @@ export default function VendorRegister() {
                 <label className="mb-1 block text-xs font-medium text-gray-400">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3.5 h-4 w-4 text-gray-500" />
-                  <input required type="password" autoComplete="new-password" placeholder="Min 6 characters"
-                    className={`${inp} pl-10`} value={form.password}
+                  <input required type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Min 6 characters"
+                    className={`${inp} pl-10 pr-10`} value={form.password}
                     onChange={(e) => setRegField("password", e.target.value)} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                  </button>
                 </div>
               </div>
               <div>
@@ -350,8 +365,17 @@ export default function VendorRegister() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-400">Password</label>
-                <input required type="password" autoComplete="current-password" placeholder="••••••••" className={inp}
-                  value={loginData.password} onChange={(e) => setLoginField("password", e.target.value)} />
+                <div className="relative">
+                  <input required type={showLoginPassword ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" className={`${inp} pr-10`}
+                    value={loginData.password} onChange={(e) => setLoginField("password", e.target.value)} />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+                  >
+                    {showLoginPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                  </button>
+                </div>
               </div>
               <div className="flex justify-end">
                 <button type="button"
@@ -434,13 +458,31 @@ export default function VendorRegister() {
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-400">New Password</label>
-                    <input required type="password" placeholder="Min 6 characters" className={inp}
-                      value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+                    <div className="relative">
+                      <input required type={showNewPw ? "text" : "password"} placeholder="Min 6 characters" className={`${inp} pr-10`}
+                        value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPw(!showNewPw)}
+                        className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showNewPw ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-400">Confirm Password</label>
-                    <input required type="password" placeholder="••••••••" className={inp}
-                      value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
+                    <div className="relative">
+                      <input required type={showConfirmPw ? "text" : "password"} placeholder="••••••••" className={`${inp} pr-10`}
+                        value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPw(!showConfirmPw)}
+                        className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showConfirmPw ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                      </button>
+                    </div>
                     {confirmPw && newPw !== confirmPw && (
                       <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
                     )}

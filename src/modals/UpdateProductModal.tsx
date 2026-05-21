@@ -3,6 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Sparkles, ImagePlus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { updateProduct, adminUpdateProduct, getCategories } from "@/services/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 export function UpdateProductModal({
@@ -59,6 +66,9 @@ export function UpdateProductModal({
       toast.success("Product updated successfully 🚀");
       await queryClient.invalidateQueries({
         queryKey: ["vendor-products", vendorId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
       });
       onClose();
     },
@@ -152,17 +162,21 @@ export function UpdateProductModal({
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-300">Category</label>
-                  <select
+                  <Select
                     value={form.category}
-                    className={inputClass}
-                    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                    onValueChange={(val) => setForm((p) => ({ ...p, category: val }))}
                   >
-                    {categories.map((cat: any) => (
-                      <option key={cat.id} value={cat.name} className="bg-[#0f172a]">
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:ring-1 focus:ring-[#FF6600] outline-none">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <InputField

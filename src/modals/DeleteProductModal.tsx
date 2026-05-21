@@ -24,11 +24,10 @@ export function DeleteProductModal({
     },
     onSuccess: async () => {
       toast.success("Product deleted successfully");
-      if (isAdmin) {
-        await queryClient.invalidateQueries({
-          queryKey: ["products"],
-        });
-      } else {
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+      });
+      if (vendorId) {
         await queryClient.invalidateQueries({
           queryKey: ["vendor-products", vendorId],
         });
