@@ -12,6 +12,8 @@ import {
   Trash2,
   IndianRupee,
   LayoutTemplate,
+  Menu,
+  X,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -151,6 +153,9 @@ function AdminPanel({
   const [showVendorsBreakdownModal, setShowVendorsBreakdownModal] = useState(false);
   const [showProductsBreakdownModal, setShowProductsBreakdownModal] = useState(false);
 
+  const [activeTab, setActiveTab] = useState("orders");
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const loadStats = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["admin-products"] });
     queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
@@ -160,27 +165,25 @@ function AdminPanel({
 
   return (
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:py-10 animate-fadeUp">
         {/* HEADER */}
 
-        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="mb-8 flex flex-row items-center justify-between gap-5 border-b border-white/5 pb-6">
           <div>
-            <h1 className="text-4xl font-black text-white">
-              Admin Dashboard
+            <h1 className="text-3xl md:text-4xl font-black text-white">
+              Admin Panel
             </h1>
 
-            <p className="mt-2 text-gray-400">
-              Manage vendors, products &
-              orders
+            <p className="mt-1 text-xs md:text-sm text-gray-400">
+              Manage vendors, products & orders
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-3">
             <button
-              onClick={() =>
-                setShowAddProduct(true)
-              }
-              className="flex items-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 font-semibold text-white transition-all hover:bg-cyan-600"
+              onClick={() => setShowAddProduct(true)}
+              className="flex items-center gap-2 rounded-2xl bg-[#FF6600] px-5 py-3 font-semibold text-white transition-all hover:bg-[#e65c00] hover:shadow-glow cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               Add Product
@@ -188,17 +191,176 @@ function AdminPanel({
 
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 font-semibold text-white transition-all hover:bg-red-600"
+              className="flex items-center gap-2 rounded-2xl bg-red-500/10 border border-red-500/20 px-5 py-3 font-semibold text-red-400 transition-all hover:bg-red-500 hover:text-white cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               Logout
             </button>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="flex md:hidden items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 cursor-pointer"
+          >
+            <Menu className="h-4 w-4 text-[#FF6600]" />
+            Menu
+            {pendingVendors > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6600] text-[9px] font-bold text-white">
+                {pendingVendors}
+              </span>
+            )}
+          </button>
         </div>
+
+        {/* MOBILE CONTROL DRAWER */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-50 flex justify-end md:hidden">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+              onClick={() => setMenuOpen(false)}
+            />
+
+            {/* Drawer */}
+            <div className="relative w-80 max-w-[85vw] h-full bg-[#0d0d0d] border-l border-white/10 p-6 flex flex-col justify-between backdrop-blur-2xl shadow-2xl animate-fadeUp">
+              <div className="space-y-8 overflow-y-auto max-h-[85vh] pr-1 scrollbar-thin">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-[#FF6600]" />
+                    <span className="font-display text-base font-black text-white uppercase tracking-wider">
+                      Controls
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setMenuOpen(false)}
+                    className="rounded-lg p-1.5 hover:bg-white/5 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* Tabs / Navigation */}
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
+                    Dashboard Views
+                  </div>
+                  {[
+                    { id: "orders", label: "Orders", count: orders.length },
+                    { id: "products", label: "Products", count: allProducts.length },
+                    { id: "vendors", label: "Vendors", count: allVendors.length },
+                  ].map((tab) => {
+                    const active = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
+                          active
+                            ? "bg-[#FF6600] text-white shadow-lg shadow-[#FF6600]/10"
+                            : "text-gray-400 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span>{tab.label}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-white/20 text-white" : "bg-white/5 text-gray-500"}`}>
+                          {tab.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Modals / Action Shortcuts */}
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
+                    Quick Operations
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowAddProduct(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-cyan-400" />
+                    Add Product
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setVendorModalOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Users className="h-3.5 w-3.5 text-green-400" />
+                      Vendor Requests
+                    </span>
+                    {pendingVendors > 0 && (
+                      <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-[9px] font-black text-green-400">
+                        {pendingVendors}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setProductModalOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    <Package className="h-3.5 w-3.5 text-orange-400" />
+                    Product Requests
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCategoriesModalOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    <ClipboardList className="h-3.5 w-3.5 text-cyan-400" />
+                    Manage Categories
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setContentModalOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    <LayoutTemplate className="h-3.5 w-3.5 text-violet-400" />
+                    Content Manager
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <button
+                onClick={() => {
+                  onLogout();
+                  setMenuOpen(false);
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 py-3 text-sm font-bold text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* STATS */}
 
-        <div className="mb-8 grid gap-5 md:grid-cols-4">
+        <div className="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
             icon={<Package />}
             count={dashboardStats?.products?.total || 0}
@@ -254,7 +416,7 @@ function AdminPanel({
 
         {/* ACTION BUTTONS */}
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 hidden md:grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <ActionButton
             icon={
               <Users className="h-5 w-5" />
@@ -307,27 +469,28 @@ function AdminPanel({
         {/* TABS */}
 
         <Tabs
-          defaultValue="orders"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="mb-6 flex flex-col sm:grid sm:grid-cols-3 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10">
+          <TabsList className="mb-6 hidden md:grid md:grid-cols-3 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10">
             <TabsTrigger
               value="orders"
-              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white"
+              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white cursor-pointer"
             >
               Orders
             </TabsTrigger>
 
             <TabsTrigger
               value="products"
-              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white"
+              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white cursor-pointer"
             >
               Product Management
             </TabsTrigger>
 
             <TabsTrigger
               value="vendors"
-              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white"
+              className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white cursor-pointer"
             >
               Vendor Management
             </TabsTrigger>

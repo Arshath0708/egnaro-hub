@@ -192,7 +192,7 @@ function DashboardContent({
           </motion.div>
 
           {/* STATS */}
-          <div className="mb-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-10 grid gap-4 grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={Package}
               title="Products"

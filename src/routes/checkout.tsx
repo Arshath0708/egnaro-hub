@@ -572,10 +572,10 @@ Please find my payment screenshot attached.
                         </div>
                       </div>
 
-                      <div className="mt-6 flex flex-wrap gap-3">
+                      <div className="mt-6 flex flex-col sm:flex-row gap-3 w-full">
                         <a
                           href={upiLink}
-                          className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                          className="w-full sm:w-auto text-center justify-center rounded-xl bg-[#FF6600] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#e65c00] hover:shadow-glow cursor-pointer"
                         >
                           Pay with Any UPI App
                         </a>
@@ -584,7 +584,7 @@ Please find my payment screenshot attached.
                           href={whatsappUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700 cursor-pointer"
                         >
                           <MessageCircle className="h-4 w-4" />
                           Send Receipt

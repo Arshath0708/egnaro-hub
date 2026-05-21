@@ -2,7 +2,7 @@
  * products.tsx — Egnaro Mart Products Page
  */
 
-import { memo, useMemo, useRef } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import {
   Link,
   useNavigate,
@@ -21,6 +21,7 @@ import {
 import {
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -79,6 +80,8 @@ export default function ProductsPage() {
 
   const searchRef =
     useRef<HTMLInputElement>(null);
+
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   /* PRODUCTS */
 
@@ -283,14 +286,16 @@ export default function ProductsPage() {
 
         <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
 
-          <Sidebar
-            categories={categories}
-            currentCat={currentCat}
-            currentSort={currentSort}
-            onSortChange={
-              handleSortChange
-            }
-          />
+          <div className="hidden lg:block">
+            <Sidebar
+              categories={categories}
+              currentCat={currentCat}
+              currentSort={currentSort}
+              onSortChange={
+                handleSortChange
+              }
+            />
+          </div>
 
           {/* MAIN */}
 
@@ -335,6 +340,133 @@ export default function ProductsPage() {
             )}
           </div>
         </div>
+
+        {/* Floating Mobile Filter Bar */}
+        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 lg:hidden">
+          <button
+            onClick={() => setMobileFiltersOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-[#FF6600] px-6 py-3.5 font-bold text-white shadow-lg shadow-[#FF6600]/30 hover:bg-[#e65c00] active:scale-95 transition-all cursor-pointer"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            <span>Filters & Sort</span>
+            {currentCat && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#FF6600]">
+                1
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Filter Drawer Overlay */}
+        {mobileFiltersOpen && (
+          <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+              onClick={() => setMobileFiltersOpen(false)}
+            />
+
+            {/* Drawer */}
+            <div className="relative w-80 max-w-[85vw] h-full bg-[#0d0d0d] border-l border-white/10 p-6 flex flex-col justify-between backdrop-blur-2xl shadow-2xl animate-fadeUp">
+              <div className="space-y-6 overflow-y-auto max-h-[85vh] pr-1 scrollbar-thin">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-4 w-4 text-[#FF6600]" />
+                    <span className="font-display text-base font-black text-white uppercase tracking-wider animate-pulse">
+                      Filter & Sort
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setMobileFiltersOpen(false)}
+                    className="rounded-lg p-1.5 hover:bg-white/5 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* Categories filter */}
+                <div className="space-y-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    Categories
+                  </div>
+                  <ul className="space-y-1">
+                    <li>
+                      <Link
+                        to="/products"
+                        onClick={() => setMobileFiltersOpen(false)}
+                        className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                          !currentCat
+                            ? "bg-[#FF6600]/10 font-semibold text-[#FF6600]"
+                            : "text-muted-foreground hover:bg-white/5"
+                        }`}
+                      >
+                        All Products
+                      </Link>
+                    </li>
+                    {categories.map((c: any) => {
+                      const active = currentCat === c.name;
+                      return (
+                        <li key={c.id}>
+                          <Link
+                            to={`/products?category=${c.name}`}
+                            onClick={() => setMobileFiltersOpen(false)}
+                            className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                              active
+                                ? "bg-[#FF6600]/10 font-semibold text-[#FF6600]"
+                                : "text-muted-foreground hover:bg-white/5"
+                            }`}
+                          >
+                            {c.name}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                {/* Sorting */}
+                <div className="space-y-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    Sort by
+                  </div>
+                  <div className="space-y-1">
+                    {SORT_OPTIONS.map((o) => {
+                      const active = currentSort === o.value;
+                      return (
+                        <button
+                          key={o.value}
+                          onClick={() => {
+                            handleSortChange(o.value);
+                            setMobileFiltersOpen(false);
+                          }}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-all cursor-pointer ${
+                            active
+                              ? "bg-[#FF6600]/10 font-semibold text-[#FF6600]"
+                              : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <button
+                onClick={() => {
+                  navigate("/products");
+                  setMobileFiltersOpen(false);
+                }}
+                className="w-full rounded-xl bg-white/5 border border-white/10 py-3 text-center text-xs font-bold text-white hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </Shell>
   );

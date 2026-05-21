@@ -59,50 +59,56 @@ export default function CartPage() {
               {detailed.map((i) => (
                 <div
                   key={i.productId}
-                  className="glass rounded-2xl p-4 flex gap-4 items-center"
+                  className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center animate-fadeUp"
                 >
-                  <img
-                    src={i.product.image}
-                    alt={i.product.name}
-                    className="h-24 w-24 rounded-xl object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <Link
-                      to={`/product/${i.product.id}`}   // ✅ fixed link syntax
-                      className="font-semibold hover:text-primary line-clamp-1"
-                    >
-                      {i.product.name}
-                    </Link>
-                    <div className="text-xs text-muted-foreground capitalize mt-0.5">
-                      {i.product.category.replace("-", " ")}
-                    </div>
-                    <div className="font-display font-bold text-lg mt-2">
-                      {inr(i.product.price)}
+                  <div className="flex gap-4 w-full min-w-0">
+                    <img
+                      src={i.product.image}
+                      alt={i.product.name}
+                      className="h-20 w-20 sm:h-24 sm:w-24 rounded-xl object-cover flex-shrink-0 border border-white/5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/product/${i.product.id}`}
+                        className="font-semibold hover:text-[#FF6600] line-clamp-1 text-sm sm:text-base transition-colors"
+                      >
+                        {i.product.name}
+                      </Link>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground capitalize mt-0.5">
+                        {i.product.category.replace("-", " ")}
+                      </div>
+                      <div className="font-display font-bold text-base sm:text-lg mt-2 text-[#FF6600]">
+                        {inr(i.product.price)}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center glass rounded-lg">
-                    <button
-                      onClick={() => setQty(i.productId, i.quantity - 1)}
-                      className="p-2 hover:text-primary"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <div className="w-8 text-center text-sm font-semibold">
-                      {i.quantity}
+
+                  <div className="flex w-full sm:w-auto items-center justify-between sm:justify-start gap-4 border-t border-white/5 sm:border-t-0 pt-3 sm:pt-0">
+                    <div className="flex items-center glass rounded-lg h-9">
+                      <button
+                        onClick={() => setQty(i.productId, i.quantity - 1)}
+                        className="p-2 hover:text-[#FF6600] cursor-pointer"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <div className="w-8 text-center text-xs font-semibold">
+                        {i.quantity}
+                      </div>
+                      <button
+                        onClick={() => setQty(i.productId, i.quantity + 1)}
+                        className="p-2 hover:text-[#FF6600] cursor-pointer"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
                     </div>
+
                     <button
-                      onClick={() => setQty(i.productId, i.quantity + 1)}
-                      className="p-2 hover:text-primary"
+                      onClick={() => remove(i.productId)}
+                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  <button
-                    onClick={() => remove(i.productId)}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               ))}
             </div>
