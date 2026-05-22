@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Shield,
   Package,
@@ -821,7 +822,7 @@ function AdminPanel({
 
         {/* MODALS */}
 
-        {vendorModalOpen && (
+        {vendorModalOpen && createPortal(
           <VendorRequestsModal
             onClose={() =>
               setVendorModalOpen(false)
@@ -829,18 +830,20 @@ function AdminPanel({
             onVendorActioned={() => {
               loadStats();
             }}
-          />
+          />,
+          document.body
         )}
 
-        {categoriesModalOpen && (
+        {categoriesModalOpen && createPortal(
           <CategoriesModal
             onClose={() =>
               setCategoriesModalOpen(false)
             }
-          />
+          />,
+          document.body
         )}
 
-        {productModalOpen && (
+        {productModalOpen && createPortal(
           <ProductRequestsModal
             onClose={() =>
               setProductModalOpen(false)
@@ -848,10 +851,11 @@ function AdminPanel({
             onProductActioned={() => {
               loadStats();
             }}
-          />
+          />,
+          document.body
         )}
 
-        {showAddProduct && admin && (
+        {showAddProduct && admin && createPortal(
           <AddProductModal
             vendorId="0"
             createdByType="admin"
@@ -860,19 +864,21 @@ function AdminPanel({
               setShowAddProduct(false);
               loadStats();
             }}
-          />
+          />,
+          document.body
         )}
 
-        {viewingProduct && (
+        {viewingProduct && createPortal(
           <ViewProductModal
             product={viewingProduct}
             onClose={() =>
               setViewingProduct(null)
             }
-          />
+          />,
+          document.body
         )}
 
-        {editingProduct && (
+        {editingProduct && createPortal(
           editingProduct.created_by_type === 'vendor' ? (
             <UpdateVendorProductModal
               product={editingProduct}
@@ -891,19 +897,21 @@ function AdminPanel({
                 loadStats();
               }}
             />
-          )
+          ),
+          document.body
         )}
 
-        {viewingVendor && (
+        {viewingVendor && createPortal(
           <ViewVendorModal
             vendor={viewingVendor}
             onClose={() =>
               setViewingVendor(null)
             }
-          />
+          />,
+          document.body
         )}
 
-        {deletingProduct && (
+        {deletingProduct && createPortal(
           <DeleteProductModal
             product={deletingProduct}
             vendorId={deletingProduct.created_by_id || "0"}
@@ -912,34 +920,39 @@ function AdminPanel({
               setDeletingProduct(null);
               loadStats();
             }}
-          />
+          />,
+          document.body
         )}
 
-        {contentModalOpen && (
+        {contentModalOpen && createPortal(
           <HomeContentModal
             onClose={() => setContentModalOpen(false)}
-          />
+          />,
+          document.body
         )}
 
-        {showRevenueModal && dashboardStats && (
+        {showRevenueModal && createPortal(
           <RevenueBreakdownModal
-            stats={dashboardStats.orders?.revenue}
+            stats={dashboardStats?.orders?.revenue || {}}
             onClose={() => setShowRevenueModal(false)}
-          />
+          />,
+          document.body
         )}
 
-        {showVendorsBreakdownModal && dashboardStats && (
+        {showVendorsBreakdownModal && createPortal(
           <VendorsBreakdownModal
-            stats={dashboardStats.vendors}
+            stats={dashboardStats?.vendors || {}}
             onClose={() => setShowVendorsBreakdownModal(false)}
-          />
+          />,
+          document.body
         )}
 
-        {showProductsBreakdownModal && dashboardStats && (
+        {showProductsBreakdownModal && createPortal(
           <ProductsBreakdownModal
-            stats={dashboardStats.products}
+            stats={dashboardStats?.products || {}}
             onClose={() => setShowProductsBreakdownModal(false)}
-          />
+          />,
+          document.body
         )}
       </div>
     </Shell>
@@ -1223,8 +1236,7 @@ const OrderRow = memo(
   }
 );
 
-function RevenueBreakdownModal({ stats, onClose }: { stats: any; onClose: () => void }) {
-  if (!stats) return null;
+function RevenueBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
@@ -1238,15 +1250,15 @@ function RevenueBreakdownModal({ stats, onClose }: { stats: any; onClose: () => 
         <div className="space-y-4">
           <div className="flex justify-between rounded-xl bg-white/5 p-4">
             <span className="text-gray-400">Total Revenue</span>
-            <span className="font-bold text-white">₹{stats.overall?.toLocaleString('en-IN') || 0}</span>
+            <span className="font-bold text-white">₹{stats?.overall?.toLocaleString('en-IN') || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4">
             <span className="text-cyan-400">Egnaro Mart (Admin)</span>
-            <span className="font-bold text-cyan-400">₹{stats.admin?.toLocaleString('en-IN') || 0}</span>
+            <span className="font-bold text-cyan-400">₹{stats?.admin?.toLocaleString('en-IN') || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-[#0B3D2E] p-4">
             <span className="text-[#FF6600]">Vendors</span>
-            <span className="font-bold text-[#FF6600]">₹{stats.vendor?.toLocaleString('en-IN') || 0}</span>
+            <span className="font-bold text-[#FF6600]">₹{stats?.vendor?.toLocaleString('en-IN') || 0}</span>
           </div>
         </div>
       </div>
@@ -1254,8 +1266,7 @@ function RevenueBreakdownModal({ stats, onClose }: { stats: any; onClose: () => 
   );
 }
 
-function VendorsBreakdownModal({ stats, onClose }: { stats: any; onClose: () => void }) {
-  if (!stats) return null;
+function VendorsBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
@@ -1269,15 +1280,15 @@ function VendorsBreakdownModal({ stats, onClose }: { stats: any; onClose: () => 
         <div className="space-y-4">
           <div className="flex justify-between rounded-xl bg-white/5 p-4">
             <span className="text-gray-400">Total Vendors</span>
-            <span className="font-bold text-white">{stats.total || 0}</span>
+            <span className="font-bold text-white">{stats?.total || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-green-500/10 p-4">
             <span className="text-green-400">Active</span>
-            <span className="font-bold text-green-400">{stats.active || 0}</span>
+            <span className="font-bold text-green-400">{stats?.active || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-orange-500/10 p-4">
             <span className="text-orange-400">Pending</span>
-            <span className="font-bold text-orange-400">{stats.pending || 0}</span>
+            <span className="font-bold text-orange-400">{stats?.pending || 0}</span>
           </div>
         </div>
       </div>
@@ -1285,8 +1296,7 @@ function VendorsBreakdownModal({ stats, onClose }: { stats: any; onClose: () => 
   );
 }
 
-function ProductsBreakdownModal({ stats, onClose }: { stats: any; onClose: () => void }) {
-  if (!stats) return null;
+function ProductsBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
@@ -1300,23 +1310,23 @@ function ProductsBreakdownModal({ stats, onClose }: { stats: any; onClose: () =>
         <div className="space-y-4">
           <div className="flex justify-between rounded-xl bg-white/5 p-4">
             <span className="text-gray-400">Total Products</span>
-            <span className="font-bold text-white">{stats.total || 0}</span>
+            <span className="font-bold text-white">{stats?.total || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-[#0B3D2E] p-4">
             <span className="text-[#FF6600]">By Vendors</span>
-            <span className="font-bold text-[#FF6600]">{stats.by_vendor || 0}</span>
+            <span className="font-bold text-[#FF6600]">{stats?.by_vendor || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4">
             <span className="text-cyan-400">By Admin</span>
-            <span className="font-bold text-cyan-400">{stats.by_admin || 0}</span>
+            <span className="font-bold text-cyan-400">{stats?.by_admin || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-green-500/10 p-4">
             <span className="text-green-400">Approved</span>
-            <span className="font-bold text-green-400">{stats.approved || 0}</span>
+            <span className="font-bold text-green-400">{stats?.approved || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-orange-500/10 p-4">
             <span className="text-orange-400">Pending</span>
-            <span className="font-bold text-orange-400">{stats.pending_approval || 0}</span>
+            <span className="font-bold text-orange-400">{stats?.pending_approval || 0}</span>
           </div>
         </div>
       </div>
