@@ -26,10 +26,13 @@ export function ProductRequestsModal({ onClose, onProductActioned }: Props) {
   useEffect(() => {
     getPendingProducts()
       .then((d) => {
-  console.log("PENDING PRODUCTS:", d);
-
-  setProducts(Array.isArray(d) ? d : []);
-})
+        console.log("PENDING PRODUCTS:", d);
+        setProducts(Array.isArray(d) ? d : []);
+      })
+      .catch((err) => {
+        console.error("Failed to load pending products:", err);
+        setProducts([]);
+      })
       .finally(() => setFetching(false));
   }, []);
 
