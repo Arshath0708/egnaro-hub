@@ -60,6 +60,16 @@ const SORT_OPTIONS = [
   },
 ] as const;
 
+function toTitleCase(str: string): string {
+  if (!str) return "";
+  return str
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export default function ProductsPage() {
   const navigate = useNavigate();
 
@@ -77,6 +87,12 @@ export default function ProductsPage() {
 
   const currentQ =
     params.get("q")?.toLowerCase() ?? "";
+
+  const currentState =
+    params.get("state") ?? undefined;
+
+  const currentCity =
+    params.get("city") ?? undefined;
 
   const searchRef =
     useRef<HTMLInputElement>(null);
@@ -108,6 +124,40 @@ export default function ProductsPage() {
     staleTime: 1000 * 60 * 10,
   });
 
+  /* AVAILABLE STATES AND CITIES (DYNAMIC EXTRACT) */
+
+  const availableStates = useMemo(() => {
+    const statesSet = new Set<string>();
+    categories.forEach((c: any) => {
+      if (c.state) {
+        statesSet.add(toTitleCase(c.state));
+      }
+    });
+    return Array.from(statesSet).sort();
+  }, [categories]);
+
+  const availableCities = useMemo(() => {
+    const citiesSet = new Set<string>();
+    categories.forEach((c: any) => {
+      if (c.city && (!currentState || toTitleCase(c.state).toLowerCase() === currentState.toLowerCase())) {
+        citiesSet.add(toTitleCase(c.city));
+      }
+    });
+    return Array.from(citiesSet).sort();
+  }, [categories, currentState]);
+
+  const filteredCategories = useMemo(() => {
+    return categories.filter((c: any) => {
+      if (currentState && (!c.state || toTitleCase(c.state).toLowerCase() !== currentState.toLowerCase())) {
+        return false;
+      }
+      if (currentCity && (!c.city || toTitleCase(c.city).toLowerCase() !== currentCity.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  }, [categories, currentState, currentCity]);
+
   /* FILTER + SORT */
 
   const displayProducts = useMemo(() => {
@@ -127,6 +177,32 @@ export default function ProductsPage() {
         )
     );
 
+    /* ENHANCE REGIONAL METADATA (WITH DEFAULT FOR ADMIN & VENDORS) */
+    arr = arr.map((p: any) => {
+      const isAdmin = p.created_by_type === "admin" || !p.created_by_type;
+      return {
+        ...p,
+        vendor_city: isAdmin ? "Erode" : (p.vendor_city || "Coimbatore"),
+        vendor_state: isAdmin ? "Tamil Nadu" : (p.vendor_state || "Tamil Nadu"),
+      };
+    });
+
+    /* STATE */
+    if (currentState) {
+      arr = arr.filter((p: any) => {
+        const pState = p.vendor_state || "";
+        return pState.toLowerCase() === currentState.toLowerCase();
+      });
+    }
+
+    /* CITY */
+    if (currentCity) {
+      arr = arr.filter((p: any) => {
+        const pCity = p.vendor_city || "";
+        return pCity.toLowerCase() === currentCity.toLowerCase();
+      });
+    }
+
     /* CATEGORY */
 
     if (currentCat) {
@@ -142,20 +218,15 @@ export default function ProductsPage() {
     /* SEARCH */
 
     if (currentQ) {
-      arr = arr.filter(
-        (p: any) =>
-          p.name
-            ?.toLowerCase()
-            .includes(currentQ) ||
-
-          p.description
-            ?.toLowerCase()
-            .includes(currentQ) ||
-
-          p.category
-            ?.toLowerCase()
-            .includes(currentQ)
-      );
+      const cleanQ = currentQ.replace(/\s+/g, "");
+      arr = arr.filter((p: any) => {
+        const nameMatch = p.name?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const descMatch = p.description?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const catMatch = p.category?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const cityMatch = p.vendor_city?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const stateMatch = p.vendor_state?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        return nameMatch || descMatch || catMatch || cityMatch || stateMatch;
+      });
     }
 
     /* SORT */
@@ -196,6 +267,8 @@ export default function ProductsPage() {
     currentCat,
     currentQ,
     currentSort,
+    currentState,
+    currentCity,
   ]);
 
   function handleSearchSubmit(
@@ -224,6 +297,30 @@ export default function ProductsPage() {
     navigate(
       `/products?${params.toString()}`
     );
+  }
+
+  function handleStateChange(state: string) {
+    if (state === "all") {
+      params.delete("state");
+      params.delete("city");
+      params.delete("category");
+    } else {
+      params.set("state", state);
+      params.delete("city");
+      params.delete("category");
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
+  function handleCityChange(city: string) {
+    if (city === "all") {
+      params.delete("city");
+      params.delete("category");
+    } else {
+      params.set("city", city);
+      params.delete("category");
+    }
+    navigate(`/products?${params.toString()}`);
   }
 
   const categoryName =
@@ -286,14 +383,19 @@ export default function ProductsPage() {
 
         <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
 
-          <div className="hidden lg:block">
+          <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <Sidebar
               categories={categories}
+              filteredCategories={filteredCategories}
+              availableStates={availableStates}
+              availableCities={availableCities}
+              currentState={currentState}
+              currentCity={currentCity}
               currentCat={currentCat}
               currentSort={currentSort}
-              onSortChange={
-                handleSortChange
-              }
+              onSortChange={handleSortChange}
+              onStateChange={handleStateChange}
+              onCityChange={handleCityChange}
             />
           </div>
 
@@ -312,32 +414,32 @@ export default function ProductsPage() {
               </div>
             ) : displayProducts.length ===
               0 ? (
-              <EmptyState
-                title="No products found"
-                description={
-                  currentQ
-                    ? `No results for "${params.get(
-                        "q"
-                      )}". Try another search.`
-                    : "Products will appear here once admin approves them."
-                }
-              />
-            ) : (
-              <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
-                {displayProducts.map(
-                  (
-                    p: any,
-                    i: number
-                  ) => (
-                    <ProductCard
-                      key={p.id}
-                      product={p}
-                      index={i}
-                    />
-                  )
-                )}
-              </div>
-            )}
+                <EmptyState
+                  title="No products found"
+                  description={
+                    currentQ
+                      ? `No results for "${params.get(
+                          "q"
+                        )}". Try another search.`
+                      : "Products will appear here once admin approves them."
+                  }
+                />
+              ) : (
+                <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
+                  {displayProducts.map(
+                    (
+                      p: any,
+                      i: number
+                    ) => (
+                      <ProductCard
+                        key={p.id}
+                        product={p}
+                        index={i}
+                      />
+                    )
+                  )}
+                </div>
+              )}
           </div>
         </div>
 
@@ -349,9 +451,9 @@ export default function ProductsPage() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span>Filters & Sort</span>
-            {currentCat && (
+            {(currentCat || currentState || currentCity) && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#FF6600]">
-                1
+                {[currentCat, currentState, currentCity].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -385,6 +487,47 @@ export default function ProductsPage() {
                   </button>
                 </div>
 
+                {/* Location Filter on Mobile */}
+                <div className="space-y-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    Location
+                  </div>
+                  <div className="space-y-2">
+                    <select
+                      value={currentState || "all"}
+                      onChange={(e) => {
+                        handleStateChange(e.target.value);
+                        setMobileFiltersOpen(false);
+                      }}
+                      className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer"
+                    >
+                      <option value="all">All States</option>
+                      {availableStates.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={currentCity || "all"}
+                      onChange={(e) => {
+                        handleCityChange(e.target.value);
+                        setMobileFiltersOpen(false);
+                      }}
+                      disabled={!currentState}
+                      className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="all">All Cities</option>
+                      {availableCities.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Categories filter */}
                 <div className="space-y-3">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
@@ -393,7 +536,17 @@ export default function ProductsPage() {
                   <ul className="space-y-1">
                     <li>
                       <Link
-                        to="/products"
+                        to={`/products${
+                          currentState || currentCity
+                            ? "?" +
+                              [
+                                currentState ? `state=${encodeURIComponent(currentState)}` : "",
+                                currentCity ? `city=${encodeURIComponent(currentCity)}` : "",
+                              ]
+                                .filter(Boolean)
+                                .join("&")
+                            : ""
+                        }`}
                         onClick={() => setMobileFiltersOpen(false)}
                         className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
                           !currentCat
@@ -401,15 +554,20 @@ export default function ProductsPage() {
                             : "text-muted-foreground hover:bg-white/5"
                         }`}
                       >
-                        All Products
+                        All Categories
                       </Link>
                     </li>
-                    {categories.map((c: any) => {
+                    {filteredCategories.map((c: any) => {
                       const active = currentCat === c.name;
+                      const linkParams = new URLSearchParams();
+                      if (currentState) linkParams.set("state", currentState);
+                      if (currentCity) linkParams.set("city", currentCity);
+                      linkParams.set("category", c.name);
+
                       return (
                         <li key={c.id}>
                           <Link
-                            to={`/products?category=${c.name}`}
+                            to={`/products?${linkParams.toString()}`}
                             onClick={() => setMobileFiltersOpen(false)}
                             className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
                               active
@@ -477,46 +635,119 @@ export default function ProductsPage() {
 const Sidebar = memo(
   function Sidebar({
     categories,
+    filteredCategories,
+    availableStates,
+    availableCities,
+    currentState,
+    currentCity,
     currentCat,
     currentSort,
     onSortChange,
+    onStateChange,
+    onCityChange,
   }: {
     categories: any[];
+    filteredCategories: any[];
+    availableStates: string[];
+    availableCities: string[];
+    currentState?: string;
+    currentCity?: string;
     currentCat?: string;
     currentSort: string;
     onSortChange: (value: string) => void;
+    onStateChange: (state: string) => void;
+    onCityChange: (city: string) => void;
   }) {
+    const allProductsParams = new URLSearchParams();
+    if (currentState) allProductsParams.set("state", currentState);
+    if (currentCity) allProductsParams.set("city", currentCity);
+
     return (
-      <aside className="space-y-6">
+      <aside className="space-y-6 animate-fadeUp">
+
+        {/* REGIONAL FILTER */}
+
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <SlidersHorizontal className="h-4 w-4 text-[#FF6600]" />
+            Location Filter
+          </div>
+
+          {/* State Select */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              State
+            </label>
+            <Select value={currentState || "all"} onValueChange={onStateChange}>
+              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm text-white focus:ring-1 focus:ring-[#FF6600]">
+                <SelectValue placeholder="All States" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All States</SelectItem>
+                {availableStates.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* City Select */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              City
+            </label>
+            <Select 
+              value={currentCity || "all"} 
+              onValueChange={onCityChange}
+              disabled={!currentState}
+            >
+              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm text-white focus:ring-1 focus:ring-[#FF6600] disabled:opacity-50">
+                <SelectValue placeholder="All Cities" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Cities</SelectItem>
+                {availableCities.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
         {/* CATEGORIES */}
 
         <div className="glass rounded-2xl p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-            <SlidersHorizontal className="h-4 w-4" />
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+            <SlidersHorizontal className="h-4 w-4 text-[#FF6600]" />
             Categories
           </div>
 
-          <ul className="space-y-1">
+          <ul className="space-y-1 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
 
             <li>
               <Link
-                to="/products"
+                to={`/products${allProductsParams.toString() ? `?${allProductsParams.toString()}` : ""}`}
                 className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
                   !currentCat
                     ? "bg-primary/10 font-semibold text-primary"
                     : "text-muted-foreground hover:bg-white/5"
                 }`}
               >
-                All Products
+                All Categories
               </Link>
             </li>
 
-            {categories.map(
+            {filteredCategories.map(
               (c: any) => (
                 <CategoryLink
                   key={c.id}
                   category={c}
+                  currentState={currentState}
+                  currentCity={currentCity}
                   active={
                     currentCat ===
                     c.name
@@ -556,18 +787,26 @@ const CategoryLink = memo(
   function CategoryLink({
     category,
     active,
+    currentState,
+    currentCity,
   }: {
     category: {
       id: string;
       name: string;
     };
-
     active: boolean;
+    currentState?: string;
+    currentCity?: string;
   }) {
+    const linkParams = new URLSearchParams();
+    if (currentState) linkParams.set("state", currentState);
+    if (currentCity) linkParams.set("city", currentCity);
+    linkParams.set("category", category.name);
+
     return (
       <li>
         <Link
-          to={`/products?category=${category.name}`}
+          to={`/products?${linkParams.toString()}`}
           className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
             active
               ? "bg-primary/10 font-semibold text-primary"

@@ -68,7 +68,7 @@ export const ProductCard = memo(function ProductCard({
         </div>
 
         {/* CONTENT SECTION */}
-        <div className="flex flex-1 flex-col p-5">
+        <div className="flex flex-1 flex-col p-4 sm:p-5">
           
           {/* RATING & CATEGORY */}
           <div className="mb-3 flex items-center justify-between">
@@ -106,14 +106,14 @@ export const ProductCard = memo(function ProductCard({
           </div>
 
           {/* PRICE SECTION */}
-          <div className="mt-auto pt-4 flex items-center justify-between">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-black text-white">
+          <div className="mt-auto pt-4 flex items-center justify-between gap-2">
+            <div className="flex flex-col min-w-0">
+              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                <span className="text-lg font-black text-white sm:text-xl">
                   {inr(Number(product.price))}
                 </span>
                 {Number(product.original_price) > Number(product.price) && (
-                  <span className="text-xs text-gray-500 line-through">
+                  <span className="text-[10px] text-gray-500 line-through sm:text-xs">
                     {inr(Number(product.original_price))}
                   </span>
                 )}
@@ -124,9 +124,9 @@ export const ProductCard = memo(function ProductCard({
             {/* ADD TO CART ICON BUTTON */}
             <button
               onClick={handleAdd}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-white shadow-lg transition-all active:scale-95 hover:bg-white hover:text-primary"
+              className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-primary text-white shadow-lg transition-all active:scale-95 hover:bg-white hover:text-primary"
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function ProductCardSkeleton() {
     <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] animate-pulse">
       <div className="aspect-[4/5] bg-white/10" />
 
-      <div className="flex flex-1 flex-col p-5 space-y-4">
+      <div className="flex flex-1 flex-col p-4 sm:p-5 space-y-4">
         <div className="flex justify-between items-center">
           <div className="h-4 w-16 rounded-full bg-white/10" />
           <div className="h-4 w-12 rounded-full bg-white/10" />
@@ -152,12 +152,12 @@ export function ProductCardSkeleton() {
           <div className="h-4 w-1/2 rounded bg-white/10" />
         </div>
 
-        <div className="mt-auto pt-4 flex justify-between items-center">
-          <div className="space-y-1">
-            <div className="h-6 w-24 rounded bg-white/10" />
-            <div className="h-3 w-16 rounded bg-white/10" />
+        <div className="mt-auto pt-4 flex justify-between items-center gap-2">
+          <div className="space-y-1 min-w-0">
+            <div className="h-5 w-16 sm:h-6 sm:w-24 rounded bg-white/10" />
+            <div className="h-3 w-10 sm:w-16 rounded bg-white/10" />
           </div>
-          <div className="h-11 w-11 rounded-2xl bg-white/10" />
+          <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl bg-white/10 shrink-0" />
         </div>
       </div>
     </div>

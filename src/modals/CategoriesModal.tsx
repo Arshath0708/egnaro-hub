@@ -18,6 +18,8 @@ import {
 type Category = {
   id: number;
   name: string;
+  state?: string;
+  city?: string;
 };
 
 interface Props {
@@ -31,11 +33,19 @@ export function CategoriesModal({
 
   const [newCategory, setNewCategory] =
     useState("");
+  const [newState, setNewState] =
+    useState("");
+  const [newCity, setNewCity] =
+    useState("");
 
   const [editingId, setEditingId] =
     useState<number | null>(null);
 
   const [editingName, setEditingName] =
+    useState("");
+  const [editingState, setEditingState] =
+    useState("");
+  const [editingCity, setEditingCity] =
     useState("");
 
   const [deletingCategory, setDeletingCategory] =
@@ -49,11 +59,14 @@ export function CategoriesModal({
   const categories = Array.isArray(apiCategories) ? apiCategories : [];
 
   const addMutation = useMutation({
-    mutationFn: (name: string) => addCategory(name),
+    mutationFn: ({ name, state, city }: { name: string; state: string; city: string }) =>
+      addCategory(name, state, city),
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Category added");
         setNewCategory("");
+        setNewState("");
+        setNewCity("");
         queryClient.invalidateQueries({ queryKey: ["categories"] });
       } else {
         toast.error(res.message || "Failed");
@@ -65,10 +78,11 @@ export function CategoriesModal({
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) => updateCategory(id, name),
+    mutationFn: ({ id, name, state, city }: { id: number; name: string; state: string; city: string }) =>
+      updateCategory(id, name, state, city),
     onSuccess: (res) => {
       if (res.success) {
-        toast.success("Updated");
+        toast.success("Category updated successfully");
         setEditingId(null);
         queryClient.invalidateQueries({ queryKey: ["categories"] });
       } else {
@@ -99,13 +113,35 @@ export function CategoriesModal({
   const isPending = addMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   function handleAdd() {
-    if (!newCategory.trim()) return;
-    addMutation.mutate(newCategory);
+    if (!newCategory.trim()) {
+      toast.error("Category name required");
+      return;
+    }
+    if (!newState.trim()) {
+      toast.error("State required");
+      return;
+    }
+    if (!newCity.trim()) {
+      toast.error("City required");
+      return;
+    }
+    addMutation.mutate({ name: newCategory, state: newState, city: newCity });
   }
 
   function handleUpdate(id: number) {
-    if (!editingName.trim()) return;
-    updateMutation.mutate({ id, name: editingName });
+    if (!editingName.trim()) {
+      toast.error("Category name required");
+      return;
+    }
+    if (!editingState.trim()) {
+      toast.error("State required");
+      return;
+    }
+    if (!editingCity.trim()) {
+      toast.error("City required");
+      return;
+    }
+    updateMutation.mutate({ id, name: editingName, state: editingState, city: editingCity });
   }
 
   function handleDelete(cat: Category) {
@@ -114,11 +150,11 @@ export function CategoriesModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-[#0f172a] p-6">
+      <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0f172a] p-6 max-h-[90vh] flex flex-col">
 
         {/* HEADER */}
 
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between shrink-0">
           <h2 className="text-2xl font-bold text-white">
             Categories
           </h2>
@@ -131,88 +167,129 @@ export function CategoriesModal({
           </button>
         </div>
 
-        {/* ADD */}
+        {/* ADD FORM */}
 
-        <div className="mb-6 flex gap-3">
-          <input
-            value={newCategory}
-            onChange={(e) =>
-              setNewCategory(
-                e.target.value
-              )
-            }
-            placeholder="Enter category"
-            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-          />
-
+        <div className="mb-6 rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-4 shrink-0">
+          <div className="text-xs font-bold uppercase tracking-widest text-[#FF6600]">
+            Add New Category
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <input
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="Category Name"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-gray-400 outline-none transition-all focus:border-[#FF6600]"
+            />
+            <input
+              value={newState}
+              onChange={(e) => setNewState(e.target.value)}
+              placeholder="State (e.g. Tamil Nadu)"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-gray-400 outline-none transition-all focus:border-[#FF6600]"
+            />
+            <input
+              value={newCity}
+              onChange={(e) => setNewCity(e.target.value)}
+              placeholder="City (e.g. Chennai)"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-gray-400 outline-none transition-all focus:border-[#FF6600]"
+            />
+          </div>
           <button
             onClick={handleAdd}
-            className="rounded-xl bg-[#FF6600] px-5 text-white"
+            disabled={isPending}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF6600] py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#e65c00] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
-            <Plus className="h-5 w-5" />
+            {addMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            <span>Add Category</span>
           </button>
         </div>
 
         {/* LIST */}
 
-        <div className="space-y-3">
-
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"
-            >
-              {editingId === cat.id ? (
-                <input
-                  value={editingName}
-                  onChange={(e) =>
-                    setEditingName(
-                      e.target.value
-                    )
-                  }
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white"
-                />
-              ) : (
-                <span className="text-white">
-                  {cat.name}
-                </span>
-              )}
-
-              <div className="flex gap-2">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-3 scrollbar-thin">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+            </div>
+          ) : categories.length === 0 ? (
+            <p className="py-8 text-center text-sm text-gray-500">
+              No categories found
+            </p>
+          ) : (
+            categories.map((cat) => (
+              <div
+                key={cat.id}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"
+              >
                 {editingId === cat.id ? (
-                  <button
-                    onClick={() =>
-                      handleUpdate(cat.id)
-                    }
-                    className="rounded-lg bg-green-600 px-3 py-2 text-white"
-                  >
-                    Save
-                  </button>
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 flex-1 mr-4">
+                    <input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      placeholder="Category Name"
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white outline-none focus:border-[#FF6600]"
+                    />
+                    <input
+                      value={editingState}
+                      onChange={(e) => setEditingState(e.target.value)}
+                      placeholder="State"
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white outline-none focus:border-[#FF6600]"
+                    />
+                    <input
+                      value={editingCity}
+                      onChange={(e) => setEditingCity(e.target.value)}
+                      placeholder="City"
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white outline-none focus:border-[#FF6600]"
+                    />
+                  </div>
                 ) : (
-                  <button
-                    onClick={() => {
-                      setEditingId(cat.id);
-                      setEditingName(
-                        cat.name
-                      );
-                    }}
-                    className="rounded-lg bg-cyan-600 p-2 text-white"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-bold text-white">
+                      {cat.name}
+                    </span>
+                    {(cat.state || cat.city) && (
+                      <span className="text-[10px] font-medium text-gray-400">
+                        {cat.city ? `${cat.city}, ` : ""}{cat.state || ""}
+                      </span>
+                    )}
+                  </div>
                 )}
 
-                <button
-                  onClick={() =>
-                    handleDelete(cat)
-                  }
-                  className="rounded-lg bg-red-600 p-2 text-white"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  {editingId === cat.id ? (
+                    <button
+                      onClick={() => handleUpdate(cat.id)}
+                      className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-green-700 cursor-pointer"
+                    >
+                      Save
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setEditingId(cat.id);
+                        setEditingName(cat.name);
+                        setEditingState(cat.state || "");
+                        setEditingCity(cat.city || "");
+                      }}
+                      className="rounded-lg bg-cyan-600 p-2 text-white transition hover:bg-cyan-700 cursor-pointer"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => handleDelete(cat)}
+                    className="rounded-lg bg-red-600 p-2 text-white transition hover:bg-red-700 cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

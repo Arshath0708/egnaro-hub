@@ -15,6 +15,8 @@ type RegisterForm = {
   email: string;
   password: string;
   address: string;
+  state: string;
+  city: string;
   bank_name: string;
   account_number: string;
   ifsc_code: string;
@@ -23,7 +25,7 @@ type LoginForm = { email: string; password: string };
 
 const EMPTY_REGISTER: RegisterForm = {
   vendor_name: "", company_name: "", phone: "", email: "",
-  password: "", address: "", bank_name: "", account_number: "", ifsc_code: "",
+  password: "", address: "", state: "", city: "", bank_name: "", account_number: "", ifsc_code: "",
 };
 const EMPTY_LOGIN: LoginForm = { email: "", password: "" };
 
@@ -347,6 +349,18 @@ export default function VendorRegister() {
                 <textarea required rows={3} autoComplete="street-address" placeholder="Full business address"
                   className={`${inp} resize-none`} value={form.address}
                   onChange={(e) => setRegField("address", e.target.value)} />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">State</label>
+                  <input required placeholder="e.g. Tamil Nadu" className={inp}
+                    value={form.state} onChange={(e) => setRegField("state", e.target.value)} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">City</label>
+                  <input required placeholder="e.g. Chennai" className={inp}
+                    value={form.city} onChange={(e) => setRegField("city", e.target.value)} />
+                </div>
               </div>
               <button disabled={loading}
                 className="w-full rounded-lg gradient-primary py-3 font-semibold text-white disabled:opacity-60">

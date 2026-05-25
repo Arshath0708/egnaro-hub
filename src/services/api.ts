@@ -353,22 +353,26 @@ export async function getCategories() {
   return await request("/get-categories.php");
 }
 
-export async function addCategory(name: string) {
+export async function addCategory(name: string, state: string, city: string) {
   return await request("/add-category.php", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, state, city }),
   });
 }
 
 export async function updateCategory(
   id: number,
-  name: string
+  name: string,
+  state: string,
+  city: string
 ) {
   return await request("/update-category.php", {
     method: "POST",
     body: JSON.stringify({
       id,
       name,
+      state,
+      city,
     }),
   });
 }
