@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import Home from "./routes/index";
 import About from "./routes/about";
@@ -18,24 +17,14 @@ import Admin from "./routes/admin";
 import VendorDashboard from "./routes/vendor-dashboard";
 import VendorRegister from "./routes/vendor-register";
 
-function ScrollToTop() {
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: "instant",
-    });
-  }, [pathname]);
-
-  return null;
-}
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { BackToTop } from "@/components/layout/BackToTop";
 
 export default function App() {
   return (
     <>
       <ScrollToTop />
+      <BackToTop />
       <Toaster
         position="top-right"
         theme="dark"

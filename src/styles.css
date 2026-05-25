@@ -167,6 +167,12 @@
   .animate-fadeUp {
     animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+  
+  /* Premium glow and active micro-states */
+  .shadow-premium-glow {
+    box-shadow: 0 0 30px -5px oklch(0.78 0.18 75 / 25%), 
+                0 1px 0 0 oklch(1 0 0 / 10%) inset;
+  }
 }
 
 @keyframes fadeUp {
@@ -177,5 +183,29 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   PREMIUM PRODUCTION LAYER OPTIMIZATIONS
+   Hardware-accelerated rendering rules to eliminate viewport blur
+   and micro-stuttering on high-DPI iOS/Android screens.
+   ============================================================ */
+
+@layer base {
+  body, html {
+    /* Subpixel antialiasing & rendering precision */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Force GPU rasterization for highly animated/blurred glass layers to avoid micro-blurring */
+  .glass, .glass-strong, .hover-lift, button, a, img {
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
   }
 }
