@@ -12,6 +12,8 @@ type Vendor = {
   phone: string;
   email: string;
   address: string;
+  state?: string;
+  city?: string;
   status?: string;
   approved?: number;
   request_type?: string;
@@ -213,6 +215,11 @@ const VendorCard = memo(({ vendor, onAction }: { vendor: Vendor; onAction: (id: 
           <p className="mt-1 text-xs text-gray-500">{vendor.email}</p>
           <p className="mt-1 text-xs text-gray-500">{vendor.phone}</p>
           <p className="mt-1 text-xs text-gray-600">{vendor.address}</p>
+          {vendor.city && vendor.state && (
+            <p className="mt-1.5 text-xs font-semibold text-[#FF6600]">
+              Location: {vendor.city}, {vendor.state}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 gap-2 pt-1">
           <button disabled={busy} onClick={() => handleAction("approve")}

@@ -771,9 +771,14 @@ function AdminPanel({
                             </TableCell>
 
                             <TableCell className="text-gray-300">
-                              {
-                                vendor.company_name
-                              }
+                              <div className="flex flex-col">
+                                <span>{vendor.company_name}</span>
+                                {vendor.city && vendor.state && (
+                                  <span className="text-[10px] text-[#FF6600] mt-0.5 font-semibold">
+                                    {vendor.city}, {vendor.state}
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
 
                             <TableCell>
