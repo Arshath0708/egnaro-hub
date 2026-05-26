@@ -353,10 +353,10 @@ export async function getCategories() {
   return await request("/get-categories.php");
 }
 
-export async function addCategory(name: string, state: string, city: string) {
+export async function addCategory(name: string, state: string, city: string, town?: string) {
   return await request("/add-category.php", {
     method: "POST",
-    body: JSON.stringify({ name, state, city }),
+    body: JSON.stringify({ name, state, city, town }),
   });
 }
 
@@ -364,7 +364,8 @@ export async function updateCategory(
   id: number,
   name: string,
   state: string,
-  city: string
+  city: string,
+  town?: string
 ) {
   return await request("/update-category.php", {
     method: "POST",
@@ -373,6 +374,7 @@ export async function updateCategory(
       name,
       state,
       city,
+      town,
     }),
   });
 }
@@ -383,3 +385,24 @@ export async function deleteCategory(id: number) {
     body: JSON.stringify({ id }),
   });
 }
+
+/* ================= LOCATIONS ================= */
+
+export async function getLocations() {
+  return await request("/get-locations.php");
+}
+
+export async function addLocation(state: string, city: string, town: string) {
+  return await request("/add-location.php", {
+    method: "POST",
+    body: JSON.stringify({ state, city, town }),
+  });
+}
+
+export async function deleteLocation(id: number) {
+  return await request("/delete-location.php", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+

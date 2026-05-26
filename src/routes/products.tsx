@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LocationSelect } from "@/components/LocationSelect";
 
 import {
   Search,
@@ -36,6 +37,7 @@ import { EmptyState } from "@/components/Section";
 import {
   getProducts,
   getCategories,
+  getLocations,
 } from "@/services/api";
 
 const SORT_OPTIONS = [
@@ -72,151 +74,153 @@ function toTitleCase(str: string): string {
 
 export default function ProductsPage() {
   const navigate = useNavigate();
-
   const location = useLocation();
 
-  const params = new URLSearchParams(
-    location.search
-  );
+  const params = new URLSearchParams(location.search);
 
-  const currentSort =
-    params.get("sort") ?? "new";
+  const currentSort = params.get("sort") ?? "new";
+  const currentCat = params.get("category") ?? undefined;
+  const currentQ = params.get("q")?.toLowerCase() ?? "";
 
-  const currentCat =
-    params.get("category") ?? undefined;
+  // Normalize URL search parameters to clean Title Case
+  const currentState = params.get("state") ? toTitleCase(params.get("state")!) : undefined;
+  const currentCity = params.get("city") ? toTitleCase(params.get("city")!) : undefined;
+  const currentTown = params.get("town") ? toTitleCase(params.get("town")!) : undefined;
 
-  const currentQ =
-    params.get("q")?.toLowerCase() ?? "";
-
-  const currentState =
-    params.get("state") ?? undefined;
-
-  const currentCity =
-    params.get("city") ?? undefined;
-
-  const searchRef =
-    useRef<HTMLInputElement>(null);
-
+  const searchRef = useRef<HTMLInputElement>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   /* PRODUCTS */
-
-  const {
-    data: products = [],
-    isLoading,
-  } = useQuery({
+  const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
-
     queryFn: getProducts,
-
     staleTime: 1000 * 60 * 5,
   });
 
   /* CATEGORIES */
-
-  const {
-    data: categories = [],
-  } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
-
     queryFn: getCategories,
-
     staleTime: 1000 * 60 * 10,
   });
 
-  /* AVAILABLE STATES AND CITIES (DYNAMIC EXTRACT) */
+  /* CENTRAL LOCATIONS TREE INDEX */
+  const { data: apiLocations = [] } = useQuery({
+    queryKey: ["locations"],
+    queryFn: getLocations,
+    staleTime: 1000 * 60 * 10,
+  });
 
-  const availableStates = useMemo(() => {
-    const statesSet = new Set<string>();
-    categories.forEach((c: any) => {
-      if (c.state) {
-        statesSet.add(toTitleCase(c.state));
-      }
+  const locations = Array.isArray(apiLocations) ? apiLocations : [];
+
+  /* REGIONAL NORMALIZATION */
+  const normalizedProducts = useMemo(() => {
+    return products.map((p: any) => {
+      const isAdmin = p.created_by_type === "admin" || !p.created_by_type;
+      return {
+        ...p,
+        vendor_state: toTitleCase(isAdmin ? "Tamil Nadu" : (p.vendor_state || "Tamil Nadu")),
+        vendor_city: toTitleCase(isAdmin ? "Erode" : (p.vendor_city || "Coimbatore")),
+        vendor_town: toTitleCase(isAdmin ? "Perundurai" : (p.vendor_town || "Gandhipuram")),
+      };
     });
-    return Array.from(statesSet).sort();
-  }, [categories]);
+  }, [products]);
+
+  /* 3-TIER NORMALIZED FILTER INDEX LISTS */
+  const availableStates = useMemo(() => {
+    const states = locations.map((l) => toTitleCase(l.state));
+    return Array.from(new Set(states)).sort();
+  }, [locations]);
 
   const availableCities = useMemo(() => {
-    const citiesSet = new Set<string>();
-    categories.forEach((c: any) => {
-      if (c.city && (!currentState || toTitleCase(c.state).toLowerCase() === currentState.toLowerCase())) {
-        citiesSet.add(toTitleCase(c.city));
-      }
-    });
-    return Array.from(citiesSet).sort();
-  }, [categories, currentState]);
+    if (!currentState) return [];
+    const cities = locations
+      .filter((l) => l.state.toLowerCase() === currentState.toLowerCase())
+      .map((l) => toTitleCase(l.city));
+    return Array.from(new Set(cities)).sort();
+  }, [locations, currentState]);
+
+  const availableTowns = useMemo(() => {
+    if (!currentState || !currentCity) return [];
+    const towns = locations
+      .filter(
+        (l) =>
+          l.state.toLowerCase() === currentState.toLowerCase() &&
+          l.city.toLowerCase() === currentCity.toLowerCase()
+      )
+      .map((l) => toTitleCase(l.town));
+    return Array.from(new Set(towns)).sort();
+  }, [locations, currentState, currentCity]);
 
   const filteredCategories = useMemo(() => {
     return categories.filter((c: any) => {
-      if (currentState && (!c.state || toTitleCase(c.state).toLowerCase() !== currentState.toLowerCase())) {
+      // Global categories (no state defined) are always visible across all locations
+      if (!c.state || c.state.trim() === "") {
+        return true;
+      }
+      // If state is selected, filter out non-matching regional categories
+      if (currentState && toTitleCase(c.state).toLowerCase() !== currentState.toLowerCase()) {
         return false;
       }
-      if (currentCity && (!c.city || toTitleCase(c.city).toLowerCase() !== currentCity.toLowerCase())) {
+      // If city is selected, filter out non-matching regional categories
+      if (currentCity && c.city && toTitleCase(c.city).toLowerCase() !== currentCity.toLowerCase()) {
         return false;
       }
       return true;
     });
   }, [categories, currentState, currentCity]);
 
-  /* FILTER + SORT */
-
+  /* PRODUCT FILTER ENGINE */
   const displayProducts = useMemo(() => {
-    let arr = Array.isArray(products)
-      ? [...products]
-      : [];
+    let arr = Array.isArray(normalizedProducts) ? [...normalizedProducts] : [];
 
-    /* ONLY APPROVED */
-
+    /* APPROVED ONLY */
     arr = arr.filter(
       (p: any) =>
         p &&
-        (
-          p.approved === true ||
+        (p.approved === true ||
           Number(p.approved) === 1 ||
-          p.status === "approved"
-        )
+          p.status === "approved")
     );
 
-    /* ENHANCE REGIONAL METADATA (WITH DEFAULT FOR ADMIN & VENDORS) */
-    arr = arr.map((p: any) => {
-      const isAdmin = p.created_by_type === "admin" || !p.created_by_type;
-      return {
-        ...p,
-        vendor_city: isAdmin ? "Erode" : (p.vendor_city || "Coimbatore"),
-        vendor_state: isAdmin ? "Tamil Nadu" : (p.vendor_state || "Tamil Nadu"),
-      };
-    });
-
-    /* STATE */
+    /* STATE FILTER */
     if (currentState) {
-      arr = arr.filter((p: any) => {
-        const pState = p.vendor_state || "";
-        return pState.toLowerCase() === currentState.toLowerCase();
-      });
+      arr = arr.filter(
+        (p: any) =>
+          p.vendor_state &&
+          p.vendor_state.toLowerCase() === currentState.toLowerCase()
+      );
     }
 
-    /* CITY */
+    /* CITY FILTER */
     if (currentCity) {
-      arr = arr.filter((p: any) => {
-        const pCity = p.vendor_city || "";
-        return pCity.toLowerCase() === currentCity.toLowerCase();
-      });
+      arr = arr.filter(
+        (p: any) =>
+          p.vendor_city &&
+          p.vendor_city.toLowerCase() === currentCity.toLowerCase()
+      );
     }
 
-    /* CATEGORY */
+    /* TOWN FILTER */
+    if (currentTown) {
+      arr = arr.filter(
+        (p: any) =>
+          p.vendor_town &&
+          p.vendor_town.toLowerCase() === currentTown.toLowerCase()
+      );
+    }
 
+    /* CATEGORY FILTER */
     if (currentCat) {
       const catObj = categories.find((c: any) => c.name.toLowerCase() === currentCat.toLowerCase());
       const catID = catObj?.id;
-
       arr = arr.filter(
         (p: any) =>
           p.category === currentCat || String(p.category) === String(catID)
       );
     }
 
-    /* SEARCH */
-
+    /* SEARCH FILTER */
     if (currentQ) {
       const cleanQ = currentQ.replace(/\s+/g, "");
       arr = arr.filter((p: any) => {
@@ -225,88 +229,64 @@ export default function ProductsPage() {
         const catMatch = p.category?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
         const cityMatch = p.vendor_city?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
         const stateMatch = p.vendor_state?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
-        return nameMatch || descMatch || catMatch || cityMatch || stateMatch;
+        const townMatch = p.vendor_town?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        return nameMatch || descMatch || catMatch || cityMatch || stateMatch || townMatch;
       });
     }
 
-    /* SORT */
-
+    /* SORT FILTER */
     switch (currentSort) {
       case "price-asc":
-        arr.sort(
-          (a: any, b: any) =>
-            Number(a.price) -
-            Number(b.price)
-        );
+        arr.sort((a: any, b: any) => Number(a.price) - Number(b.price));
         break;
-
       case "price-desc":
-        arr.sort(
-          (a: any, b: any) =>
-            Number(b.price) -
-            Number(a.price)
-        );
+        arr.sort((a: any, b: any) => Number(b.price) - Number(a.price));
         break;
-
       case "discount":
-        arr.sort(
-          (a: any, b: any) =>
-            Number(b.discount || 0) -
-            Number(a.discount || 0)
-        );
+        arr.sort((a: any, b: any) => Number(b.discount || 0) - Number(a.discount || 0));
         break;
-
       default:
         break;
     }
 
     return arr;
   }, [
-    products,
+    normalizedProducts,
     categories,
     currentCat,
     currentQ,
     currentSort,
     currentState,
     currentCity,
+    currentTown,
   ]);
 
-  function handleSearchSubmit(
-    e: React.FormEvent
-  ) {
+  function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    const q =
-      searchRef.current?.value.trim() ||
-      "";
-
+    const q = searchRef.current?.value.trim() || "";
     if (q) {
       params.set("q", q);
     } else {
       params.delete("q");
     }
-
-    navigate(
-      `/products?${params.toString()}`
-    );
+    navigate(`/products?${params.toString()}`);
   }
 
   function handleSortChange(value: string) {
     params.set("sort", value);
-
-    navigate(
-      `/products?${params.toString()}`
-    );
+    navigate(`/products?${params.toString()}`);
   }
 
   function handleStateChange(state: string) {
     if (state === "all") {
       params.delete("state");
       params.delete("city");
+      params.delete("town");
       params.delete("category");
     } else {
       params.set("state", state);
       params.delete("city");
+      params.delete("town");
       params.delete("category");
     }
     navigate(`/products?${params.toString()}`);
@@ -315,18 +295,28 @@ export default function ProductsPage() {
   function handleCityChange(city: string) {
     if (city === "all") {
       params.delete("city");
+      params.delete("town");
       params.delete("category");
     } else {
       params.set("city", city);
+      params.delete("town");
       params.delete("category");
     }
     navigate(`/products?${params.toString()}`);
   }
 
-  const categoryName =
-    categories.find(
-      (c: any) => c.name === currentCat
-    )?.name;
+  function handleTownChange(town: string) {
+    if (town === "all") {
+      params.delete("town");
+      params.delete("category");
+    } else {
+      params.set("town", town);
+      params.delete("category");
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
+  const categoryName = categories.find((c: any) => c.name === currentCat)?.name;
 
   return (
     <Shell>
@@ -389,13 +379,16 @@ export default function ProductsPage() {
               filteredCategories={filteredCategories}
               availableStates={availableStates}
               availableCities={availableCities}
+              availableTowns={availableTowns}
               currentState={currentState}
               currentCity={currentCity}
+              currentTown={currentTown}
               currentCat={currentCat}
               currentSort={currentSort}
               onSortChange={handleSortChange}
               onStateChange={handleStateChange}
               onCityChange={handleCityChange}
+              onTownChange={handleTownChange}
             />
           </div>
 
@@ -451,9 +444,9 @@ export default function ProductsPage() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span>Filters & Sort</span>
-            {(currentCat || currentState || currentCity) && (
+            {(currentCat || currentState || currentCity || currentTown) && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#FF6600]">
-                {[currentCat, currentState, currentCity].filter(Boolean).length}
+                {[currentCat, currentState, currentCity, currentTown].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -488,43 +481,42 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Location Filter on Mobile */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                    Location
+                    Location Filter
                   </div>
-                  <div className="space-y-2">
-                    <select
+                  <div className="space-y-3">
+                    <LocationSelect
+                      label="State"
                       value={currentState || "all"}
-                      onChange={(e) => {
-                        handleStateChange(e.target.value);
-                        setMobileFiltersOpen(false);
-                      }}
-                      className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer"
-                    >
-                      <option value="all">All States</option>
-                      {availableStates.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={(val) => handleStateChange(val === "all" ? "all" : val)}
+                      options={availableStates}
+                      placeholder="All States"
+                      showOther={false}
+                      allOptionLabel="All States"
+                    />
 
-                    <select
+                    <LocationSelect
+                      label="City"
                       value={currentCity || "all"}
-                      onChange={(e) => {
-                        handleCityChange(e.target.value);
-                        setMobileFiltersOpen(false);
-                      }}
+                      onValueChange={(val) => handleCityChange(val === "all" ? "all" : val)}
+                      options={availableCities}
+                      placeholder="All Cities"
                       disabled={!currentState}
-                      className="w-full rounded-xl border border-white/10 bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      <option value="all">All Cities</option>
-                      {availableCities.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                      showOther={false}
+                      allOptionLabel="All Cities"
+                    />
+
+                    <LocationSelect
+                      label="Town / Area"
+                      value={currentTown || "all"}
+                      onValueChange={(val) => handleTownChange(val === "all" ? "all" : val)}
+                      options={availableTowns}
+                      placeholder="All Towns"
+                      disabled={!currentCity}
+                      showOther={false}
+                      allOptionLabel="All Towns"
+                    />
                   </div>
                 </div>
 
@@ -537,11 +529,12 @@ export default function ProductsPage() {
                     <li>
                       <Link
                         to={`/products${
-                          currentState || currentCity
+                          currentState || currentCity || currentTown
                             ? "?" +
                               [
                                 currentState ? `state=${encodeURIComponent(currentState)}` : "",
                                 currentCity ? `city=${encodeURIComponent(currentCity)}` : "",
+                                currentTown ? `town=${encodeURIComponent(currentTown)}` : "",
                               ]
                                 .filter(Boolean)
                                 .join("&")
@@ -562,6 +555,7 @@ export default function ProductsPage() {
                       const linkParams = new URLSearchParams();
                       if (currentState) linkParams.set("state", currentState);
                       if (currentCity) linkParams.set("city", currentCity);
+                      if (currentTown) linkParams.set("town", currentTown);
                       linkParams.set("category", c.name);
 
                       return (
@@ -638,29 +632,36 @@ const Sidebar = memo(
     filteredCategories,
     availableStates,
     availableCities,
+    availableTowns,
     currentState,
     currentCity,
+    currentTown,
     currentCat,
     currentSort,
     onSortChange,
     onStateChange,
     onCityChange,
+    onTownChange,
   }: {
     categories: any[];
     filteredCategories: any[];
     availableStates: string[];
     availableCities: string[];
+    availableTowns: string[];
     currentState?: string;
     currentCity?: string;
+    currentTown?: string;
     currentCat?: string;
     currentSort: string;
     onSortChange: (value: string) => void;
     onStateChange: (state: string) => void;
     onCityChange: (city: string) => void;
+    onTownChange: (town: string) => void;
   }) {
     const allProductsParams = new URLSearchParams();
     if (currentState) allProductsParams.set("state", currentState);
     if (currentCity) allProductsParams.set("city", currentCity);
+    if (currentTown) allProductsParams.set("town", currentTown);
 
     return (
       <aside className="space-y-6 animate-fadeUp">
@@ -674,48 +675,39 @@ const Sidebar = memo(
           </div>
 
           {/* State Select */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              State
-            </label>
-            <Select value={currentState || "all"} onValueChange={onStateChange}>
-              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm text-white focus:ring-1 focus:ring-[#FF6600]">
-                <SelectValue placeholder="All States" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
-                {availableStates.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <LocationSelect
+            label="State"
+            value={currentState || "all"}
+            onValueChange={onStateChange}
+            options={availableStates}
+            placeholder="All States"
+            showOther={false}
+            allOptionLabel="All States"
+          />
 
           {/* City Select */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              City
-            </label>
-            <Select 
-              value={currentCity || "all"} 
-              onValueChange={onCityChange}
-              disabled={!currentState}
-            >
-              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm text-white focus:ring-1 focus:ring-[#FF6600] disabled:opacity-50">
-                <SelectValue placeholder="All Cities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Cities</SelectItem>
-                {availableCities.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <LocationSelect
+            label="City"
+            value={currentCity || "all"}
+            onValueChange={onCityChange}
+            options={availableCities}
+            placeholder="All Cities"
+            disabled={!currentState}
+            showOther={false}
+            allOptionLabel="All Cities"
+          />
+
+          {/* Town Select */}
+          <LocationSelect
+            label="Town / Area"
+            value={currentTown || "all"}
+            onValueChange={onTownChange}
+            options={availableTowns}
+            placeholder="All Towns"
+            disabled={!currentCity}
+            showOther={false}
+            allOptionLabel="All Towns"
+          />
         </div>
 
         {/* CATEGORIES */}
@@ -748,6 +740,7 @@ const Sidebar = memo(
                   category={c}
                   currentState={currentState}
                   currentCity={currentCity}
+                  currentTown={currentTown}
                   active={
                     currentCat ===
                     c.name
@@ -789,6 +782,7 @@ const CategoryLink = memo(
     active,
     currentState,
     currentCity,
+    currentTown,
   }: {
     category: {
       id: string;
@@ -797,10 +791,12 @@ const CategoryLink = memo(
     active: boolean;
     currentState?: string;
     currentCity?: string;
+    currentTown?: string;
   }) {
     const linkParams = new URLSearchParams();
     if (currentState) linkParams.set("state", currentState);
     if (currentCity) linkParams.set("city", currentCity);
+    if (currentTown) linkParams.set("town", currentTown);
     linkParams.set("category", category.name);
 
     return (

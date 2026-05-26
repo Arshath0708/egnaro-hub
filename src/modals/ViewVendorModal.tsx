@@ -81,6 +81,13 @@ export function ViewVendorModal({
                     <DetailItem icon={<Mail />} label="Email Address" value={details.email} />
                     <DetailItem icon={<Phone />} label="Phone Number" value={details.phone} />
                     <DetailItem icon={<MapPin />} label="Business Address" value={details.address} isAddress />
+                    {(details.state || details.city || details.town) && (
+                      <DetailItem 
+                        icon={<MapPin />} 
+                        label="Location Hub" 
+                        value={`${details.town ? details.town + ", " : ""}${details.city ? details.city + ", " : ""}${details.state || ""}`} 
+                      />
+                    )}
                   </div>
                 </div>
 

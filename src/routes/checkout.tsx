@@ -340,8 +340,8 @@ Please find my payment screenshot attached.
                     {addresses.map((addr: any, idx: number) => {
                       const isSelected = form.address === addr.street && form.pincode === addr.pincode;
                       return (
-                        <div 
-                          key={idx} 
+                        <div
+                          key={idx}
                           onClick={() => handleSelectAddress(addr)}
                           className={`cursor-pointer rounded-xl border p-4 transition-all ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:border-primary/50"}`}
                         >
@@ -515,11 +515,10 @@ Please find my payment screenshot attached.
                     key={p.id}
                     type="button"
                     onClick={() => setPayment(p.id as any)}
-                    className={`rounded-2xl border-2 p-5 text-left transition-all ${
-                      payment === p.id
+                    className={`rounded-2xl border-2 p-5 text-left transition-all ${payment === p.id
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/40"
-                    }`}
+                      }`}
                   >
                     <p.icon className="mb-3 h-6 w-6 text-primary" />
 
@@ -549,7 +548,7 @@ Please find my payment screenshot attached.
 
                     <div>
                       <h3 className="text-lg font-bold">
-                        One Click UPI Payment 🚀
+                        One Click UPI Payment
                       </h3>
 
                       <div className="mt-4 space-y-3 text-sm">

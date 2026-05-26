@@ -160,7 +160,7 @@ function DashboardContent({
               </div>
 
               <h1 className="text-5xl font-black">
-                Welcome Back 👋
+                Welcome Back
               </h1>
 
               <p className="mt-4 text-gray-400">

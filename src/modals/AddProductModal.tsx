@@ -67,8 +67,8 @@ export function AddProductModal({
     onSuccess: async () => {
       toast.success(
         createdByType === "admin"
-          ? "Product added successfully 🚀"
-          : "Product submitted for approval 🚀"
+          ? "Product added successfully "
+          : "Product submitted for approval "
       );
       await queryClient.invalidateQueries({
         queryKey: ["products"],

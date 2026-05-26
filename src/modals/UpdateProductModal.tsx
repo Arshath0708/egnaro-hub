@@ -63,7 +63,7 @@ export function UpdateProductModal({
       }
     },
     onSuccess: async () => {
-      toast.success("Product updated successfully 🚀");
+      toast.success("Product updated successfully ");
       await queryClient.invalidateQueries({
         queryKey: ["vendor-products", vendorId],
       });

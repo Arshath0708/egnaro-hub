@@ -15,11 +15,13 @@ import {
   LayoutTemplate,
   Menu,
   X,
+  MapPin,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
 import AdminLogin from "@/components/AdminLogin";
 import { CategoriesModal } from "@/modals/CategoriesModal";
+import { LocationsModal } from "@/modals/LocationsModal";
 import { VendorRequestsModal } from "@/modals/VendorRequestsModal";
 import { ProductRequestsModal } from "@/modals/ProductRequestsModal";
 import { AddProductModal } from "@/modals/AddProductModal";
@@ -39,7 +41,10 @@ import {
   getProducts,
   getOrders,
   getVendors,
-  getAdminStats
+  getAdminStats,
+  getLocations,
+  addLocation,
+  deleteLocation
 } from "@/services/api";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -128,6 +133,9 @@ function AdminPanel({
     useState(false);
 
   const [categoriesModalOpen, setCategoriesModalOpen] =
+    useState(false);
+
+  const [locationsModalOpen, setLocationsModalOpen] =
     useState(false);
 
   const [showAddProduct, setShowAddProduct] =
@@ -333,6 +341,17 @@ function AdminPanel({
 
                   <button
                     onClick={() => {
+                      setLocationsModalOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-amber-400" />
+                    Manage Locations
+                  </button>
+
+                  <button
+                    onClick={() => {
                       setContentModalOpen(true);
                       setMenuOpen(false);
                     }}
@@ -417,7 +436,7 @@ function AdminPanel({
 
         {/* ACTION BUTTONS */}
 
-        <div className="mb-8 hidden md:grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 hidden md:grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <ActionButton
             icon={
               <Users className="h-5 w-5" />
@@ -439,6 +458,18 @@ function AdminPanel({
             accent="from-cyan-700 to-cyan-500"
             onClick={() =>
               setCategoriesModalOpen(true)
+            }
+          />
+
+          <ActionButton
+            icon={
+              <MapPin className="h-5 w-5" />
+            }
+            label="Manage Locations"
+            description="Manage regional states, cities and towns"
+            accent="from-amber-700 to-amber-500"
+            onClick={() =>
+              setLocationsModalOpen(true)
             }
           />
 
@@ -848,6 +879,15 @@ function AdminPanel({
           document.body
         )}
 
+        {locationsModalOpen && createPortal(
+          <LocationsModal
+            onClose={() =>
+              setLocationsModalOpen(false)
+            }
+          />,
+          document.body
+        )}
+
         {productModalOpen && createPortal(
           <ProductRequestsModal
             onClose={() =>
@@ -1242,30 +1282,64 @@ const OrderRow = memo(
 );
 
 function RevenueBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: () => void }) {
+  const details = stats?.details;
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
+      <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative">
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-white"
+          className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors duration-200"
         >
           ✕
         </button>
-        <h2 className="mb-6 text-2xl font-bold text-white">Revenue Split</h2>
-        <div className="space-y-4">
-          <div className="flex justify-between rounded-xl bg-white/5 p-4">
-            <span className="text-gray-400">Total Revenue</span>
-            <span className="font-bold text-white">₹{stats?.overall?.toLocaleString('en-IN') || 0}</span>
+        <h2 className="mb-6 text-2xl font-bold text-white">Marketplace Revenue Split</h2>
+        
+        {details ? (
+          <div className="space-y-4 animate-fadeIn">
+            <div className="flex justify-between rounded-2xl bg-white/5 p-4 border border-white/5">
+              <span className="text-gray-400 font-medium">Marketplace GMV</span>
+              <span className="font-black text-white text-lg">₹{details.marketplace_gmv?.toLocaleString('en-IN') || 0}</span>
+            </div>
+            
+            <div className="h-px bg-white/10 my-4" />
+            
+            <div className="flex justify-between rounded-2xl bg-cyan-500/10 p-4 border border-cyan-500/10">
+              <span className="text-cyan-400 font-medium">Platform Net Revenue (Admin)</span>
+              <span className="font-black text-cyan-400 text-lg">₹{details.platform_revenue?.toLocaleString('en-IN') || 0}</span>
+            </div>
+            <div className="pl-4 space-y-2">
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>└ Admin Product Sales (100%)</span>
+                <span>₹{details.admin_owned_sales?.toLocaleString('en-IN') || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>└ Vendor Commissions (10%)</span>
+                <span>₹{details.vendors_commission?.toLocaleString('en-IN') || 0}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between rounded-2xl bg-[#0B3D2E]/80 p-4 border border-[#FF6600]/10 mt-2">
+              <span className="text-[#FF6600] font-medium">Vendor Earnings (90%)</span>
+              <span className="font-black text-[#FF6600] text-lg">₹{details.vendors_earning?.toLocaleString('en-IN') || 0}</span>
+            </div>
           </div>
-          <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4">
-            <span className="text-cyan-400">Egnaro Mart (Admin)</span>
-            <span className="font-bold text-cyan-400">₹{stats?.admin?.toLocaleString('en-IN') || 0}</span>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex justify-between rounded-xl bg-white/5 p-4">
+              <span className="text-gray-400">Total Revenue</span>
+              <span className="font-bold text-white">₹{stats?.overall?.toLocaleString('en-IN') || 0}</span>
+            </div>
+            <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4">
+              <span className="text-cyan-400">Egnaro Mart (Admin)</span>
+              <span className="font-bold text-cyan-400">₹{stats?.admin?.toLocaleString('en-IN') || 0}</span>
+            </div>
+            <div className="flex justify-between rounded-xl bg-[#0B3D2E] p-4">
+              <span className="text-[#FF6600]">Vendors</span>
+              <span className="font-bold text-[#FF6600]">₹{stats?.vendor?.toLocaleString('en-IN') || 0}</span>
+            </div>
           </div>
-          <div className="flex justify-between rounded-xl bg-[#0B3D2E] p-4">
-            <span className="text-[#FF6600]">Vendors</span>
-            <span className="font-bold text-[#FF6600]">₹{stats?.vendor?.toLocaleString('en-IN') || 0}</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

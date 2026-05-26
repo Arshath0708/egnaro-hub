@@ -25,7 +25,7 @@ export function UpdateVendorProductModal({
       return await adminUpdateProduct(form);
     },
     onSuccess: async () => {
-      toast.success("Vendor product updated successfully 🚀");
+      toast.success("Vendor product updated successfully ");
       await queryClient.invalidateQueries({
         queryKey: ["vendor-products"], // Invalidates vendor products list if cached
       });
@@ -89,7 +89,7 @@ export function UpdateVendorProductModal({
                   className={inputClass}
                 />
               </div>
-              
+
               {/* RIGHT PREVIEW */}
               <div>
                 <div className="sticky top-10 rounded-3xl border border-white/10 bg-[#0b1220] p-6">

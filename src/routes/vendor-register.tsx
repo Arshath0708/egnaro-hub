@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, LogIn, ShieldCheck, Lock, Mail, KeyRound, Loader2, ArrowLeft, Clock, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
-import { addVendor } from "@/services/api";
+import { addVendor, getLocations, addLocation } from "@/services/api";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { toast } from "sonner";
+import { LocationSelect } from "@/components/LocationSelect";
 
 const API = "https://egnaromart.com/api";
 
@@ -17,6 +18,7 @@ type RegisterForm = {
   address: string;
   state: string;
   city: string;
+  town: string;
   bank_name: string;
   account_number: string;
   ifsc_code: string;
@@ -25,7 +27,7 @@ type LoginForm = { email: string; password: string };
 
 const EMPTY_REGISTER: RegisterForm = {
   vendor_name: "", company_name: "", phone: "", email: "",
-  password: "", address: "", state: "", city: "", bank_name: "", account_number: "", ifsc_code: "",
+  password: "", address: "", state: "", city: "", town: "", bank_name: "", account_number: "", ifsc_code: "",
 };
 const EMPTY_LOGIN: LoginForm = { email: "", password: "" };
 
@@ -51,6 +53,69 @@ export default function VendorRegister() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState<RegisterForm>(EMPTY_REGISTER);
+
+  // Custom text input states when selecting "Other"
+  const [customState, setCustomState] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [customTown, setCustomTown] = useState("");
+
+  const [locations, setLocations] = useState<any[]>([]);
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getLocations();
+        if (Array.isArray(data)) {
+          setLocations(data);
+        }
+      } catch (err) {
+        console.error("Failed to load locations", err);
+      }
+    }
+    load();
+  }, []);
+
+  const availableStates = useMemo(() => {
+    const states = new Set<string>();
+    locations.forEach((loc) => {
+      if (loc.state) states.add(loc.state);
+    });
+    return [...Array.from(states).sort(), "other"];
+  }, [locations]);
+
+  const availableCities = useMemo(() => {
+    if (!form.state || form.state === "other") return [];
+    const cities = new Set<string>();
+    locations.forEach((loc) => {
+      if (loc.state === form.state && loc.city) {
+        cities.add(loc.city);
+      }
+    });
+    return [...Array.from(cities).sort(), "other"];
+  }, [locations, form.state]);
+
+  const availableTowns = useMemo(() => {
+    if (!form.city || form.city === "other") return [];
+    const towns = new Set<string>();
+    locations.forEach((loc) => {
+      if (loc.state === form.state && loc.city === form.city && loc.town) {
+        towns.add(loc.town);
+      }
+    });
+    return [...Array.from(towns).sort(), "other"];
+  }, [locations, form.state, form.city]);
+
+  const setLocationState = useCallback((state: string) => {
+    setForm((p) => ({ ...p, state, city: "", town: "" }));
+    setCustomState("");
+    setCustomCity("");
+    setCustomTown("");
+  }, []);
+
+  const setLocationCity = useCallback((city: string) => {
+    setForm((p) => ({ ...p, city, town: "" }));
+    setCustomCity("");
+    setCustomTown("");
+  }, []);
   const [loginData, setLoginData] = useState<LoginForm>(EMPTY_LOGIN);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -186,13 +251,54 @@ export default function VendorRegister() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+
+    // Resolve final state, city, and town names, prioritizing typed custom values if "other" is selected
+    const finalState = form.state === "other" ? customState.trim() : form.state;
+    const finalCity = (form.state === "other" || form.city === "other") ? customCity.trim() : form.city;
+    const finalTown = (form.state === "other" || form.city === "other" || form.town === "other") ? customTown.trim() : form.town;
+
+    if (!finalState) {
+      toast.error("Please enter a State name");
+      return;
+    }
+    if (!finalCity) {
+      toast.error("Please enter a City name");
+      return;
+    }
+    if (!finalTown) {
+      toast.error("Please enter a Town / Area name");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await addVendor(form);
-      if (res.success) { setSubmitted(true); toast.success("Application submitted"); }
-      else toast.error(res.message || "Registration failed");
+      // 1. If any custom fields were used, dynamically register the new State/City/Town combinator in locations index table
+      const isCustomLocation = 
+        form.state === "other" || 
+        form.city === "other" || 
+        form.town === "other";
+
+      if (isCustomLocation) {
+        // Prepare payload (this will check for duplicates case-insensitively on the backend)
+        await addLocation(finalState, finalCity, finalTown);
+      }
+
+      // 2. Submit vendor registration payload with the resolved normalized parameters
+      const res = await addVendor({
+        ...form,
+        state: finalState,
+        city: finalCity,
+        town: finalTown,
+      });
+
+      if (res.success) {
+        setSubmitted(true);
+        toast.success("Application submitted successfully");
+      } else {
+        toast.error(res.message || "Registration failed");
+      }
     } catch {
-      toast.error("Server error");
+      toast.error("Server error during registration");
     } finally {
       setLoading(false);
     }
@@ -350,16 +456,77 @@ export default function VendorRegister() {
                   className={`${inp} resize-none`} value={form.address}
                   onChange={(e) => setRegField("address", e.target.value)} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-400">State</label>
-                  <input required placeholder="e.g. Tamil Nadu" className={inp}
-                    value={form.state} onChange={(e) => setRegField("state", e.target.value)} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-400">City</label>
-                  <input required placeholder="e.g. Chennai" className={inp}
-                    value={form.city} onChange={(e) => setRegField("city", e.target.value)} />
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  {/* State Select */}
+                  <LocationSelect
+                    label="State"
+                    value={form.state}
+                    onValueChange={setLocationState}
+                    options={availableStates}
+                    placeholder="Select State"
+                    customValue={customState}
+                    onCustomValueChange={setCustomState}
+                    customPlaceholder="Enter custom State..."
+                  />
+
+                  {/* City Select */}
+                  {form.state === "other" ? (
+                    <div className="space-y-1.5 w-full">
+                      <label className="block text-xs font-semibold text-gray-400 tracking-wide uppercase">
+                        City
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="Enter custom City..."
+                        value={customCity}
+                        onChange={(e) => setCustomCity(e.target.value)}
+                        className="w-full h-11 rounded-xl border border-[#FF6600]/30 bg-[#090d1a]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all duration-200"
+                      />
+                    </div>
+                  ) : (
+                    <LocationSelect
+                      label="City"
+                      value={form.city}
+                      onValueChange={setLocationCity}
+                      options={availableCities}
+                      placeholder="Select City"
+                      disabled={!form.state}
+                      customValue={customCity}
+                      onCustomValueChange={setCustomCity}
+                      customPlaceholder="Enter custom City..."
+                    />
+                  )}
+
+                  {/* Town Select */}
+                  {form.state === "other" || form.city === "other" ? (
+                    <div className="space-y-1.5 w-full">
+                      <label className="block text-xs font-semibold text-gray-400 tracking-wide uppercase">
+                        Town / Area
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="Enter custom Town..."
+                        value={customTown}
+                        onChange={(e) => setCustomTown(e.target.value)}
+                        className="w-full h-11 rounded-xl border border-[#FF6600]/30 bg-[#090d1a]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all duration-200"
+                      />
+                    </div>
+                  ) : (
+                    <LocationSelect
+                      label="Town / Area"
+                      value={form.town}
+                      onValueChange={(val) => setRegField("town", val)}
+                      options={availableTowns}
+                      placeholder="Select Town"
+                      disabled={!form.city}
+                      customValue={customTown}
+                      onCustomValueChange={setCustomTown}
+                      customPlaceholder="Enter custom Town..."
+                    />
+                  )}
                 </div>
               </div>
               <button disabled={loading}
