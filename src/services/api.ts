@@ -224,7 +224,7 @@ export async function getVendors() {
 }
 
 export async function getVendorById(vendorId: number) {
-  return await request(`/get-vendor-by-id.php?vendor_id=${vendorId}`);
+  return await request(`/get-vendor-by-id.php?id=${vendorId}`);
 }
 
 export async function getHomeContent() {

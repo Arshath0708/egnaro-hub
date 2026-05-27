@@ -31,8 +31,8 @@ export function ViewVendorModal({
     fetchVendor();
   }, [vendor]);
 
-  // Use API details if available, fallback to initial vendor object
-  const details = data?.details || vendor;
+  // Use API details if available, fallback to initial vendor object, merging to preserve bank details
+  const details = data?.details ? { ...vendor, ...data.details } : vendor;
   const stats = data?.stats || null;
 
   return (
