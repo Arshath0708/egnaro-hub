@@ -47,6 +47,14 @@ export async function getProducts() {
     approved: p.approved === 1 || p.approved === "1",
     average_rating: Number(p.average_rating || 0),
     total_reviews: Number(p.total_reviews || 0),
+    stock_quantity: Number(p.stock_quantity || 0),
+    creator_name: p.created_by_type === "admin"
+      ? "Admin"
+      : p.vendor_name
+        ? (p.vendor_company && p.vendor_company !== p.vendor_name
+            ? `${p.vendor_name} (${p.vendor_company})`
+            : p.vendor_name)
+        : (p.vendor_company || "Vendor"),
   }));
 }
 
@@ -191,7 +199,7 @@ export async function trackOrder(orderId: string, token?: string) {
 }
 
 export async function getUserOrders(token: string) {
-  return await request(`/get-order.php`, {
+  return await request(`/get-order.php?token=${encodeURIComponent(token)}`, {
     headers: { "Authorization": `Bearer ${token}` }
   });
 }

@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from "react";
+import { memo, useRef, useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -17,6 +17,7 @@ import {
   Lock,
   LogIn,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Shell } from "@/components/layout/Shell";
 import { trackOrder, getUserOrders, getUser, updateProfile, manageAddress } from "@/services/api";
@@ -154,6 +155,13 @@ export default function TrackOrder() {
   const userOrders: Order[] = Array.isArray(userOrdersData?.orders)
     ? userOrdersData.orders.map(buildOrder)
     : [];
+
+  useEffect(() => {
+    if (userOrdersData?.message === "Invalid or expired token") {
+      useAuth.getState().logout();
+      toast.error("Your session has expired. Please log in again.");
+    }
+  }, [userOrdersData]);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -305,6 +313,10 @@ export default function TrackOrder() {
               <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
                 Loading orders…
               </div>
+            ) : userOrdersData?.success === false ? (
+              <div className="rounded-xl border border-red-200/20 bg-red-500/5 p-8 text-center text-red-400 font-semibold">
+                {userOrdersData.message || "Failed to load orders. Please try logging in again."}
+              </div>
             ) : userOrders.length === 0 ? (
               <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
                 You have no previous orders.
@@ -392,6 +404,13 @@ const AccountTab = memo(function AccountTab() {
   });
 
   const user = data?.user;
+
+  useEffect(() => {
+    if (data?.message === "Invalid or expired token") {
+      useAuth.getState().logout();
+      toast.error("Your session has expired. Please log in again.");
+    }
+  }, [data]);
 
   const [editProfile, setEditProfile] = useState(false);
   const [name, setName] = useState("");

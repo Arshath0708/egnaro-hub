@@ -65,6 +65,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 type Order = {
   id: number;
   order_id: string;
@@ -164,6 +172,43 @@ function AdminPanel({
 
   const [activeTab, setActiveTab] = useState("orders");
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Advanced Search & Filtering States
+  const [productSearch, setProductSearch] = useState("");
+  const [productCategory, setProductCategory] = useState("all");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatus, setOrderStatus] = useState("all");
+  const [vendorSearch, setVendorSearch] = useState("");
+
+  const filteredProducts = allProducts.filter((p: any) => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
+      (p.creator_name || "").toLowerCase().includes(productSearch.toLowerCase());
+    const matchesCategory =
+      productCategory === "all" || p.category.toLowerCase() === productCategory.toLowerCase();
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredOrders = orders.filter((o: any) => {
+    const matchesSearch =
+      o.order_id.toLowerCase().includes(orderSearch.toLowerCase()) ||
+      o.customer_name.toLowerCase().includes(orderSearch.toLowerCase()) ||
+      o.phone.includes(orderSearch);
+    const matchesStatus =
+      orderStatus === "all" || o.status.toLowerCase() === orderStatus.toLowerCase();
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredVendors = allVendors.filter((v: any) => {
+    const matchesSearch =
+      v.vendor_name.toLowerCase().includes(vendorSearch.toLowerCase()) ||
+      v.company_name.toLowerCase().includes(vendorSearch.toLowerCase()) ||
+      v.email.toLowerCase().includes(vendorSearch.toLowerCase());
+    return matchesSearch;
+  });
+
+  const uniqueCategories = Array.from(new Set(allProducts.map((p: any) => p.category)));
 
   const loadStats = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["admin-products"] });
@@ -505,355 +550,410 @@ function AdminPanel({
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="mb-6 hidden md:grid md:grid-cols-3 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10">
+          <TabsList className="mb-8 hidden md:grid md:grid-cols-3 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10">
             <TabsTrigger
               value="orders"
               className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white cursor-pointer"
             >
-              Orders
+              Orders ({filteredOrders.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="products"
               className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white cursor-pointer"
             >
-              Product Management
+              Product Management ({filteredProducts.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="vendors"
               className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/20 hover:text-white cursor-pointer"
             >
-              Vendor Management
+              Vendor Management ({filteredVendors.length})
             </TabsTrigger>
           </TabsList>
 
           {/* ORDERS */}
-
-          <TabsContent value="orders">
-            <Section title="Orders">
-              <div className="space-y-4">
-                {orders.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-gray-500">
-                    No orders yet
-                  </p>
-                ) : (
-                  orders.map((o) => (
-                    <OrderRow
-                      key={o.id}
-                      order={o}
+          {activeTab === "orders" && (
+            <TabsContent value="orders" className="animate-fadeIn">
+              <Section title="Orders">
+                {/* Search & Filter Row */}
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search orders by ID, name, or phone..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
                     />
-                  ))
-                )}
-              </div>
-            </Section>
-          </TabsContent>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status:</span>
+                    <Select
+                      value={orderStatus}
+                      onValueChange={setOrderStatus}
+                    >
+                      <SelectTrigger className="w-[160px] h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600]">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent className="border border-white/10 bg-[#0f172a] text-white rounded-2xl">
+                        <SelectItem value="all" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">All Statuses</SelectItem>
+                        <SelectItem value="processing" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Processing</SelectItem>
+                        <SelectItem value="shipped" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Shipped</SelectItem>
+                        <SelectItem value="delivered" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Delivered</SelectItem>
+                        <SelectItem value="cancelled" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {filteredOrders.length === 0 ? (
+                    <div className="py-12 text-center border border-dashed border-white/10 rounded-3xl bg-white/[0.01]">
+                      <ClipboardList className="mx-auto h-12 w-12 text-gray-600 mb-3" />
+                      <p className="text-sm text-gray-400 font-semibold">No orders found matching your criteria</p>
+                    </div>
+                  ) : (
+                    filteredOrders.map((o) => (
+                      <OrderRow
+                        key={o.id}
+                        order={o}
+                      />
+                    ))
+                  )}
+                </div>
+              </Section>
+            </TabsContent>
+          )}
 
           {/* PRODUCTS */}
+          {activeTab === "products" && (
+            <TabsContent value="products" className="animate-fadeIn">
+              <Section title="Product Management">
+                {/* Search & Filter Row */}
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search products by name, category, or creator..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Category:</span>
+                    <Select
+                      value={productCategory}
+                      onValueChange={setProductCategory}
+                    >
+                      <SelectTrigger className="w-[180px] h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600] capitalize">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent className="border border-white/10 bg-[#0f172a] text-white rounded-2xl capitalize">
+                        <SelectItem value="all" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">All Categories</SelectItem>
+                        {uniqueCategories.map((cat: any) => (
+                          <SelectItem key={cat} value={cat} className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg capitalize">
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-          <TabsContent value="products">
-            <Section title="Product Management">
-              <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-white/5 scrollbar-thin">
-                <Table>
-                  <TableHeader className="bg-white/5">
-                    <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableHead className="text-gray-400">
-                        Product
-                      </TableHead>
+                <div className="w-full overflow-x-auto rounded-[2rem] border border-white/5 bg-[#0b1220]/40 backdrop-blur-md scrollbar-thin">
+                  <Table>
+                    <TableHeader className="bg-white/5">
+                      <TableRow className="border-white/5 hover:bg-transparent">
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Product
+                        </TableHead>
 
-                      <TableHead className="text-gray-400">
-                        Category
-                      </TableHead>
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Category
+                        </TableHead>
 
-                      <TableHead className="text-gray-400">
-                        Reviews
-                      </TableHead>
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Reviews
+                        </TableHead>
 
-                      <TableHead className="text-gray-400">
-                        Created By
-                      </TableHead>
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Created By
+                        </TableHead>
 
-                      <TableHead className="text-gray-400">
-                        Selling Price
-                      </TableHead>
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Selling Price
+                        </TableHead>
 
-                      <TableHead className="text-gray-400">
-                        Stock
-                      </TableHead>
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Stock
+                        </TableHead>
 
-                      <TableHead className="text-right text-gray-400">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-
-                  <TableBody>
-                    {allProducts.length ===
-                    0 ? (
-                      <TableRow className="border-white/10 hover:bg-transparent">
-                        <TableCell
-                          colSpan={7}
-                          className="py-8 text-center text-gray-500"
-                        >
-                          No products found
-                        </TableCell>
+                        <TableHead className="text-right text-gray-400 py-4 font-bold tracking-wider">
+                          Actions
+                        </TableHead>
                       </TableRow>
-                    ) : (
-                      allProducts.map((p) => (
-                        <TableRow
-                          key={p.id}
-                          className="border-white/10 hover:bg-white/[0.02]"
-                        >
-                          <TableCell className="font-medium text-white">
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={p.image}
-                                alt={p.name}
-                                className="h-10 w-10 rounded-lg bg-white/10 object-cover"
-                              />
+                    </TableHeader>
 
-                              <span>
-                                {p.name}
-                              </span>
-                            </div>
-                          </TableCell>
-
-                          <TableCell className="capitalize text-gray-300">
-                            {p.category}
-                          </TableCell>
-
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold text-yellow-500">
-                                ⭐ {p.average_rating || 0}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                ({p.total_reviews || 0} reviews)
-                              </span>
-                            </div>
-                          </TableCell>
-
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium capitalize text-white">
-                                {p.created_by_type || "Vendor"}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {p.creator_name || "Unknown"}
-                              </span>
-                            </div>
-                          </TableCell>
-
-                          <TableCell className="text-white">
-                            <span className="font-bold text-[#FF6600]">
-                              ₹{p.price}
-                            </span>
-                          </TableCell>
-
-                          <TableCell className="font-medium text-gray-300">
-                            {p.stock_quantity !== undefined ? p.stock_quantity : 0}
-                          </TableCell>
-
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() =>
-                                  setViewingProduct(
-                                    p
-                                  )
-                                }
-                                className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 transition-colors hover:bg-cyan-500/20"
-                              >
-                                <Search className="h-4 w-4" />
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  setEditingProduct(
-                                    p
-                                  )
-                                }
-                                className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 transition-colors hover:bg-emerald-500/20"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  setDeletingProduct(
-                                    p
-                                  )
-                                }
-                                className="rounded-lg bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
+                    <TableBody>
+                      {filteredProducts.length === 0 ? (
+                        <TableRow className="border-white/5 hover:bg-transparent">
+                          <TableCell
+                            colSpan={7}
+                            className="py-12 text-center text-gray-500 font-semibold"
+                          >
+                            No products found matching your search
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </Section>
-          </TabsContent>
-
-          {/* VENDORS */}
-
-          <TabsContent value="vendors">
-            <Section title="Vendor Management">
-              <div className="mb-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-5">
-                  <p className="text-sm text-yellow-300">
-                    Pending Requests
-                  </p>
-
-                  <h2 className="mt-2 text-3xl font-black text-white">
-                    {
-                      allVendors.filter(
-                        (v) =>
-                          Number(
-                            v.approved
-                          ) === 0
-                      ).length
-                    }
-                  </h2>
-                </div>
-
-                <div className="rounded-2xl border border-green-500/20 bg-green-500/10 p-5">
-                  <p className="text-sm text-green-300">
-                    Approved Vendors
-                  </p>
-
-                  <h2 className="mt-2 text-3xl font-black text-white">
-                    {
-                      allVendors.filter(
-                        (v) =>
-                          Number(
-                            v.approved
-                          ) === 1
-                      ).length
-                    }
-                  </h2>
-                </div>
-              </div>
-
-              {/* APPROVED VENDORS */}
-
-              <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-white/5 scrollbar-thin">
-                <Table>
-                  <TableHeader className="bg-white/5">
-                    <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableHead className="text-gray-400">
-                        Vendor
-                      </TableHead>
-
-                      <TableHead className="text-gray-400">
-                        Company
-                      </TableHead>
-
-                      <TableHead className="text-gray-400">
-                        Contact
-                      </TableHead>
-
-                      <TableHead className="text-gray-400">
-                        Status
-                      </TableHead>
-
-                      <TableHead className="text-right text-gray-400">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-
-                  <TableBody>
-                    {allVendors.filter(
-                      (v) =>
-                        Number(
-                          v.approved
-                        ) === 1
-                    ).length === 0 ? (
-                      <TableRow className="border-white/10">
-                        <TableCell
-                          colSpan={5}
-                          className="py-8 text-center text-gray-500"
-                        >
-                          No approved vendors
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      allVendors
-                        .filter(
-                          (v) =>
-                            Number(
-                              v.approved
-                            ) === 1
-                        )
-                        .map((vendor) => (
+                      ) : (
+                        filteredProducts.map((p) => (
                           <TableRow
-                            key={vendor.id}
-                            className="border-white/10 hover:bg-white/[0.03]"
+                            key={p.id}
+                            className="border-white/5 hover:bg-white/[0.02] transition-colors"
                           >
-                            <TableCell className="font-medium text-white">
-                              {
-                                vendor.vendor_name
-                              }
-                            </TableCell>
-
-                            <TableCell className="text-gray-300">
-                              <div className="flex flex-col">
-                                <span>{vendor.company_name}</span>
-                                {vendor.city && vendor.state && (
-                                  <span className="text-[10px] text-[#FF6600] mt-0.5 font-semibold">
-                                    {vendor.city}, {vendor.state}
-                                  </span>
-                                )}
-                              </div>
-                            </TableCell>
-
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-sm text-gray-300">
-                                  {
-                                    vendor.email
-                                  }
-                                </span>
-
-                                <span className="text-xs text-gray-500">
-                                  {
-                                    vendor.phone
-                                  }
+                            <TableCell className="font-medium text-white py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-white/5 border border-white/10 shadow-inner">
+                                  <img
+                                    src={p.image}
+                                    alt={p.name}
+                                    className="h-full w-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = "/placeholder.png";
+                                    }}
+                                  />
+                                </div>
+                                <span className="font-bold tracking-wide text-white">
+                                  {p.name}
                                 </span>
                               </div>
                             </TableCell>
 
-                            <TableCell>
-                              <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-400">
-                                Approved
+                            <TableCell className="capitalize text-gray-300 font-semibold">
+                              <span className="inline-flex items-center rounded-lg bg-white/5 px-2.5 py-1 text-xs font-semibold text-gray-300 border border-white/5">
+                                {p.category}
                               </span>
                             </TableCell>
 
-                            <TableCell className="text-right">
-                              <button
-                                onClick={() =>
-                                  setViewingVendor(
-                                    vendor
-                                  )
-                                }
-                                className="rounded-lg bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20"
-                              >
-                                <Search className="h-4 w-4" />
-                              </button>
+                            <TableCell>
+                              <div className="flex flex-col gap-0.5">
+                                <div className="flex items-center gap-1 font-bold text-yellow-500">
+                                  <span className="text-sm">⭐</span>
+                                  <span>{Number(p.average_rating || 0).toFixed(1)}</span>
+                                </div>
+                                <span className="text-[10px] font-medium text-gray-500">
+                                  ({p.total_reviews || 0} reviews)
+                                </span>
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-xs font-bold text-white tracking-wide uppercase">
+                                  {p.created_by_type || "Vendor"}
+                                </span>
+                                <span className="text-[10px] font-semibold text-[#FF6600]/80">
+                                  {p.creator_name || "Unknown"}
+                                </span>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="text-white">
+                              <span className="text-base font-black text-[#FF6600]">
+                                ₹{p.price}
+                              </span>
+                            </TableCell>
+
+                            <TableCell className="font-medium text-gray-300">
+                              {p.stock_quantity === 0 ? (
+                                <span className="inline-flex items-center rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-black text-red-400 border border-red-500/20">
+                                  Out of Stock
+                                </span>
+                              ) : p.stock_quantity < 20 ? (
+                                <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-black text-amber-400 border border-amber-500/20">
+                                  {p.stock_quantity} Low Stock
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-black text-emerald-400 border border-emerald-500/20">
+                                  {p.stock_quantity} In Stock
+                                </span>
+                              )}
+                            </TableCell>
+
+                            <TableCell className="text-right py-4">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => setViewingProduct(p)}
+                                  className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 transition-colors hover:bg-cyan-500/20 cursor-pointer"
+                                  title="View Details"
+                                >
+                                  <Search className="h-4 w-4" />
+                                </button>
+
+                                <button
+                                  onClick={() => setEditingProduct(p)}
+                                  className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400 transition-colors hover:bg-emerald-500/20 cursor-pointer"
+                                  title="Edit Product"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+
+                                <button
+                                  onClick={() => setDeletingProduct(p)}
+                                  className="rounded-xl bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20 cursor-pointer"
+                                  title="Delete Product"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </Section>
-          </TabsContent>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Section>
+            </TabsContent>
+          )}
+
+          {/* VENDORS */}
+          {activeTab === "vendors" && (
+            <TabsContent value="vendors" className="animate-fadeIn">
+              <Section title="Vendor Management">
+                <div className="mb-6 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-[2rem] border border-yellow-500/20 bg-yellow-500/5 p-6 backdrop-blur-md">
+                    <p className="text-sm font-bold text-yellow-500 uppercase tracking-wider">
+                      Pending Requests
+                    </p>
+                    <h2 className="mt-2 text-4xl font-black text-white">
+                      {allVendors.filter((v) => Number(v.approved) === 0).length}
+                    </h2>
+                  </div>
+
+                  <div className="rounded-[2rem] border border-green-500/20 bg-green-500/5 p-6 backdrop-blur-md">
+                    <p className="text-sm font-bold text-green-500 uppercase tracking-wider">
+                      Approved Vendors
+                    </p>
+                    <h2 className="mt-2 text-4xl font-black text-white">
+                      {allVendors.filter((v) => Number(v.approved) === 1).length}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Search Row */}
+                <div className="mb-6 flex rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search vendors by name, company, or email..."
+                      value={vendorSearch}
+                      onChange={(e) => setVendorSearch(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
+                    />
+                  </div>
+                </div>
+
+                {/* APPROVED VENDORS */}
+                <div className="w-full overflow-x-auto rounded-[2rem] border border-white/5 bg-[#0b1220]/40 backdrop-blur-md scrollbar-thin">
+                  <Table>
+                    <TableHeader className="bg-white/5">
+                      <TableRow className="border-white/5 hover:bg-transparent">
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Vendor
+                        </TableHead>
+
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Company
+                        </TableHead>
+
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Contact
+                        </TableHead>
+
+                        <TableHead className="text-gray-400 py-4 font-bold tracking-wider">
+                          Status
+                        </TableHead>
+
+                        <TableHead className="text-right text-gray-400 py-4 font-bold tracking-wider">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                      {filteredVendors.filter((v) => Number(v.approved) === 1).length === 0 ? (
+                        <TableRow className="border-white/5 hover:bg-transparent">
+                          <TableCell
+                            colSpan={5}
+                            className="py-12 text-center text-gray-500 font-semibold"
+                          >
+                            No approved vendors found matching search criteria
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredVendors
+                          .filter((v) => Number(v.approved) === 1)
+                          .map((vendor) => (
+                            <TableRow
+                              key={vendor.id}
+                              className="border-white/5 hover:bg-white/[0.02] transition-colors"
+                            >
+                              <TableCell className="font-bold text-white py-4">
+                                {vendor.vendor_name}
+                              </TableCell>
+
+                              <TableCell className="text-gray-300 font-semibold">
+                                <div className="flex flex-col gap-0.5">
+                                  <span>{vendor.company_name}</span>
+                                  {vendor.city && vendor.state && (
+                                    <span className="inline-flex items-center text-[10px] text-[#FF6600] font-bold">
+                                      📍 {vendor.city}, {vendor.state}
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+
+                              <TableCell>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-sm text-gray-300 font-medium">
+                                    {vendor.email}
+                                  </span>
+                                  <span className="text-xs text-gray-500 font-semibold">
+                                    📞 {vendor.phone}
+                                  </span>
+                                </div>
+                              </TableCell>
+
+                              <TableCell>
+                                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-black text-emerald-400 border border-emerald-500/20">
+                                  Approved
+                                </span>
+                              </TableCell>
+
+                              <TableCell className="text-right py-4">
+                                <button
+                                  onClick={() => setViewingVendor(vendor)}
+                                  className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20 cursor-pointer"
+                                  title="View Vendor Details"
+                                >
+                                  <Search className="h-4 w-4" />
+                                </button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Section>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* MODALS */}
