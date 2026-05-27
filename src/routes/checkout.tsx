@@ -219,7 +219,7 @@ Please find my payment screenshot attached.
 
     try {
       const firstProduct = detailed[0]?.product;
-      const vendorId = firstProduct?.created_by_type === "vendor" ? firstProduct?.created_by_id : 0;
+      const vendorId = firstProduct?.vendor_id || firstProduct?.created_by_id || 0;
 
       const orderItems = detailed.map((i) => ({
         id: i.product.id,
@@ -516,8 +516,8 @@ Please find my payment screenshot attached.
                     type="button"
                     onClick={() => setPayment(p.id as any)}
                     className={`rounded-2xl border-2 p-5 text-left transition-all ${payment === p.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/40"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/40"
                       }`}
                   >
                     <p.icon className="mb-3 h-6 w-6 text-primary" />

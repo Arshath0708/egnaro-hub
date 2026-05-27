@@ -45,7 +45,7 @@ export function AddProductModal({
     description: "",
     stock_quantity: "",
     created_by_type: createdByType,
-    created_by_id: createdById || "",
+    created_by_id: createdById || vendorId || "",
   });
 
   // Set default category when categories list finishes loading
