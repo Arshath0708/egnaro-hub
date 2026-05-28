@@ -6,9 +6,11 @@ import { toast } from "sonner";
 export function ViewVendorModal({
   vendor,
   onClose,
+  hidePerformanceOverview = false,
 }: {
   vendor: any;
   onClose: () => void;
+  hidePerformanceOverview?: boolean;
 }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -98,9 +100,9 @@ export function ViewVendorModal({
                     Bank Information
                   </h3>
                   <div className="space-y-4">
-                    <DetailItem icon={<Landmark />} label="Bank Name" value={details.bank_name || "N/A"} />
-                    <DetailItem icon={<Hash />} label="Account Number" value={details.account_number || "N/A"} />
-                    <DetailItem icon={<Hash />} label="IFSC Code" value={details.ifsc_code || "N/A"} />
+                    <DetailItem icon={<Landmark />} label="Bank Name" value={details.bank_details?.bank_name || details.bank_name || "N/A"} />
+                    <DetailItem icon={<Hash />} label="Account Number" value={details.bank_details?.account_number || details.account_number || "N/A"} />
+                    <DetailItem icon={<Hash />} label="IFSC Code" value={details.bank_details?.ifsc_code || details.ifsc_code || "N/A"} />
                     <div className="pt-2">
                       <div className="mb-1 text-xs uppercase tracking-wider text-gray-500">Account Status</div>
                       <StatusBadge status={details.status} />
@@ -109,7 +111,7 @@ export function ViewVendorModal({
                 </div>
 
                 {/* STATS */}
-                {stats && (
+                {stats && !hidePerformanceOverview && (
                   <div className="lg:col-span-2">
                     <h3 className="mb-4 text-lg font-bold text-white">Performance Overview</h3>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
