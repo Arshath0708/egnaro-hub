@@ -36,9 +36,34 @@ async function request(endpoint: string, options?: RequestInit) {
    PRODUCTS
 ========================= */
 
-export async function getProducts() {
-  const data = await request("/get-products.php");
-  return data.map((p: any) => ({
+export async function getProducts(params?: {
+  page?: number;
+  limit?: number;
+  category?: string;
+  status?: string;
+  vendor_id?: number;
+  search?: string;
+} | any) {
+  let actualParams = params;
+  if (params && (params.queryKey || params.signal)) {
+    actualParams = undefined;
+  }
+
+  const queryParts = [];
+  if (actualParams) {
+    if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
+    if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
+    if (actualParams.category) queryParts.push(`category=${encodeURIComponent(actualParams.category)}`);
+    if (actualParams.status) queryParts.push(`status=${encodeURIComponent(actualParams.status)}`);
+    if (actualParams.vendor_id !== undefined) queryParts.push(`vendor_id=${actualParams.vendor_id}`);
+    if (actualParams.search) queryParts.push(`search=${encodeURIComponent(actualParams.search)}`);
+  }
+  const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  const data = await request(`/get-products.php${queryString}`);
+  
+  const productsList = Array.isArray(data) ? data : (data.products || []);
+
+  const mapped = productsList.map((p: any) => ({
     ...p,
     id: String(p.id),
     price: Number(p.price),
@@ -56,14 +81,55 @@ export async function getProducts() {
             : p.vendor_name)
         : (p.vendor_company || "Vendor"),
   }));
+
+  if (actualParams) {
+    return {
+      ...data,
+      products: mapped
+    };
+  }
+  return mapped;
 }
 
 
 
-export async function getVendorProducts(vendorId: string) {
-  const data = await request(`/get-vendor-products.php?vendor_id=${vendorId}`);
+export async function getVendorProducts(
+  vendorId: string | number,
+  params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    category?: string;
+    search?: string;
+  } | any
+) {
+  let actualParams = params;
+  if (params && (params.queryKey || params.signal)) {
+    actualParams = undefined;
+  }
+
+  const queryParts = [`vendor_id=${vendorId}`];
+  if (actualParams) {
+    if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
+    if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
+    if (actualParams.status) queryParts.push(`status=${encodeURIComponent(actualParams.status)}`);
+    if (actualParams.category) queryParts.push(`category=${encodeURIComponent(actualParams.category)}`);
+    if (actualParams.search) queryParts.push(`search=${encodeURIComponent(actualParams.search)}`);
+  } else {
+    queryParts.push("limit=10000");
+  }
+
+  const queryString = `?${queryParts.join("&")}`;
+  const data = await request(`/get-vendor-products.php${queryString}`);
   if (!data.success) {
     throw new Error(data.message || "Failed to fetch vendor products");
+  }
+
+  if (actualParams) {
+    return {
+      ...data,
+      products: data.products || []
+    };
   }
   return data.products || [];
 }
@@ -74,9 +140,20 @@ export async function getVendorStats(vendorId: string) {
     throw new Error(data.message || "Failed to fetch vendor stats");
   }
   return {
-    revenue: data.revenue || 0,
-    total_orders: data.total_orders || 0,
+    gross_revenue: Number(data.gross_revenue || 0),
+    net_revenue: Number(data.net_revenue || 0),
+    commission: Number(data.commission || 0),
+    total_orders: Number(data.total_orders || 0),
   };
+}
+
+export async function getVendorOrders(vendorId: string, page: number = 1, status: string = "", limit: number = 10, search: string = "") {
+  const query = `vendor_id=${vendorId}&page=${page}&limit=${limit}&status=${encodeURIComponent(status)}&search=${encodeURIComponent(search)}`;
+  const data = await request(`/get-vendor-orders.php?${query}`);
+  if (!data.success) {
+    throw new Error(data.message || "Failed to fetch vendor orders");
+  }
+  return data;
 }
 
 export async function getPendingProducts() {
@@ -94,6 +171,8 @@ export type ProductForm = {
   stock_quantity: string;
   created_by_type: string;
   created_by_id: string;
+  approved?: number;
+  status?: string;
 };
 
 export async function addProduct(form: ProductForm) {
@@ -179,6 +258,29 @@ export async function addVendor(data: any) {
   });
 }
 
+export async function updateBankDetails(data: {
+  vendor_id: number;
+  bank_name: string;
+  account_number: string;
+  ifsc_code: string;
+}) {
+  return await request("/update-bank-details.php", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getPendingBankRequests(status: string = "pending") {
+  return await request(`/get-pending-bank-requests.php?status=${status}`);
+}
+
+export async function adminApproveBank(vendorId: number, action: "approve" | "reject") {
+  return await request("/admin-approve-bank.php", {
+    method: "POST",
+    body: JSON.stringify({ vendor_id: vendorId, action }),
+  });
+}
+
 /* =========================
    ORDERS
 ========================= */
@@ -198,8 +300,28 @@ export async function trackOrder(orderId: string, token?: string) {
   });
 }
 
-export async function getUserOrders(token: string) {
-  return await request(`/get-order.php?token=${encodeURIComponent(token)}`, {
+export async function getUserOrders(
+  token: string,
+  params?: {
+    page?: number;
+    limit?: number;
+  } | any
+) {
+  let actualParams = params;
+  if (params && (params.queryKey || params.signal)) {
+    actualParams = undefined;
+  }
+
+  const queryParts = [`token=${encodeURIComponent(token)}`];
+  if (actualParams) {
+    if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
+    if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
+  } else {
+    queryParts.push("limit=10000");
+  }
+
+  const queryString = `?${queryParts.join("&")}`;
+  return await request(`/get-order.php${queryString}`, {
     headers: { "Authorization": `Bearer ${token}` }
   });
 }
@@ -223,12 +345,72 @@ export async function getAdminStats() {
   return data.stats;
 }
 
-export async function getOrders() {
-  return await request("/get-orders.php");
+export async function getOrders(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+  date_from?: string;
+  date_to?: string;
+} | any) {
+  let actualParams = params;
+  if (params && (params.queryKey || params.signal)) {
+    actualParams = undefined;
+  }
+
+  const queryParts = [];
+  if (actualParams) {
+    if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
+    if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
+    if (actualParams.status) queryParts.push(`status=${encodeURIComponent(actualParams.status)}`);
+    if (actualParams.search) queryParts.push(`search=${encodeURIComponent(actualParams.search)}`);
+    if (actualParams.date_from) queryParts.push(`date_from=${encodeURIComponent(actualParams.date_from)}`);
+    if (actualParams.date_to) queryParts.push(`date_to=${encodeURIComponent(actualParams.date_to)}`);
+  }
+  const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  const data = await request(`/get-orders.php${queryString}`);
+  
+  const ordersList = Array.isArray(data) ? data : (data.orders || []);
+  
+  if (actualParams) {
+    return {
+      ...data,
+      orders: ordersList
+    };
+  }
+  return ordersList;
 }
 
-export async function getVendors() {
-  return await request("/get-vendors.php");
+export async function getVendors(params?: {
+  page?: number;
+  limit?: number;
+  approved?: string;
+  search?: string;
+} | any) {
+  let actualParams = params;
+  if (params && (params.queryKey || params.signal)) {
+    actualParams = undefined;
+  }
+
+  const queryParts = [];
+  if (actualParams) {
+    if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
+    if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
+    if (actualParams.approved) queryParts.push(`approved=${encodeURIComponent(actualParams.approved)}`);
+    if (actualParams.search) queryParts.push(`search=${encodeURIComponent(actualParams.search)}`);
+  }
+  const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  const data = await request(`/get-vendors.php${queryString}`);
+  
+  const vendorsList = Array.isArray(data) ? data : (data.vendors || []);
+  
+  if (actualParams) {
+    return {
+      ...data,
+      vendors: vendorsList
+    };
+  }
+  return vendorsList;
 }
 
 export async function getVendorById(vendorId: number) {

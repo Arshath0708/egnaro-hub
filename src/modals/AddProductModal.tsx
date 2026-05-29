@@ -46,6 +46,8 @@ export function AddProductModal({
     stock_quantity: "",
     created_by_type: createdByType,
     created_by_id: createdById || vendorId || "",
+    approved: createdByType === "admin" ? 1 : 0,
+    status: createdByType === "admin" ? "approved" : "pending",
   });
 
   // Set default category when categories list finishes loading
@@ -75,7 +77,10 @@ export function AddProductModal({
       });
       if (vendorId) {
         await queryClient.invalidateQueries({
-          queryKey: ["vendor-products", vendorId],
+          queryKey: ["vendor-products-all", vendorId],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["vendor-products-paginated", vendorId],
         });
       }
       onClose();

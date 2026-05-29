@@ -27,7 +27,19 @@ export function UpdateVendorProductModal({
     onSuccess: async () => {
       toast.success("Vendor product updated successfully ");
       await queryClient.invalidateQueries({
-        queryKey: ["vendor-products"], // Invalidates vendor products list if cached
+        queryKey: ["vendor-products"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["vendor-products-all"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["vendor-products-paginated"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["admin-products"],
       });
       onClose();
     },

@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   MapPin,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -44,7 +46,8 @@ import {
   getAdminStats,
   getLocations,
   addLocation,
-  deleteLocation
+  deleteLocation,
+  getCategories
 } from "@/services/api";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -107,20 +110,52 @@ function AdminPanel({
 }) {
   const queryClient = useQueryClient();
 
+  // Advanced Search, Filtering & Pagination States
+  const [productPage, setProductPage] = useState(1);
+  const [orderPage, setOrderPage] = useState(1);
+  const [vendorPage, setVendorPage] = useState(1);
+
+  const [productSearch, setProductSearch] = useState("");
+  const [productCategory, setProductCategory] = useState("all");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatus, setOrderStatus] = useState("all");
+  const [orderDateFrom, setOrderDateFrom] = useState("");
+  const [orderDateTo, setOrderDateTo] = useState("");
+  const [vendorSearch, setVendorSearch] = useState("");
+
+  const [activeTab, setActiveTab] = useState("orders");
+  const [menuOpen, setMenuOpen] = useState(false);
+
   // Queries
-  const { data: productsData = [] } = useQuery({
-    queryKey: ["admin-products"],
-    queryFn: getProducts,
+  const { data: productsData } = useQuery({
+    queryKey: ["admin-products", productPage, productCategory, productSearch],
+    queryFn: () => getProducts({
+      page: productPage,
+      limit: 10,
+      category: productCategory === "all" ? "" : productCategory,
+      search: productSearch,
+    }),
   });
 
-  const { data: ordersData = [] } = useQuery({
-    queryKey: ["admin-orders"],
-    queryFn: getOrders,
+  const { data: ordersData } = useQuery({
+    queryKey: ["admin-orders", orderPage, orderStatus, orderSearch, orderDateFrom, orderDateTo],
+    queryFn: () => getOrders({
+      page: orderPage,
+      limit: 10,
+      status: orderStatus === "all" ? "" : orderStatus,
+      search: orderSearch,
+      date_from: orderDateFrom,
+      date_to: orderDateTo,
+    }),
   });
 
-  const { data: vendorsData = [] } = useQuery({
-    queryKey: ["admin-vendors"],
-    queryFn: getVendors,
+  const { data: vendorsData } = useQuery({
+    queryKey: ["admin-vendors", vendorPage, vendorSearch],
+    queryFn: () => getVendors({
+      page: vendorPage,
+      limit: 10,
+      search: vendorSearch,
+    }),
   });
 
   const { data: statsRes } = useQuery({
@@ -128,11 +163,22 @@ function AdminPanel({
     queryFn: getAdminStats,
   });
 
-  const allProducts = Array.isArray(productsData) ? productsData : [];
-  const orders = Array.isArray(ordersData) ? ordersData : [];
-  const allVendors = Array.isArray(vendorsData) ? vendorsData : [];
-  const pendingVendors = allVendors.filter((v: any) => Number(v.approved) === 0).length;
+  const { data: apiCategories = [] } = useQuery({
+    queryKey: ["admin-categories"],
+    queryFn: getCategories,
+  });
+
+  const allProducts = (productsData?.products || []) as any[];
+  const orders = (ordersData?.orders || []) as any[];
+  const allVendors = (vendorsData?.vendors || []) as any[];
+  
   const dashboardStats = statsRes || null;
+  const pendingVendors = dashboardStats?.vendors?.pending || 0;
+  const pendingProducts = dashboardStats?.products?.pending_approval || 0;
+
+  const productsTotalPages = productsData?.total_pages || 1;
+  const ordersTotalPages = ordersData?.total_pages || 1;
+  const vendorsTotalPages = vendorsData?.total_pages || 1;
 
   const [vendorModalOpen, setVendorModalOpen] =
     useState(false);
@@ -170,51 +216,50 @@ function AdminPanel({
   const [showVendorsBreakdownModal, setShowVendorsBreakdownModal] = useState(false);
   const [showProductsBreakdownModal, setShowProductsBreakdownModal] = useState(false);
 
-  const [activeTab, setActiveTab] = useState("orders");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const filteredProducts = allProducts;
 
-  // Advanced Search & Filtering States
-  const [productSearch, setProductSearch] = useState("");
-  const [productCategory, setProductCategory] = useState("all");
-  const [orderSearch, setOrderSearch] = useState("");
-  const [orderStatus, setOrderStatus] = useState("all");
-  const [vendorSearch, setVendorSearch] = useState("");
+  const filteredOrders = orders;
 
-  const filteredProducts = allProducts.filter((p: any) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-      p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
-      (p.creator_name || "").toLowerCase().includes(productSearch.toLowerCase());
-    const matchesCategory =
-      productCategory === "all" || p.category.toLowerCase() === productCategory.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
+  const filteredVendors = allVendors;
 
-  const filteredOrders = orders.filter((o: any) => {
-    const matchesSearch =
-      o.order_id.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      o.customer_name.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      o.phone.includes(orderSearch);
-    const matchesStatus =
-      orderStatus === "all" || o.status.toLowerCase() === orderStatus.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
+  const uniqueCategories = apiCategories.map((cat: any) => cat.name);
 
-  const filteredVendors = allVendors.filter((v: any) => {
-    const matchesSearch =
-      v.vendor_name.toLowerCase().includes(vendorSearch.toLowerCase()) ||
-      v.company_name.toLowerCase().includes(vendorSearch.toLowerCase()) ||
-      v.email.toLowerCase().includes(vendorSearch.toLowerCase());
-    return matchesSearch;
-  });
-
-  const uniqueCategories = Array.from(new Set(allProducts.map((p: any) => p.category)));
+  // Helper wrappers to reset pages on filter/search change
+  const handleProductSearchChange = (val: string) => {
+    setProductSearch(val);
+    setProductPage(1);
+  };
+  const handleProductCategoryChange = (val: string) => {
+    setProductCategory(val);
+    setProductPage(1);
+  };
+  const handleOrderSearchChange = (val: string) => {
+    setOrderSearch(val);
+    setOrderPage(1);
+  };
+  const handleOrderStatusChange = (val: string) => {
+    setOrderStatus(val);
+    setOrderPage(1);
+  };
+  const handleOrderDateFromChange = (val: string) => {
+    setOrderDateFrom(val);
+    setOrderPage(1);
+  };
+  const handleOrderDateToChange = (val: string) => {
+    setOrderDateTo(val);
+    setOrderPage(1);
+  };
+  const handleVendorSearchChange = (val: string) => {
+    setVendorSearch(val);
+    setVendorPage(1);
+  };
 
   const loadStats = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["admin-products"] });
     queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
     queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
     queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
   }, [queryClient]);
 
   return (
@@ -259,9 +304,9 @@ function AdminPanel({
           >
             <Menu className="h-4 w-4 text-[#FF6600]" />
             Menu
-            {pendingVendors > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6600] text-[9px] font-bold text-white">
-                {pendingVendors}
+            {(pendingVendors + pendingProducts) > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6600] text-[9px] font-bold text-white animate-pulse">
+                {pendingVendors + pendingProducts}
               </span>
             )}
           </button>
@@ -367,10 +412,17 @@ function AdminPanel({
                       setProductModalOpen(true);
                       setMenuOpen(false);
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                    className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
                   >
-                    <Package className="h-3.5 w-3.5 text-orange-400" />
-                    Product Requests
+                    <span className="flex items-center gap-2.5">
+                      <Package className="h-3.5 w-3.5 text-orange-400" />
+                      Product Requests
+                    </span>
+                    {pendingProducts > 0 && (
+                      <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[9px] font-black text-orange-400">
+                        {pendingProducts}
+                      </span>
+                    )}
                   </button>
 
                   <button
@@ -522,7 +574,7 @@ function AdminPanel({
             icon={
               <Package className="h-5 w-5" />
             }
-            label="Product Requests"
+            label={`Product Requests (${pendingProducts})`}
             description="Review vendor submitted products"
             accent="from-[#1a0a00] to-[#3d1800]"
             onClick={() =>
@@ -578,34 +630,76 @@ function AdminPanel({
             <TabsContent value="orders" className="animate-fadeIn">
               <Section title="Orders">
                 {/* Search & Filter Row */}
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+                <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+                  {/* Search Input */}
                   <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search orders by ID, name, or phone..."
+                      placeholder="Search orders by ID, name, phone, or vendor..."
                       value={orderSearch}
-                      onChange={(e) => setOrderSearch(e.target.value)}
+                      onChange={(e) => handleOrderSearchChange(e.target.value)}
                       className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
                     />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status:</span>
-                    <Select
-                      value={orderStatus}
-                      onValueChange={setOrderStatus}
-                    >
-                      <SelectTrigger className="w-[160px] h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600]">
-                        <SelectValue placeholder="Select Status" />
-                      </SelectTrigger>
-                      <SelectContent className="border border-white/10 bg-[#0f172a] text-white rounded-2xl">
-                        <SelectItem value="all" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">All Statuses</SelectItem>
-                        <SelectItem value="processing" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Processing</SelectItem>
-                        <SelectItem value="shipped" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Shipped</SelectItem>
-                        <SelectItem value="delivered" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Delivered</SelectItem>
-                        <SelectItem value="cancelled" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  
+                  {/* Filter Fields */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    {/* Status Select */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status:</span>
+                      <Select
+                        value={orderStatus}
+                        onValueChange={handleOrderStatusChange}
+                      >
+                        <SelectTrigger className="w-[140px] h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600]">
+                          <SelectValue placeholder="Select Status" />
+                        </SelectTrigger>
+                        <SelectContent className="border border-white/10 bg-[#0f172a] text-white rounded-2xl">
+                          <SelectItem value="all" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">All Statuses</SelectItem>
+                          <SelectItem value="processing" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Processing</SelectItem>
+                          <SelectItem value="shipped" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Shipped</SelectItem>
+                          <SelectItem value="delivered" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Delivered</SelectItem>
+                          <SelectItem value="cancelled" className="cursor-pointer focus:bg-white/10 focus:text-white rounded-lg">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Date From */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">From:</span>
+                      <input
+                        type="date"
+                        value={orderDateFrom}
+                        onChange={(e) => handleOrderDateFromChange(e.target.value)}
+                        className="h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-[#FF6600] [color-scheme:dark] cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Date To */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">To:</span>
+                      <input
+                        type="date"
+                        value={orderDateTo}
+                        onChange={(e) => handleOrderDateToChange(e.target.value)}
+                        className="h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-[#FF6600] [color-scheme:dark] cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Reset Dates Button */}
+                    {(orderDateFrom || orderDateTo) && (
+                      <button
+                        onClick={() => {
+                          setOrderDateFrom("");
+                          setOrderDateTo("");
+                          setOrderPage(1);
+                        }}
+                        className="h-11 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 active:scale-95 cursor-pointer"
+                      >
+                        Reset Dates
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -624,6 +718,28 @@ function AdminPanel({
                     ))
                   )}
                 </div>
+
+                {ordersTotalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                      disabled={orderPage === 1}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <span className="text-sm font-semibold text-gray-400">
+                      Page <strong className="text-white">{orderPage}</strong> of <strong className="text-white">{ordersTotalPages}</strong>
+                    </span>
+                    <button
+                      onClick={() => setOrderPage((p) => Math.min(ordersTotalPages, p + 1))}
+                      disabled={orderPage === ordersTotalPages}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
               </Section>
             </TabsContent>
           )}
@@ -640,7 +756,7 @@ function AdminPanel({
                       type="text"
                       placeholder="Search products by name, category, or creator..."
                       value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
+                      onChange={(e) => handleProductSearchChange(e.target.value)}
                       className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
                     />
                   </div>
@@ -648,7 +764,7 @@ function AdminPanel({
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Category:</span>
                     <Select
                       value={productCategory}
-                      onValueChange={setProductCategory}
+                      onValueChange={handleProductCategoryChange}
                     >
                       <SelectTrigger className="w-[180px] h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600] capitalize">
                         <SelectValue placeholder="Select Category" />
@@ -817,6 +933,28 @@ function AdminPanel({
                     </TableBody>
                   </Table>
                 </div>
+
+                {productsTotalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setProductPage((p) => Math.max(1, p - 1))}
+                      disabled={productPage === 1}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <span className="text-sm font-semibold text-gray-400">
+                      Page <strong className="text-white">{productPage}</strong> of <strong className="text-white">{productsTotalPages}</strong>
+                    </span>
+                    <button
+                      onClick={() => setProductPage((p) => Math.min(productsTotalPages, p + 1))}
+                      disabled={productPage === productsTotalPages}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
               </Section>
             </TabsContent>
           )}
@@ -831,7 +969,7 @@ function AdminPanel({
                       Pending Requests
                     </p>
                     <h2 className="mt-2 text-4xl font-black text-white">
-                      {allVendors.filter((v) => Number(v.approved) === 0).length}
+                      {dashboardStats?.vendors?.pending || 0}
                     </h2>
                   </div>
 
@@ -840,7 +978,7 @@ function AdminPanel({
                       Approved Vendors
                     </p>
                     <h2 className="mt-2 text-4xl font-black text-white">
-                      {allVendors.filter((v) => Number(v.approved) === 1).length}
+                      {dashboardStats?.vendors?.active || 0}
                     </h2>
                   </div>
                 </div>
@@ -853,7 +991,7 @@ function AdminPanel({
                       type="text"
                       placeholder="Search vendors by name, company, or email..."
                       value={vendorSearch}
-                      onChange={(e) => setVendorSearch(e.target.value)}
+                      onChange={(e) => handleVendorSearchChange(e.target.value)}
                       className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
                     />
                   </div>
@@ -951,6 +1089,28 @@ function AdminPanel({
                     </TableBody>
                   </Table>
                 </div>
+
+                {vendorsTotalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setVendorPage((p) => Math.max(1, p - 1))}
+                      disabled={vendorPage === 1}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <span className="text-sm font-semibold text-gray-400">
+                      Page <strong className="text-white">{vendorPage}</strong> of <strong className="text-white">{vendorsTotalPages}</strong>
+                    </span>
+                    <button
+                      onClick={() => setVendorPage((p) => Math.min(vendorsTotalPages, p + 1))}
+                      disabled={vendorPage === vendorsTotalPages}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
               </Section>
             </TabsContent>
           )}
@@ -1289,13 +1449,39 @@ const OrderRow = memo(
               </span>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
               {/* CUSTOMER INFO */}
               <div className="space-y-1">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Customer</p>
                 <p className="text-sm font-semibold text-white">{order.customer_name}</p>
                 <p className="text-xs text-gray-400">{order.phone}</p>
-                <p className="text-xs text-gray-500 leading-relaxed max-w-xs">{order.address}</p>
+                {(order as any).email && <p className="text-xs text-gray-400 break-all">{(order as any).email}</p>}
+                <p className="text-xs text-gray-500 leading-relaxed max-w-xs mt-1">{order.address}</p>
+              </div>
+
+              {/* VENDOR ATTR */}
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Attributed Vendor</p>
+                {(order as any).vendor_name ? (
+                  <>
+                    <p className="text-sm font-semibold text-cyan-400">
+                      {(order as any).vendor_name}
+                    </p>
+                    {(order as any).vendor_company && (
+                      <p className="text-xs text-gray-300 font-medium">
+                        {(order as any).vendor_company}
+                      </p>
+                    )}
+                    {(order as any).vendor_phone && (
+                      <p className="text-xs text-gray-400 mt-1">📞 {(order as any).vendor_phone}</p>
+                    )}
+                    {(order as any).vendor_email && (
+                      <p className="text-xs text-gray-400 break-all">✉️ {(order as any).vendor_email}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-500 italic">Egnaro Mart (Direct / Admin)</p>
+                )}
               </div>
 
               {/* ORDER ITEMS */}

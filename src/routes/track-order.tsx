@@ -1,7 +1,9 @@
 import { memo, useRef, useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
+  ChevronLeft,
+  ChevronRight,
   Search,
   Package,
   MapPin,
@@ -141,14 +143,15 @@ export default function TrackOrder() {
   const isLoggedIn = useAuth(selectIsLoggedIn);
 
   const [activeTab, setActiveTab] = useState<"orders" | "account">("orders");
+  const [orderPage, setOrderPage] = useState(1);
 
   const [order, setOrder] = useState<
     Order | null | "none" | "login"
   >(null);
 
   const { data: userOrdersData, isLoading: isLoadingOrders } = useQuery({
-    queryKey: ["userOrders", token],
-    queryFn: () => getUserOrders(token!),
+    queryKey: ["userOrders", token, orderPage],
+    queryFn: () => getUserOrders(token!, { page: orderPage, limit: 6 }),
     enabled: !!isLoggedIn && !!token,
   });
 
@@ -322,37 +325,64 @@ export default function TrackOrder() {
                 You have no previous orders.
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {userOrders.map((uo: Order) => (
-                  <div
-                    key={uo.order_id}
-                    onClick={() => setOrder(uo)}
-                    className="cursor-pointer rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg"
-                  >
-                    <div className="mb-4 flex items-center justify-between">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Order ID</div>
-                        <div className="font-bold">{uo.order_id}</div>
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {userOrders.map((uo: Order) => (
+                    <div
+                      key={uo.order_id}
+                      onClick={() => setOrder(uo)}
+                      className="cursor-pointer rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg"
+                    >
+                      <div className="mb-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Order ID</div>
+                          <div className="font-bold">{uo.order_id}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-muted-foreground">Date</div>
+                          <div className="text-sm font-semibold">{dateShort(uo.createdAt)}</div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-xs text-muted-foreground">Date</div>
-                        <div className="text-sm font-semibold">{dateShort(uo.createdAt)}</div>
+                      
+                      <div className="mb-4 text-sm text-muted-foreground line-clamp-1">
+                        {uo.items.length} {uo.items.length === 1 ? "item" : "items"}
                       </div>
-                    </div>
-                    
-                    <div className="mb-4 text-sm text-muted-foreground line-clamp-1">
-                      {uo.items.length} {uo.items.length === 1 ? "item" : "items"}
-                    </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize tracking-wide">
-                        {uo.status.replace(/-/g, " ")}
+                      <div className="flex items-center justify-between">
+                        <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize tracking-wide">
+                          {uo.status.replace(/-/g, " ")}
+                        </div>
+                        <div className="font-black text-primary">{inr(uo.total)}</div>
                       </div>
-                      <div className="font-black text-primary">{inr(uo.total)}</div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {userOrdersData?.total_pages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                      disabled={orderPage === 1}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Page <strong className="text-foreground">{orderPage}</strong> of <strong className="text-foreground">{userOrdersData.total_pages}</strong>
+                    </span>
+                    
+                    <button
+                      onClick={() => setOrderPage((p) => Math.min(userOrdersData.total_pages, p + 1))}
+                      disabled={orderPage === userOrdersData.total_pages}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -397,7 +427,9 @@ export default function TrackOrder() {
 
 const AccountTab = memo(function AccountTab() {
   const token = useAuth((s) => s.token);
-  const { data, refetch, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery({
     queryKey: ["userProfile", token],
     queryFn: () => getUser(token!),
     enabled: !!token,
@@ -418,6 +450,43 @@ const AccountTab = memo(function AccountTab() {
 
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", street: "", city: "", state: "", pincode: "" });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async ({ name, phone }: { name: string; phone: string }) => {
+      return await updateProfile(token!, name, phone);
+    },
+    onSuccess: (res: any) => {
+      if (res?.success) {
+        toast.success("Profile updated successfully");
+        setEditProfile(false);
+      } else {
+        toast.error(res?.message || "Failed to update profile");
+      }
+      queryClient.invalidateQueries({ queryKey: ["userProfile", token] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update profile");
+    }
+  });
+
+  const addressMutation = useMutation({
+    mutationFn: async ({ action, payload }: { action: string; payload: any }) => {
+      return await manageAddress(token!, action, payload);
+    },
+    onSuccess: (res: any) => {
+      if (res?.success) {
+        toast.success("Addresses updated successfully");
+        setShowAddAddress(false);
+        setNewAddr({ label: "Home", street: "", city: "", state: "", pincode: "" });
+      } else {
+        toast.error(res?.message || "Failed to update address");
+      }
+      queryClient.invalidateQueries({ queryKey: ["userProfile", token] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update address");
+    }
+  });
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading account...</div>;
   if (!user) return null;
@@ -461,8 +530,10 @@ const AccountTab = memo(function AccountTab() {
               <input value={phone} onChange={e => setPhone(e.target.value)} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background" />
             </div>
             <div className="col-span-full mt-2 flex justify-end gap-2">
-              <button onClick={() => setEditProfile(false)} className="rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-accent">Cancel</button>
-              <button onClick={async () => { await updateProfile(token!, name, phone); setEditProfile(false); refetch(); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90">Save Changes</button>
+              <button onClick={() => setEditProfile(false)} disabled={updateProfileMutation.isPending} className="rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-accent disabled:opacity-50">Cancel</button>
+              <button onClick={() => updateProfileMutation.mutate({ name, phone })} disabled={updateProfileMutation.isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+              </button>
             </div>
           </div>
         ) : (
@@ -493,12 +564,9 @@ const AccountTab = memo(function AccountTab() {
         </div>
 
         {showAddAddress && (
-          <form onSubmit={async (e) => {
+          <form onSubmit={(e) => {
             e.preventDefault();
-            await manageAddress(token!, "add", newAddr);
-            setShowAddAddress(false);
-            setNewAddr({ label: "Home", street: "", city: "", state: "", pincode: "" });
-            refetch();
+            addressMutation.mutate({ action: "add", payload: newAddr });
           }} className="mb-8 rounded-lg border border-border bg-accent/50 p-4">
             <h3 className="mb-4 text-sm font-bold">Add New Address</h3>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -515,8 +583,10 @@ const AccountTab = memo(function AccountTab() {
               </select>
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowAddAddress(false)} className="rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-background">Cancel</button>
-              <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90">Save Address</button>
+              <button type="button" onClick={() => setShowAddAddress(false)} disabled={addressMutation.isPending} className="rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-background disabled:opacity-50">Cancel</button>
+              <button type="submit" disabled={addressMutation.isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                {addressMutation.isPending ? "Saving..." : "Save Address"}
+              </button>
             </div>
           </form>
         )}
@@ -537,9 +607,9 @@ const AccountTab = memo(function AccountTab() {
                   </div>
                   <div className="mt-4 flex gap-3 text-xs font-semibold">
                     {!isDefault && (
-                      <button onClick={async () => { await manageAddress(token!, "set_default", { index: i }); refetch(); }} className="text-primary hover:underline">Set Default</button>
+                      <button disabled={addressMutation.isPending} onClick={() => addressMutation.mutate({ action: "set_default", payload: { index: i } })} className="text-primary hover:underline disabled:opacity-50">Set Default</button>
                     )}
-                    <button onClick={async () => { await manageAddress(token!, "delete", { index: i }); refetch(); }} className="text-red-500 hover:underline">Delete</button>
+                    <button disabled={addressMutation.isPending} onClick={() => addressMutation.mutate({ action: "delete", payload: { index: i } })} className="text-red-500 hover:underline disabled:opacity-50">Delete</button>
                   </div>
                 </div>
               );
