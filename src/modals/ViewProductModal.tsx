@@ -1,5 +1,28 @@
-import { X, Sparkles, ImagePlus, Eye, Star } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, Sparkles, Star, Tag, ShoppingBag, Layers, AlertCircle } from "lucide-react";
 import { inr } from "@/lib/format";
+
+/* ================= LAYERED ICON CONTAINER ================= */
+function LayeredIconContainer({
+  icon,
+  glowColor,
+}: {
+  icon: React.ReactNode;
+  glowColor: string;
+}) {
+  return (
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950/80 backdrop-blur-xl overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+      <div
+        className="absolute inset-0 opacity-40 blur-md"
+        style={{
+          background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`
+        }}
+      />
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+      <div className="relative text-white z-10">{icon}</div>
+    </div>
+  );
+}
 
 export function ViewProductModal({
   product,
@@ -9,95 +32,143 @@ export function ViewProductModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 backdrop-blur-md">
-      <div className="flex min-h-full items-start justify-center py-8">
-        <div className="relative w-full max-w-5xl rounded-[36px] border border-white/10 bg-[#050816] shadow-2xl">
-          <div className="p-8 lg:p-10">
-            {/* HEADER */}
-            <div className="mb-8 flex items-start justify-between">
+    <div className="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        onClick={onClose}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        className="relative z-10 w-full max-w-5xl rounded-[32px] border border-white/5 bg-gradient-to-b from-[#0a0f1d] to-[#05070a] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden"
+      >
+        {/* Glow orbs */}
+        <div className="absolute -top-12 -left-12 h-48 w-48 rounded-full blur-3xl opacity-15 pointer-events-none bg-[#FF6600]" />
+        <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full blur-3xl opacity-15 pointer-events-none bg-cyan-500" />
+
+        <div className="p-8 lg:p-10 relative z-10">
+          {/* HEADER */}
+          <div className="mb-8 flex items-start justify-between">
+            <div className="flex gap-4">
+              <LayeredIconContainer
+                icon={<ShoppingBag className="h-5 w-5 text-cyan-400" />}
+                glowColor="rgba(6, 182, 212, 0.4)"
+              />
               <div>
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
-                  <Sparkles className="h-4 w-4" />
-                  View Product
+                <div className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-cyan-300">
+                  <Sparkles className="h-3 w-3 text-cyan-400" />
+                  Product Profile Spec Sheet
                 </div>
-                <h1 className="text-4xl font-black text-white">
+                <h1 className="text-3xl font-black text-white tracking-wide mt-1.5 leading-none">
                   {product.name}
                 </h1>
               </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 text-white transition hover:bg-white/10"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div className="space-y-6 text-gray-300">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <p className="mb-1 text-sm text-gray-500">Category</p>
-                  <p className="font-semibold text-white uppercase">{product.category}</p>
-                </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all hover:bg-white/10 active:scale-90 cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm text-gray-500">Description & Ratings</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-400">
-                        <Star className="h-3 w-3 fill-current" />
-                        {product.average_rating || 0}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        ({product.total_reviews || 0} reviews)
-                      </div>
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div className="space-y-5 text-gray-300">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Scope Category</p>
+                  <p className="font-extrabold text-white uppercase mt-1 tracking-wide text-sm">{product.category}</p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Rating Breakdown</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 px-2.5 py-0.5 text-xs font-black text-yellow-500">
+                      <Star className="h-3.5 w-3.5 fill-current text-yellow-500" />
+                      {Number(product.average_rating || 0).toFixed(1)}
                     </div>
-                  </div>
-                  <p className="text-white whitespace-pre-wrap">{product.description}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                    <p className="mb-1 text-sm text-gray-500">Price</p>
-                    <p className="text-2xl font-black text-cyan-400">{inr(product.price)}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                    <p className="mb-1 text-sm text-gray-500">Original Price</p>
-                    <p className="text-xl font-bold text-gray-400 line-through">{inr(product.original_price)}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                    <p className="mb-1 text-sm text-gray-500">Discount</p>
-                    <p className="text-xl font-bold text-white">{product.discount}% OFF</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                    <p className="mb-1 text-sm text-gray-500">Stock Quantity</p>
-                    <p className="text-xl font-bold text-white">{product.stock_quantity}</p>
+                    <span className="text-[10px] font-semibold text-gray-500">
+                      ({product.total_reviews || 0} reviews)
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <div className="sticky top-10 overflow-hidden rounded-3xl border border-white/10 bg-[#111827]">
-                  <div className="relative">
-                    <img
-                      src={product.image}
-                      alt="preview"
-                      className="h-96 w-full object-cover"
-                    />
-                    <div className="absolute right-4 top-4 rounded-full bg-cyan-500 px-4 py-2 text-xs font-bold text-white">
+              <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Catalog Description</p>
+                <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap italic">
+                  {product.description || "No description provided."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-white/5 bg-[#FF6600]/5 p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600]">Active Selling Price</p>
+                  <p className="text-2xl font-black text-[#FF6600] mt-1">{inr(product.price)}</p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Original / MRP Price</p>
+                  <p className="text-xl font-bold text-gray-500 line-through mt-1.5">{inr(product.original_price)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-white/5 bg-emerald-500/5 p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Calculated Discount</p>
+                  <p className="text-lg font-black text-emerald-400 mt-1 flex items-center gap-1">
+                    <Tag className="h-4 w-4 text-emerald-400" />
+                    {product.discount}% OFF Saved
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Calculated Stock Balance</p>
+                  {product.stock_quantity === 0 ? (
+                    <span className="inline-flex items-center rounded-lg bg-red-500/10 border border-red-500/20 px-2.5 py-0.5 text-xs font-black text-red-400 mt-2">
+                      Out of Stock
+                    </span>
+                  ) : product.stock_quantity < 20 ? (
+                    <span className="inline-flex items-center rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-xs font-black text-amber-400 mt-2">
+                      {product.stock_quantity} units (Low Stock)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-black text-emerald-400 mt-2">
+                      {product.stock_quantity} units (Healthy)
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="sticky top-10 overflow-hidden rounded-3xl border border-white/5 bg-[#070b16] p-2">
+                <div className="relative rounded-2xl overflow-hidden border border-white/10">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-80 w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/placeholder.png";
+                    }}
+                  />
+                  {product.discount > 0 && (
+                    <div className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-[#FF6600] to-[#FF8000] px-4 py-1.5 text-[10px] font-black uppercase text-white shadow-lg shadow-[#FF6600]/20">
                       {product.discount}% OFF
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

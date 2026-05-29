@@ -559,9 +559,9 @@ function Hero() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs font-semibold"
+              className="mb-6 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 font-mono text-[0.7rem] font-bold uppercase tracking-[0.1em] text-slate-300"
             >
-              <SlideIcon className="h-3.5 w-3.5" />
+              <SlideIcon className="h-3.5 w-3.5 text-primary" />
               {slide.right_title}
             </motion.div>
 
@@ -571,7 +571,7 @@ function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="font-display text-4xl font-black leading-[1.1] tracking-tight lg:text-[3.5rem]"
+              className="text-glow-hero font-display text-4xl sm:text-[3.2rem] lg:text-[4rem] font-black leading-[1.0] tracking-[-0.04em]"
             >
               <span
                 className={`bg-gradient-to-r ${slide.accent} bg-clip-text text-transparent`}
@@ -586,7 +586,7 @@ function Hero() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05 }}
-              className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground"
+              className="mt-6 max-w-[55ch] font-sans text-[1.1rem] leading-[1.75] text-slate-400"
             >
               {slide.left_subtext}
             </motion.p>
@@ -595,15 +595,15 @@ function Hero() {
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 to="/products"
-                className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 font-bold gradient-primary text-primary-foreground"
+                className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 font-sans font-bold text-[0.9rem] uppercase tracking-[0.05em] gradient-primary text-primary-foreground transition-all duration-300 hover:shadow-glow"
               >
                 Shop Now
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
 
               <Link
                 to="/vendor-register"
-                className="group inline-flex items-center gap-2 rounded-xl glass px-7 py-3.5 font-bold"
+                className="group inline-flex items-center gap-2 rounded-xl glass px-7 py-3.5 font-sans font-bold text-[0.9rem] uppercase tracking-[0.05em] hover:bg-white/10 transition-colors duration-200"
               >
                 <Store className="h-4 w-4" />
                 Become a Vendor
@@ -640,7 +640,7 @@ function Hero() {
               {slide.left_image ? (
                 <div className="relative h-56 w-full overflow-hidden lg:h-72">
                   <img
-                    src={slide.left_image}
+                     src={slide.left_image}
                     alt={slide.left_title}
                     className="h-full w-full object-cover"
                   />
@@ -649,7 +649,7 @@ function Hero() {
               ) : (
                 /* Fallback icon card when no image is set */
                 <div className="flex h-56 items-center justify-center bg-gradient-to-br from-primary/10 to-transparent lg:h-72">
-                  <div className="flex h-24 w-24 items-center justify-center rounded-3xl gradient-primary shadow-2xl">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-3xl gradient-primary shadow-2xl animate-pulse-glow">
                     <SlideIcon className="h-10 w-10 text-white" />
                   </div>
                 </div>
@@ -657,15 +657,15 @@ function Hero() {
 
               {/* Right text block */}
               <div className="p-8 lg:p-10">
-                <div className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
+                <div className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.12em] text-primary">
                   {slide.right_title}
                 </div>
 
-                <div className="mt-3 text-2xl font-black leading-snug text-white">
+                <div className="mt-3 font-display text-2xl font-black leading-[1.1] tracking-[-0.02em] text-white">
                   {slide.left_title}
                 </div>
 
-                <p className="mt-3 leading-relaxed text-muted-foreground">
+                <p className="mt-3 font-sans text-sm leading-[1.65] text-slate-400">
                   {slide.right_subtext}
                 </p>
               </div>
@@ -775,15 +775,15 @@ function WhyChooseUs() {
               <it.icon className="h-5 w-5 text-white" />
             </div>
 
-            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">
+            <div className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.12em] text-primary mb-2">
               {it.stat}
             </div>
 
-            <div className="font-display font-bold text-base">
+            <div className="font-display font-bold text-base text-slate-200">
               {it.title}
             </div>
 
-            <div className="text-sm text-muted-foreground mt-2 leading-relaxed">
+            <div className="font-sans text-sm text-slate-400 mt-2 leading-relaxed">
               {it.desc}
             </div>
           </motion.div>

@@ -23,14 +23,14 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold mb-4 tracking-wide uppercase text-foreground/90">
+            <h4 className="font-display text-[0.9rem] font-bold uppercase tracking-[0.1em] text-slate-200 mb-4">
               Quick Links
             </h4>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
+            <ul className="space-y-2.5 font-sans text-[0.875rem] text-slate-400">
               <li>
                 <Link
                   to="/products"
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   Shop All
                 </Link>
@@ -38,7 +38,7 @@ export function Footer() {
               <li>
                 <Link
                   to="/about"
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   About Us
                 </Link>
@@ -46,7 +46,7 @@ export function Footer() {
               <li>
                 <Link
                   to="/track-order"
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   Track Order
                 </Link>
@@ -54,7 +54,7 @@ export function Footer() {
               <li>
                 <Link
                   to="/vendor-register"
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   Become a Vendor
                 </Link>
@@ -62,7 +62,7 @@ export function Footer() {
               <li>
                 <Link
                   to="/terms"
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   Terms &amp; Conditions
                 </Link>
@@ -70,7 +70,7 @@ export function Footer() {
               <li>
                 <Link
                   to="/refund-policy"
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   Return &amp; Refund
                 </Link>
@@ -79,15 +79,15 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold mb-4 tracking-wide uppercase text-foreground/90">
+            <h4 className="font-display text-[0.9rem] font-bold uppercase tracking-[0.1em] text-slate-200 mb-4">
               Contact
             </h4>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <ul className="space-y-3 font-sans text-[0.875rem] text-slate-400">
               <li className="flex items-start gap-2">
                 <Phone className="h-4 w-4 mt-0.5 text-primary" />
                 <a
                   href="tel:+919442581506"
-                  className="hover:text-foreground"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   +91 9442581506
                 </a>
@@ -96,7 +96,7 @@ export function Footer() {
                 <Mail className="h-4 w-4 mt-0.5 text-primary" />
                 <a
                   href="mailto:egnaromart@gmail.com"
-                  className="hover:text-foreground"
+                  className="hover:text-slate-100 transition-colors"
                 >
                   egnaromart@gmail.com
                 </a>
@@ -112,10 +112,10 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold mb-4 tracking-wide uppercase text-foreground/90">
+            <h4 className="font-display text-[0.9rem] font-bold uppercase tracking-[0.1em] text-slate-200 mb-4">
               Newsletter
             </h4>
-            <p className="text-sm text-muted-foreground mb-3">
+            <p className="font-sans text-[0.875rem] text-slate-400 mb-3">
               Get exclusive deals & launches.
             </p>
             <form
@@ -135,7 +135,7 @@ export function Footer() {
                 type="email"
                 required
                 placeholder="you@email.com"
-                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+                className="flex-1 bg-transparent px-3 py-2 font-sans text-[0.875rem] text-slate-200 outline-none placeholder:text-slate-500"
               />
               <button
                 type="submit"
@@ -147,7 +147,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-glass-border flex flex-col sm:flex-row gap-3 items-center justify-between text-xs text-muted-foreground">
+        <div className="mt-12 pt-6 border-t border-glass-border flex flex-col sm:flex-row gap-3 items-center justify-between font-sans text-[0.78rem] text-slate-500">
           <div>
             © {new Date().getFullYear()} Egnaro Mart. All rights reserved.
           </div>

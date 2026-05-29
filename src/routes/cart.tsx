@@ -70,14 +70,14 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0">
                       <Link
                         to={`/product/${i.product.id}`}
-                        className="font-semibold hover:text-[#FF6600] line-clamp-1 text-sm sm:text-base transition-colors"
+                        className="font-display font-bold hover:text-[#FF6600] line-clamp-1 text-sm sm:text-base transition-colors text-slate-200"
                       >
                         {i.product.name}
                       </Link>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground capitalize mt-0.5">
+                      <div className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-slate-400 mt-0.5">
                         {i.product.category.replace("-", " ")}
                       </div>
-                      <div className="font-display font-bold text-base sm:text-lg mt-2 text-[#FF6600]">
+                      <div className="font-mono text-base sm:text-lg font-extrabold mt-2 text-[#FF6600]">
                         {inr(i.product.price)}
                       </div>
                     </div>
@@ -91,7 +91,7 @@ export default function CartPage() {
                       >
                         <Minus className="h-3 w-3" />
                       </button>
-                      <div className="w-8 text-center text-xs font-semibold">
+                      <div className="w-8 text-center font-mono text-xs font-bold text-slate-200">
                         {i.quantity}
                       </div>
                       <button
@@ -114,24 +114,24 @@ export default function CartPage() {
             </div>
 
             <aside className="glass-strong rounded-2xl p-6 h-fit shadow-elegant sticky top-24">
-              <h3 className="font-display text-xl font-bold mb-4">
+              <h3 className="font-display text-xl font-bold mb-4 text-slate-100">
                 Order Summary
               </h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{inr(subtotal)}</span>
+                  <span className="font-mono text-slate-400">Subtotal</span>
+                  <span className="font-mono text-slate-200 font-bold">{inr(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="font-medium">
+                  <span className="font-mono text-slate-400">Shipping</span>
+                  <span className="font-mono text-slate-200 font-bold">
                     {shipping === 0 ? "FREE" : inr(shipping)}
                   </span>
                 </div>
                 <div className="border-t border-glass-border my-3" />
                 <div className="flex justify-between text-lg">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-display font-bold text-gradient">
+                  <span className="font-sans font-bold text-slate-200">Total</span>
+                  <span className="font-mono text-xl font-black text-gradient">
                     {inr(total)}
                   </span>
                 </div>

@@ -47,13 +47,13 @@ export const ProductCard = memo(function ProductCard({
           {/* BADGES */}
           <div className="absolute inset-x-3 top-3 flex justify-between items-start">
             {Number(product.discount) > 0 ? (
-              <div className="rounded-full bg-primary px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md">
+              <div className="rounded-full bg-primary px-3 py-1.5 font-mono text-[0.68rem] font-bold uppercase tracking-[0.1em] text-white shadow-lg backdrop-blur-md">
                 {product.discount}% OFF
               </div>
             ) : <div />}
 
             {product.is_new && (
-              <div className="rounded-full bg-emerald-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md">
+              <div className="rounded-full bg-emerald-500 px-3 py-1.5 font-mono text-[0.68rem] font-bold uppercase tracking-[0.1em] text-white shadow-lg backdrop-blur-md">
                 NEW
               </div>
             )}
@@ -75,31 +75,31 @@ export const ProductCard = memo(function ProductCard({
              <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-0.5 rounded-full bg-yellow-400/10 px-2 py-0.5">
                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-[11px] font-bold text-yellow-400">
+                <span className="font-mono text-[0.68rem] font-bold text-yellow-400">
                   {rating.toFixed(1)}
                 </span>
               </div>
-              <span className="text-[10px] font-medium text-gray-500">
+              <span className="font-mono text-[0.65rem] font-medium text-slate-500">
                 ({reviews})
               </span>
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-slate-400">
               {product.category || "General"}
             </span>
           </div>
 
           {/* INFO */}
           <div className="space-y-2">
-            <h3 className="line-clamp-1 text-base font-bold text-white transition-colors group-hover:text-primary">
+            <h3 className="line-clamp-1 font-display text-[1.05rem] font-bold tracking-[-0.01em] text-slate-100 transition-colors group-hover:text-primary">
               {product.name}
             </h3>
 
             {/* DESCRIPTION PREVIEW */}
             <div className="relative">
-              <p className="line-clamp-2 text-xs leading-relaxed text-gray-400">
+              <p className="line-clamp-2 font-sans text-[0.875rem] leading-[1.65] text-slate-400">
                 {product.description || "Premium high-quality product from Egnaro Mart, designed for excellence and durability."}
               </p>
-              <span className="mt-1 inline-block text-[10px] font-bold text-primary opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="mt-1 inline-block font-mono text-[0.68rem] font-bold text-primary opacity-0 transition-opacity group-hover:opacity-100">
                 See More →
               </span>
             </div>
@@ -108,17 +108,17 @@ export const ProductCard = memo(function ProductCard({
           {/* PRICE SECTION */}
           <div className="mt-auto pt-4 flex items-center justify-between gap-2">
             <div className="flex flex-col min-w-0">
-              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                <span className="text-lg font-black text-white sm:text-xl">
+              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 font-mono">
+                <span className="price-hover text-lg font-extrabold tracking-tight text-primary sm:text-xl">
                   {inr(Number(product.price))}
                 </span>
                 {Number(product.original_price) > Number(product.price) && (
-                  <span className="text-[10px] text-gray-500 line-through sm:text-xs">
+                  <span className="text-[10px] text-slate-500 line-through sm:text-xs">
                     {inr(Number(product.original_price))}
                   </span>
                 )}
               </div>
-              <p className="text-[9px] font-medium text-emerald-400">Free Delivery</p>
+              <p className="font-mono text-[0.65rem] font-medium text-emerald-400">Free Delivery</p>
             </div>
 
             {/* ADD TO CART ICON BUTTON */}

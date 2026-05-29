@@ -152,10 +152,10 @@ export function Header() {
                 to={n.to}
                 end={n.to === "/"}
                 className={({ isActive }) =>
-                  `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  `rounded-lg px-3 py-2 font-sans text-[0.82rem] uppercase tracking-[0.06em] transition-colors duration-200 ${
                     isActive
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      ? "bg-accent/20 text-primary font-bold"
+                      : "text-slate-400 hover:bg-accent/10 hover:text-slate-100 font-medium"
                   }`
                 }
               >

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Plus,
@@ -8,6 +9,7 @@ import {
   X,
   Loader2,
   FolderOpen,
+  Sparkles,
 } from "lucide-react";
 import {
   getCategories,
@@ -37,9 +39,29 @@ interface Props {
   onClose: () => void;
 }
 
-export function CategoriesModal({
-  onClose,
-}: Props) {
+/* ================= LAYERED ICON CONTAINER ================= */
+function LayeredIconContainer({
+  icon,
+  glowColor,
+}: {
+  icon: React.ReactNode;
+  glowColor: string;
+}) {
+  return (
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950/80 backdrop-blur-xl overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+      <div
+        className="absolute inset-0 opacity-40 blur-md"
+        style={{
+          background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`
+        }}
+      />
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+      <div className="relative text-white z-10">{icon}</div>
+    </div>
+  );
+}
+
+export function CategoriesModal({ onClose }: Props) {
   const queryClient = useQueryClient();
 
   const [newCategory, setNewCategory] = useState("");
@@ -193,7 +215,6 @@ export function CategoriesModal({
       toast.error("Category name required");
       return;
     }
-    // Location is 100% OPTIONAL now. If 'all' or empty, we send empty string representing global.
     const finalState = newState === "all" ? "" : newState;
     const finalCity = newCity === "all" ? "" : newCity;
     const finalTown = newTown === "all" ? "" : newTown;
@@ -229,279 +250,333 @@ export function CategoriesModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl rounded-3xl border border-white/10 bg-[#0f172a] p-6 max-h-[90vh] flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        onClick={onClose}
+      />
+
+      {/* Modal Container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        className="relative z-10 w-full max-w-3xl max-h-[90vh] flex flex-col rounded-[32px] border border-white/5 bg-gradient-to-b from-[#0a0f1d] to-[#05070a] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden"
+      >
+        {/* Glow orbs */}
+        <div className="absolute -top-12 -left-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-[#FF6600]" />
+        <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-cyan-500" />
 
         {/* HEADER */}
-        <div className="mb-6 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF6600]/10 text-[#FF6600]">
-              <FolderOpen className="h-5 w-5" />
-            </div>
+        <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 relative z-10">
+          <div className="flex items-center gap-3">
+            <LayeredIconContainer
+              icon={<FolderOpen className="h-5 w-5 text-[#FF6600]" />}
+              glowColor="rgba(255, 102, 0, 0.4)"
+            />
             <div>
-              <h2 className="text-xl font-bold text-white">Categories Directory</h2>
-              <p className="text-xs text-gray-400">Configure catalog categories with normalized regional hubs</p>
+              <h2 className="text-xl font-black text-white tracking-wide">Categories Directory</h2>
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                Configure catalog tags with regional logistics scopes
+              </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all hover:bg-white/10 active:scale-90 cursor-pointer"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* ADD FORM */}
-        <div className="mb-6 rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-4 shrink-0">
-          <div className="text-xs font-bold uppercase tracking-widest text-[#FF6600]">
-            Add New Normalized Category
-          </div>
-          <div className="grid gap-3 sm:grid-cols-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Category Name</label>
-              <input
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="e.g. Rice & Pulses"
-                className="w-full h-11 rounded-xl border border-white/10 bg-[#090d1a]/60 px-3 py-2.5 text-sm text-white placeholder:text-gray-500 shadow-lg outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all duration-200"
+        {/* BODY PANEL */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scrollbar-thin relative z-10">
+          
+          {/* ADD FORM */}
+          <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#FF6600] flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Register Scoped Catalog Category</span>
+            </div>
+            
+            <div className="grid gap-4 sm:grid-cols-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Category Name</label>
+                <input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="e.g. Rice & Pulses"
+                  className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-[#FF6600] transition-colors"
+                />
+              </div>
+
+              <LocationSelect
+                label="State Scope"
+                value={newState}
+                onValueChange={(val) => {
+                  setNewState(val);
+                  setNewCity("");
+                  setNewTown("");
+                }}
+                options={addUniqueStates}
+                placeholder="Global (All Regions)"
+                showOther={false}
+                allOptionLabel="Global (All Regions)"
+              />
+
+              <LocationSelect
+                label="City Scope"
+                value={newCity}
+                onValueChange={(val) => {
+                  setNewCity(val);
+                  setNewTown("");
+                }}
+                options={addAvailableCities}
+                placeholder="Global (All Regions)"
+                disabled={!newState || newState === "all"}
+                showOther={false}
+                allOptionLabel="Global (All Regions)"
+              />
+
+              <LocationSelect
+                label="Town / Area Scope"
+                value={newTown}
+                onValueChange={(val) => setNewTown(val)}
+                options={addAvailableTowns}
+                placeholder="Global (All Regions)"
+                disabled={!newCity || newCity === "all"}
+                showOther={false}
+                allOptionLabel="Global (All Regions)"
               />
             </div>
 
-            <LocationSelect
-              label="State"
-              value={newState}
-              onValueChange={(val) => {
-                setNewState(val);
-                setNewCity("");
-                setNewTown("");
-              }}
-              options={addUniqueStates}
-              placeholder="Global (All Regions)"
-              showOther={false}
-              allOptionLabel="Global (All Regions)"
-            />
-
-            <LocationSelect
-              label="City"
-              value={newCity}
-              onValueChange={(val) => {
-                setNewCity(val);
-                setNewTown("");
-              }}
-              options={addAvailableCities}
-              placeholder="Global (All Regions)"
-              disabled={!newState || newState === "all"}
-              showOther={false}
-              allOptionLabel="Global (All Regions)"
-            />
-
-            <LocationSelect
-              label="Town / Area"
-              value={newTown}
-              onValueChange={(val) => setNewTown(val)}
-              options={addAvailableTowns}
-              placeholder="Global (All Regions)"
-              disabled={!newCity || newCity === "all"}
-              showOther={false}
-              allOptionLabel="Global (All Regions)"
-            />
+            <button
+              onClick={handleAdd}
+              disabled={isPending || locationsLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6600] to-[#FF8000] py-3 text-xs font-extrabold uppercase tracking-wider text-white transition hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer shadow-lg shadow-[#FF6600]/15"
+            >
+              {addMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              Add Category Directory Link
+            </button>
           </div>
 
-          <button
-            onClick={handleAdd}
-            disabled={isPending || locationsLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF6600] py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#e65c00] active:scale-[0.98] disabled:opacity-50 cursor-pointer animate-duration-150"
-          >
-            {addMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-            <span>Add Normalized Category</span>
-          </button>
-        </div>
-
-        {/* LIST */}
-        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin">
-          {categoriesLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+          {/* LIST */}
+          <div className="space-y-3.5">
+            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1 border-b border-white/5 pb-2">
+              Registered Categories Catalog
             </div>
-          ) : categories.length === 0 ? (
-            <p className="py-12 text-center text-sm text-gray-500">
-              No categories configured. Add a category above to start.
-            </p>
-          ) : (
-            categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 hover:bg-white/[0.08] p-4 transition-all"
-              >
-                {editingId === cat.id ? (
-                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-4 flex-1 mr-4 items-end">
-                    <div className="flex flex-col gap-1.5 w-full">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Name</label>
-                      <input
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        placeholder="Category Name"
-                        className="w-full h-11 rounded-xl border border-white/10 bg-[#090d1a]/60 px-3 py-1.5 text-xs text-white outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all duration-200"
+
+            {categoriesLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-500">
+                <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+                <span className="text-xs font-semibold">Indexing active categories...</span>
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="py-12 text-center border border-dashed border-white/5 rounded-2xl bg-white/[0.01] text-gray-500 text-xs font-semibold">
+                No categories configured. Insert a category above.
+              </div>
+            ) : (
+              categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="flex items-center justify-between rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent hover:border-white/10 p-4 transition-all duration-300"
+                >
+                  {editingId === cat.id ? (
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-4 flex-1 mr-4 items-end animate-fadeIn">
+                      <div className="flex flex-col gap-1.5 w-full">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Name</label>
+                        <input
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          placeholder="Category Name"
+                          className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-1.5 text-xs text-white outline-none focus:border-[#FF6600]"
+                        />
+                      </div>
+                      
+                      <LocationSelect
+                        label="State Scope"
+                        value={editingState}
+                        onValueChange={(val) => {
+                          setEditingState(val);
+                          setEditingCity("");
+                          setEditingTown("");
+                        }}
+                        options={editUniqueStates}
+                        placeholder="Global"
+                        showOther={false}
+                        allOptionLabel="Global"
+                      />
+
+                      <LocationSelect
+                        label="City Scope"
+                        value={editingCity}
+                        onValueChange={(val) => {
+                          setEditingCity(val);
+                          setEditingTown("");
+                        }}
+                        options={editAvailableCities}
+                        placeholder="Global"
+                        disabled={!editingState || editingState === "all"}
+                        showOther={false}
+                        allOptionLabel="Global"
+                      />
+
+                      <LocationSelect
+                        label="Town Scope"
+                        value={editingTown}
+                        onValueChange={(val) => setEditingTown(val)}
+                        options={editAvailableTowns}
+                        placeholder="Global"
+                        disabled={!editingCity || editingCity === "all"}
+                        showOther={false}
+                        allOptionLabel="Global"
                       />
                     </div>
-                    
-                    <LocationSelect
-                      label="State"
-                      value={editingState}
-                      onValueChange={(val) => {
-                        setEditingState(val);
-                        setEditingCity("");
-                        setEditingTown("");
-                      }}
-                      options={editUniqueStates}
-                      placeholder="Global"
-                      showOther={false}
-                      allOptionLabel="Global"
-                    />
-
-                    <LocationSelect
-                      label="City"
-                      value={editingCity}
-                      onValueChange={(val) => {
-                        setEditingCity(val);
-                        setEditingTown("");
-                      }}
-                      options={editAvailableCities}
-                      placeholder="Global"
-                      disabled={!editingState || editingState === "all"}
-                      showOther={false}
-                      allOptionLabel="Global"
-                    />
-
-                    <LocationSelect
-                      label="Town"
-                      value={editingTown}
-                      onValueChange={(val) => setEditingTown(val)}
-                      options={editAvailableTowns}
-                      placeholder="Global"
-                      disabled={!editingCity || editingCity === "all"}
-                      showOther={false}
-                      allOptionLabel="Global"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-bold text-white">
-                      {cat.name}
-                    </span>
-                    {(cat.state || cat.city || cat.town) && (
-                      <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
-                        <span>Regional Scope:</span>
-                        <span className="text-white">{cat.state}</span>
-                        <span>→</span>
-                        <span className="text-white">{cat.city}</span>
-                        {cat.town && (
-                          <>
-                            <span>→</span>
-                            <span className="text-[#FF6600] font-black">{cat.town}</span>
-                          </>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex gap-2 shrink-0 ml-4">
-                  {editingId === cat.id ? (
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => handleUpdate(cat.id)}
-                        className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-green-700 cursor-pointer"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-400 transition hover:bg-white/10 cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </div>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setEditingId(cat.id);
-                        setEditingName(cat.name);
-                        setEditingState(cat.state || "");
-                        setEditingCity(cat.city || "");
-                        setEditingTown(cat.town || "");
-                      }}
-                      className="rounded-lg bg-cyan-600/10 p-2 text-cyan-400 transition hover:bg-cyan-600 hover:text-white cursor-pointer"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-sm font-extrabold text-white tracking-wide">
+                        {cat.name}
+                      </span>
+                      {(cat.state || cat.city || cat.town) ? (
+                        <span className="text-[10px] font-semibold text-gray-400 flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center rounded bg-[#FF6600]/10 border border-[#FF6600]/20 px-1.5 py-0.5 text-[8.5px] font-black text-[#FF6600] uppercase tracking-wider">Scope</span>
+                          <span className="text-white font-bold">{cat.state}</span>
+                          <span>→</span>
+                          <span className="text-gray-300">{cat.city}</span>
+                          {cat.town && (
+                            <>
+                              <span>→</span>
+                              <span className="text-cyan-400 font-extrabold">{cat.town}</span>
+                            </>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 inline-flex items-center gap-1">
+                          🌐 Scope: Global (All Regions)
+                        </span>
+                      )}
+                    </div>
                   )}
 
-                  <button
-                    onClick={() => handleDelete(cat)}
-                    className="rounded-lg bg-red-600/10 p-2 text-red-400 transition hover:bg-red-600 hover:text-white cursor-pointer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex gap-2 shrink-0 ml-4">
+                    {editingId === cat.id ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleUpdate(cat.id)}
+                          className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-extrabold uppercase tracking-wider text-white transition hover:from-emerald-500 cursor-pointer"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-xs font-extrabold uppercase tracking-wider text-gray-400 hover:bg-white/10 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditingId(cat.id);
+                          setEditingName(cat.name);
+                          setEditingState(cat.state || "");
+                          setEditingCity(cat.city || "");
+                          setEditingTown(cat.town || "");
+                        }}
+                        className="rounded-xl bg-cyan-500/10 p-2.5 text-cyan-400 hover:bg-cyan-500/20 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleDelete(cat)}
+                      className="rounded-xl bg-red-500/10 p-2.5 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* SLA COMPLIANT DELETE OVERLAY */}
-      {deletingCategory && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-[36px] border border-red-500/20 bg-[#050816] p-8 text-center shadow-2xl animate-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setDeletingCategory(null)}
-              className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white transition hover:bg-white/10"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
-              <Trash2 className="h-10 w-10 text-red-500 animate-bounce" />
-            </div>
-
-            <h2 className="text-3xl font-black text-white">Delete Category</h2>
-            <p className="mt-3 text-sm text-gray-400 leading-relaxed">
-              Are you sure you want to delete the category:<br />
-              <span className="font-bold text-white text-lg">{deletingCategory.name}</span>?<br />
-              This will remove it from shop displays. This action is permanent.
-            </p>
-
-            <div className="mt-8 flex gap-4">
-              <button
-                onClick={() => setDeletingCategory(null)}
-                className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 text-sm font-bold text-white transition hover:bg-white/10 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  deleteMutation.mutate(deletingCategory.id);
-                }}
-                disabled={deleteMutation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-600 disabled:opacity-60 cursor-pointer"
-              >
-                {deleteMutation.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-5 w-5" />
-                )}
-                <span>Delete</span>
-              </button>
-            </div>
+              ))
+            )}
           </div>
         </div>
-      )}
+      </motion.div>
+
+      {/* DELETE CONFIRM OVERLAY */}
+      <AnimatePresence>
+        {deletingCategory && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/85 backdrop-blur-md"
+              onClick={() => setDeletingCategory(null)}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-md rounded-[32px] border border-red-500/20 bg-gradient-to-b from-[#0a0f1d] to-[#05070a] p-8 text-center shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden"
+            >
+              <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full blur-2xl opacity-10 bg-red-500 pointer-events-none" />
+
+              <button
+                onClick={() => setDeletingCategory(null)}
+                className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/20">
+                <Trash2 className="h-8 w-8 text-red-500 animate-pulse" />
+              </div>
+
+              <h2 className="text-2xl font-black text-white tracking-wide">Delete Category</h2>
+              <p className="mt-3 text-xs text-gray-400 leading-relaxed max-w-xs mx-auto">
+                Are you sure you want to delete:<br />
+                <span className="font-extrabold text-white text-base block my-1.5">{deletingCategory.name}</span>
+                This action is permanent and removes the category scopes immediately from shop displays.
+              </p>
+
+              <div className="mt-8 flex gap-3.5">
+                <button
+                  onClick={() => setDeletingCategory(null)}
+                  className="flex-1 rounded-xl border border-white/10 bg-white/5 py-3 text-xs font-extrabold uppercase tracking-wider text-white transition hover:bg-white/10 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    deleteMutation.mutate(deletingCategory.id);
+                  }}
+                  disabled={deleteMutation.isPending}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 py-3 text-xs font-extrabold uppercase tracking-wider text-white transition hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                >
+                  {deleteMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

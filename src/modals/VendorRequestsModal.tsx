@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from "react";
-import { X, Check, Loader2, Users, KeyRound, CreditCard, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Check, Loader2, Users, KeyRound, CreditCard, ArrowRight, ShieldAlert, BadgeInfo } from "lucide-react";
 import { approveVendor } from "@/services/api";
 import { toast } from "sonner";
 
@@ -26,6 +27,28 @@ interface Props {
 
 type ModalTab = "registrations" | "resets" | "bank_updates";
 
+/* ================= LAYERED ICON CONTAINER ================= */
+function LayeredIconContainer({
+  icon,
+  glowColor,
+}: {
+  icon: React.ReactNode;
+  glowColor: string;
+}) {
+  return (
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950/80 backdrop-blur-xl overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+      <div
+        className="absolute inset-0 opacity-40 blur-md"
+        style={{
+          background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`
+        }}
+      />
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+      <div className="relative text-white z-10">{icon}</div>
+    </div>
+  );
+}
+
 export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
   const [tab, setTab] = useState<ModalTab>("registrations");
 
@@ -49,8 +72,6 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
       let data = [];
       try { data = JSON.parse(text); } catch { /* */ }
       if (Array.isArray(data)) {
-        // Only truly pending registrations (not vendors mid-reset-flow)
-        // We'll cross-filter with resetRequests after both loads complete
         setVendors(data.filter((v: Vendor) => Number(v.approved) === 0 || v.status === "pending"));
       } else {
         setVendors([]);
@@ -70,7 +91,6 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
       const data = await res.json();
       if (data.success) {
         setResetRequests(data.reset_requests || []);
-        // Cross-filter: remove vendors in reset flow from registration list
         const resetIds = new Set([
           ...(data.reset_requests || []).map((v: Vendor) => v.id),
         ]);
@@ -122,115 +142,174 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
     setTimeout(() => onVendorActioned(), 300);
   }
 
-  const tabCls = (t: ModalTab) =>
-    `flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
-      tab === t
-        ? "bg-[#FF6600] text-white shadow"
-        : "text-gray-400 hover:text-white"
-    }`;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        onClick={onClose}
+      />
 
-      <div
-        className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-[28px] border border-white/10 bg-[#0a0f0a] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+      {/* Modal Container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-[32px] border border-white/5 bg-gradient-to-b from-[#0a0f1d] to-[#05070a] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden"
       >
+        {/* Glow orbs */}
+        <div className="absolute -top-12 -left-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-emerald-500" />
+        <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-[#FF6600]" />
+
         {/* HEADER */}
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+        <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 relative z-10">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B3D2E] text-[#FF6600]">
-              <Users className="h-5 w-5" />
-            </div>
+            <LayeredIconContainer
+              icon={<Users className="h-5 w-5 text-emerald-400" />}
+              glowColor="rgba(16, 185, 129, 0.4)"
+            />
             <div>
-              <h2 className="text-lg font-bold text-white">Vendor Requests</h2>
-              <p className="text-xs text-gray-500">
-                {vendors.length} registration · {resetRequests.length} reset · {bankRequests.length} bank updates
+              <h2 className="text-xl font-black text-white tracking-wide">Vendor Requests</h2>
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                {vendors.length} Pending · {resetRequests.length} Resets · {bankRequests.length} Bank Updates
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all hover:bg-white/10 active:scale-90 cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* TABS */}
-        <div className="flex gap-1 rounded-2xl bg-white/5 mx-4 mt-4 mb-1 p-1">
-          <button className={tabCls("registrations")} onClick={() => setTab("registrations")}>
-            Registrations ({vendors.length})
-          </button>
-          <button className={tabCls("resets")} onClick={() => setTab("resets")}>
-            Reset Requests ({resetRequests.length})
-          </button>
-          <button className={tabCls("bank_updates")} onClick={() => setTab("bank_updates")}>
-            Bank Updates ({bankRequests.length})
-          </button>
+        {/* TABS (Tactile Pill Segmented) */}
+        <div className="flex gap-1.5 rounded-2xl bg-white/[0.02] border border-white/5 mx-6 mt-5 mb-2 p-1.5 relative z-10">
+          {[
+            { id: "registrations", label: "Registrations", count: vendors.length },
+            { id: "resets", label: "Reset Requests", count: resetRequests.length },
+            { id: "bank_updates", label: "Bank Updates", count: bankRequests.length },
+          ].map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id as ModalTab)}
+                className={`flex-1 py-3 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 relative cursor-pointer ${
+                  active
+                    ? "bg-[#FF6600] text-white shadow-lg shadow-[#FF6600]/25"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-1.5">
+                  {t.label}
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${active ? "bg-white/20 text-white" : "bg-white/5 text-gray-500"}`}>
+                    {t.count}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* BODY */}
-        <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4">
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5 scrollbar-thin relative z-10 min-h-[300px]">
+          <AnimatePresence mode="wait">
+            {tab === "registrations" && (
+              <motion.div
+                key="registrations"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4"
+              >
+                {fetchingVendors ? (
+                  <Spinner />
+                ) : vendors.length === 0 ? (
+                  <Empty
+                    icon={<Users className="h-10 w-10 text-emerald-400" />}
+                    label="No pending vendor registrations"
+                    sublabel="Everything is clear! Incoming seller accounts will appear here."
+                    glowColor="rgba(16, 185, 129, 0.15)"
+                  />
+                ) : (
+                  vendors.map((vendor) => (
+                    <VendorCard key={vendor.id} vendor={vendor} onAction={removeVendor} />
+                  ))
+                )}
+              </motion.div>
+            )}
 
-          {/* ── REGISTRATIONS ── */}
-          {tab === "registrations" && (
-            fetchingVendors ? (
-              <Spinner />
-            ) : vendors.length === 0 ? (
-              <Empty icon={<Users className="h-12 w-12 opacity-30" />} label="No pending vendor registrations" />
-            ) : (
-              vendors.map((vendor) => (
-                <VendorCard key={vendor.id} vendor={vendor} onAction={removeVendor} />
-              ))
-            )
-          )}
+            {tab === "resets" && (
+              <motion.div
+                key="resets"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4"
+              >
+                {fetchingReset ? (
+                  <Spinner />
+                ) : resetRequests.length === 0 ? (
+                  <Empty
+                    icon={<KeyRound className="h-10 w-10 text-amber-400" />}
+                    label="No password reset requests"
+                    sublabel="No accounts require verification reset credentials currently."
+                    glowColor="rgba(245, 158, 11, 0.15)"
+                  />
+                ) : (
+                  resetRequests.map((vendor) => (
+                    <ResetRequestCard
+                      key={vendor.id}
+                      vendor={vendor}
+                      onDone={removeReset}
+                    />
+                  ))
+                )}
+              </motion.div>
+            )}
 
-          {/* ── RESET REQUESTS ── */}
-          {tab === "resets" && (
-            fetchingReset ? (
-              <Spinner />
-            ) : resetRequests.length === 0 ? (
-              <Empty icon={<KeyRound className="h-12 w-12 opacity-30" />} label="No pending password reset requests" />
-            ) : (
-              resetRequests.map((vendor) => (
-                <ResetRequestCard
-                  key={vendor.id}
-                  vendor={vendor}
-                  onDone={removeReset}
-                />
-              ))
-            )
-          )}
-
-          {/* ── BANK UPDATES ── */}
-          {tab === "bank_updates" && (
-            fetchingBank ? (
-              <Spinner />
-            ) : bankRequests.length === 0 ? (
-              <Empty icon={<CreditCard className="h-12 w-12 opacity-30 text-purple-400" />} label="No pending bank details update requests" />
-            ) : (
-              bankRequests.map((req) => (
-                <BankRequestCard
-                  key={req.vendor_id}
-                  req={req}
-                  onDone={removeBank}
-                />
-              ))
-            )
-          )}
-
+            {tab === "bank_updates" && (
+              <motion.div
+                key="bank_updates"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4"
+              >
+                {fetchingBank ? (
+                  <Spinner />
+                ) : bankRequests.length === 0 ? (
+                  <Empty
+                    icon={<CreditCard className="h-10 w-10 text-violet-400" />}
+                    label="No bank change requests"
+                    sublabel="No merchants have filed bank ledger modifications."
+                    glowColor="rgba(139, 92, 246, 0.15)"
+                  />
+                ) : (
+                  bankRequests.map((req) => (
+                    <BankRequestCard
+                      key={req.vendor_id}
+                      req={req}
+                      onDone={removeBank}
+                    />
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   REGISTRATION CARD
-═══════════════════════════════════════════════════════════ */
+/* ================= REGISTRATION CARD ================= */
 const VendorCard = memo(({ vendor, onAction }: { vendor: Vendor; onAction: (id: number) => void }) => {
   const [loading, setLoading] = useState<"approve" | "reject" | null>(null);
   const busy = loading !== null;
@@ -255,28 +334,39 @@ const VendorCard = memo(({ vendor, onAction }: { vendor: Vendor; onAction: (id: 
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold text-white">{vendor.company_name}</h3>
-          <p className="mt-1 text-sm text-gray-400">{vendor.vendor_name}</p>
-          <p className="mt-1 text-xs text-gray-500">{vendor.email}</p>
-          <p className="mt-1 text-xs text-gray-500">{vendor.phone}</p>
-          <p className="mt-1 text-xs text-gray-600">{vendor.address}</p>
-          {vendor.city && vendor.state && (
-            <p className="mt-1.5 text-xs font-semibold text-[#FF6600]">
-              Location: {vendor.city}, {vendor.state}
-            </p>
-          )}
+    <div className="rounded-3xl border border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent p-5 hover:border-white/10 transition-all duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-base font-extrabold text-white tracking-wide">{vendor.company_name}</h3>
+            {vendor.city && vendor.state && (
+              <span className="inline-flex items-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-400">
+                📍 {vendor.city}, {vendor.state}
+              </span>
+            )}
+          </div>
+          <p className="text-xs font-bold text-[#FF6600] uppercase tracking-wider">{vendor.vendor_name}</p>
+          <div className="text-xs text-gray-400 space-y-0.5">
+            <p>✉️ {vendor.email}</p>
+            <p>📞 {vendor.phone}</p>
+            <p className="text-gray-500 leading-relaxed max-w-md italic mt-1">📍 {vendor.address}</p>
+          </div>
         </div>
-        <div className="flex shrink-0 gap-2 pt-1">
-          <button disabled={busy} onClick={() => handleAction("approve")}
-            className="flex items-center gap-1.5 rounded-xl bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:bg-green-500 disabled:opacity-60">
+
+        <div className="flex sm:flex-col shrink-0 gap-2.5">
+          <button
+            disabled={busy}
+            onClick={() => handleAction("approve")}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white transition shadow-lg shadow-emerald-950/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
             {loading === "approve" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             Approve
           </button>
-          <button disabled={busy} onClick={() => handleAction("reject")}
-            className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:bg-red-500 disabled:opacity-60">
+          <button
+            disabled={busy}
+            onClick={() => handleAction("reject")}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
             {loading === "reject" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
             Reject
           </button>
@@ -286,9 +376,7 @@ const VendorCard = memo(({ vendor, onAction }: { vendor: Vendor; onAction: (id: 
   );
 });
 
-/* ═══════════════════════════════════════════════════════════
-   RESET CARD
-═══════════════════════════════════════════════════════════ */
+/* ================= RESET CARD ================= */
 const ResetRequestCard = memo(({
   vendor,
   onDone,
@@ -305,7 +393,6 @@ const ResetRequestCard = memo(({
       const res = await fetch(`${API}/admin-handle-vendor-reset.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Hardcode type as we only have reset requests now
         body: JSON.stringify({ vendor_id: vendor.id, action, type: "reset_requested" }),
       });
       const data = await res.json();
@@ -323,25 +410,29 @@ const ResetRequestCard = memo(({
   }
 
   return (
-    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400">
+    <div className="rounded-3xl border border-amber-500/15 bg-gradient-to-b from-amber-500/[0.03] to-transparent p-5 hover:border-amber-500/30 transition-all duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-400">
             <KeyRound className="h-3 w-3" />
-            Reset Requested
+            Reset Credentials Requested
           </div>
-          <h3 className="truncate text-base font-semibold text-white">{vendor.vendor_name}</h3>
-          <p className="mt-1 text-xs text-gray-400">{vendor.email}</p>
-          <p className="mt-1 text-xs text-gray-500">{vendor.phone}</p>
-          <p className="mt-2 text-xs text-gray-500">
-            Vendor is requesting a password reset. Approve to let them set a new password.
-          </p>
+          <h3 className="truncate text-base font-extrabold text-white tracking-wide">{vendor.vendor_name}</h3>
+          <div className="text-xs text-gray-400 space-y-0.5">
+            <p>✉️ {vendor.email}</p>
+            <p>📞 {vendor.phone}</p>
+            <p className="text-gray-500 leading-normal mt-2 italic flex items-center gap-1">
+              <BadgeInfo className="h-3 w-3 inline text-amber-400" />
+              Merchant requested verification override code. Approve to execute reset sequence.
+            </p>
+          </div>
         </div>
-        <div className="flex shrink-0 flex-col gap-2 pt-1">
+
+        <div className="flex sm:flex-col shrink-0 gap-2.5">
           <button
             disabled={busy}
             onClick={() => handleAction("approve_reset")}
-            className="flex items-center gap-1.5 rounded-xl bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:bg-green-500 disabled:opacity-60"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-[#FF6600] hover:bg-[#e65c00] px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white transition active:scale-95 disabled:opacity-50 cursor-pointer shadow-lg shadow-[#FF6600]/15"
           >
             {loading === "approve_reset" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             Approve Reset
@@ -349,7 +440,7 @@ const ResetRequestCard = memo(({
           <button
             disabled={busy}
             onClick={() => handleAction("reject")}
-            className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:bg-red-500 disabled:opacity-60"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {loading === "reject" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
             Reject
@@ -360,9 +451,7 @@ const ResetRequestCard = memo(({
   );
 });
 
-/* ═══════════════════════════════════════════════════════════
-   BANK UPDATE CARD
-═══════════════════════════════════════════════════════════ */
+/* ================= BANK UPDATE CARD ================= */
 const BankRequestCard = memo(({
   req,
   onDone,
@@ -396,24 +485,23 @@ const BankRequestCard = memo(({
   }
 
   return (
-    <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-5">
+    <div className="rounded-3xl border border-purple-500/15 bg-gradient-to-b from-purple-500/[0.03] to-transparent p-5 hover:border-purple-500/30 transition-all duration-300 space-y-4">
       {/* Header Info */}
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-400">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/5 pb-3">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="inline-flex items-center gap-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-purple-400">
             <CreditCard className="h-3 w-3" />
-            Bank Update Requested
+            Bank Information Update Request
           </div>
-          <h3 className="truncate text-base font-semibold text-white">{req.company_name}</h3>
-          <p className="mt-0.5 text-xs text-gray-400">Vendor: {req.vendor_name}</p>
-          <p className="text-[11px] text-gray-500">{req.email} · {req.phone}</p>
+          <h3 className="truncate text-base font-extrabold text-white tracking-wide">{req.company_name}</h3>
+          <p className="text-xs font-bold text-gray-400">{req.vendor_name} · <span className="text-gray-500">{req.email}</span></p>
         </div>
         
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-2.5">
           <button
             disabled={busy}
             onClick={() => handleAction("approve")}
-            className="flex items-center gap-1 rounded-xl bg-green-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-green-500 disabled:opacity-60 cursor-pointer"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-2 text-xs font-extrabold uppercase tracking-wider text-white transition hover:from-emerald-500 hover:to-teal-500 disabled:opacity-60 cursor-pointer active:scale-95"
           >
             {loading === "approve" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             Approve
@@ -421,7 +509,7 @@ const BankRequestCard = memo(({
           <button
             disabled={busy}
             onClick={() => handleAction("reject")}
-            className="flex items-center gap-1 rounded-xl bg-red-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-red-500 disabled:opacity-60 cursor-pointer"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1 rounded-xl bg-white/5 border border-white/10 px-3.5 py-2 text-xs font-extrabold uppercase tracking-wider text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition disabled:opacity-60 cursor-pointer active:scale-95"
           >
             {loading === "reject" ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3.5 w-3.5" />}
             Reject
@@ -430,27 +518,27 @@ const BankRequestCard = memo(({
       </div>
 
       {/* Comparisons */}
-      <div className="grid gap-3 rounded-xl bg-black/40 p-3 sm:grid-cols-2">
+      <div className="grid gap-4 rounded-2xl bg-black/40 p-4 sm:grid-cols-2 border border-white/5">
         {/* Current live bank */}
-        <div className="space-y-1 border-r border-white/5 pr-2">
-          <div className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Current Details</div>
-          <div className="text-xs font-medium text-gray-400">
-            <span className="block truncate text-gray-300">🏦 {req.current_bank?.bank_name || "N/A"}</span>
-            <span className="block mt-0.5">A/C: {req.current_bank?.account_number || "N/A"}</span>
-            <span className="block">IFSC: {req.current_bank?.ifsc_code || "N/A"}</span>
+        <div className="space-y-1 sm:border-r sm:border-white/5 sm:pr-4">
+          <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Current Ledger Details</div>
+          <div className="text-xs space-y-1 font-medium text-gray-400">
+            <span className="block truncate text-gray-300 font-extrabold">🏦 {req.current_bank?.bank_name || "N/A"}</span>
+            <span className="block">A/C: <span className="font-mono text-gray-300">{req.current_bank?.account_number || "N/A"}</span></span>
+            <span className="block">IFSC: <span className="font-mono text-gray-300">{req.current_bank?.ifsc_code || "N/A"}</span></span>
           </div>
         </div>
 
         {/* Requested bank */}
-        <div className="space-y-1 pl-1">
-          <div className="text-[9px] font-bold uppercase tracking-widest text-purple-400 flex items-center gap-1">
-            Requested Details
-            <ArrowRight className="h-2.5 w-2.5" />
+        <div className="space-y-1 sm:pl-2">
+          <div className="text-[9px] font-black uppercase tracking-widest text-purple-400 flex items-center gap-1 mb-1.5">
+            Requested Ledger Details
+            <ArrowRight className="h-2.5 w-2.5 text-purple-400" />
           </div>
-          <div className="text-xs font-medium text-purple-300">
-            <span className="block truncate font-bold text-white">🏦 {req.requested_bank?.bank_name || "N/A"}</span>
-            <span className="block mt-0.5 font-bold text-white">A/C: {req.requested_bank?.account_number || "N/A"}</span>
-            <span className="block font-bold text-white">IFSC: {req.requested_bank?.ifsc_code || "N/A"}</span>
+          <div className="text-xs space-y-1 font-medium text-purple-300">
+            <span className="block truncate font-extrabold text-white">🏦 {req.requested_bank?.bank_name || "N/A"}</span>
+            <span className="block">A/C: <span className="font-mono text-white font-extrabold">{req.requested_bank?.account_number || "N/A"}</span></span>
+            <span className="block">IFSC: <span className="font-mono text-white font-extrabold">{req.requested_bank?.ifsc_code || "N/A"}</span></span>
           </div>
         </div>
       </div>
@@ -458,22 +546,44 @@ const BankRequestCard = memo(({
   );
 });
 
-/* ═══════════════════════════════════════════════════════════
-   SHARED
-═══════════════════════════════════════════════════════════ */
+/* ================= SHARED ELEMENTS ================= */
 function Spinner() {
   return (
-    <div className="flex items-center justify-center py-16">
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
       <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+      <span className="text-xs font-semibold text-gray-500 tracking-wider">Syncing operational requests...</span>
     </div>
   );
 }
 
-function Empty({ icon, label }: { icon: React.ReactNode; label: string }) {
+function Empty({
+  icon,
+  label,
+  sublabel,
+  glowColor,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sublabel: string;
+  glowColor: string;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-      {icon}
-      <p className="mt-3 text-sm">{label}</p>
+    <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-white/5 rounded-[2.5rem] bg-white/[0.01] p-8 relative overflow-hidden">
+      {/* Blurred background aura */}
+      <div className="absolute inset-0 opacity-20 blur-2xl pointer-events-none"
+        style={{
+          background: `radial-gradient(circle, ${glowColor} 0%, transparent 60%)`
+        }}
+      />
+      <div className="relative z-10 space-y-3.5">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.02] border border-white/5">
+          {icon}
+        </div>
+        <div>
+          <h4 className="text-sm font-extrabold text-white tracking-wide">{label}</h4>
+          <p className="mt-1 text-[11px] font-medium text-gray-500 max-w-xs mx-auto leading-normal">{sublabel}</p>
+        </div>
+      </div>
     </div>
   );
 }

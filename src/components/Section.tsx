@@ -9,13 +9,38 @@ export function Section({
   children: React.ReactNode;
   action?: React.ReactNode;
 }) {
+  // Automatically identify the last word of a section heading to wrap it in a premium gradient span
+  const renderTitle = (text: string) => {
+    const words = text.split(" ");
+    if (words.length <= 1) return text;
+    const lastWord = words.pop();
+    return (
+      <>
+        {words.join(" ")}{" "}
+        <span className="text-gradient font-black">
+          {lastWord}
+        </span>
+      </>
+    );
+  };
+
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
       <div className="flex items-end justify-between gap-6 mb-8">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-          {eyebrow && <div className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-2">{eyebrow}</div>}
-          <h2 className="font-display text-3xl md:text-4xl font-bold">{title}</h2>
-          {subtitle && <p className="text-muted-foreground mt-2 max-w-2xl">{subtitle}</p>}
+          {eyebrow && (
+            <div className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.1em] text-primary mb-2">
+              {eyebrow}
+            </div>
+          )}
+          <h2 className="font-display font-extrabold text-2xl sm:text-3xl lg:text-[2.2rem] leading-[1.05] tracking-[-0.03em] text-slate-100">
+            {renderTitle(title)}
+          </h2>
+          {subtitle && (
+            <p className="font-sans text-[0.95rem] leading-[1.65] text-slate-400 mt-2 max-w-2xl">
+              {subtitle}
+            </p>
+          )}
         </motion.div>
         {action}
       </div>

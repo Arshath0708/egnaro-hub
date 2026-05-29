@@ -50,9 +50,13 @@ export async function getProducts(params?: {
   }
 
   const queryParts = [];
+  
+  // Defensive high default limit for client-side search catalogs when limit is not specified
+  const limitValue = actualParams?.limit !== undefined ? actualParams.limit : 10000;
+  queryParts.push(`limit=${limitValue}`);
+
   if (actualParams) {
     if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
-    if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
     if (actualParams.category) queryParts.push(`category=${encodeURIComponent(actualParams.category)}`);
     if (actualParams.status) queryParts.push(`status=${encodeURIComponent(actualParams.status)}`);
     if (actualParams.vendor_id !== undefined) queryParts.push(`vendor_id=${actualParams.vendor_id}`);
