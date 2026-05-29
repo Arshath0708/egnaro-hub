@@ -65,6 +65,7 @@ type Product = {
   discount: number;
   description: string;
   approved: number;
+  status?: string;
   stock_quantity: number;
 };
 
@@ -193,11 +194,15 @@ function DashboardContent({
   const filteredOrders = ordersData;
 
   const approvedCount = allProducts.filter(
-    (p) => Number(p.approved) === 1
+    (p) => Number(p.approved) === 1 || p.status === "approved"
   ).length;
 
   const pendingCount = allProducts.filter(
-    (p) => Number(p.approved) === 0
+    (p) => Number(p.approved) === 0 && p.status !== "rejected"
+  ).length;
+
+  const rejectedCount = allProducts.filter(
+    (p) => p.status === "rejected"
   ).length;
 
   return (
@@ -289,9 +294,13 @@ function DashboardContent({
                       <span className="text-gray-400 block mb-0.5">Approved</span>
                       <span className="font-bold text-green-400">{approvedCount}</span>
                     </div>
-                    <div className="text-right">
+                    <div className="text-center">
                       <span className="text-gray-400 block mb-0.5">Pending</span>
                       <span className="font-semibold text-yellow-400">{pendingCount}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-gray-400 block mb-0.5">Rejected</span>
+                      <span className="font-semibold text-red-400">{rejectedCount}</span>
                     </div>
                   </div>
                 </div>
@@ -454,6 +463,7 @@ function DashboardContent({
                       <option value="all">All Statuses</option>
                       <option value="approved">Approved</option>
                       <option value="pending">Pending</option>
+                      <option value="rejected">Rejected</option>
                     </select>
                   </div>
 
@@ -514,9 +524,13 @@ function DashboardContent({
                           />
 
                           <div className="absolute right-4 top-4">
-                            {Number(product.approved) === 1 ? (
+                            {Number(product.approved) === 1 || product.status === "approved" ? (
                               <span className="rounded-full bg-green-500/20 px-4 py-2 text-xs font-bold text-green-400">
                                 Approved
+                              </span>
+                            ) : product.status === "rejected" ? (
+                              <span className="rounded-full bg-red-500/20 px-4 py-2 text-xs font-bold text-red-400">
+                                Rejected
                               </span>
                             ) : (
                               <span className="rounded-full bg-yellow-500/20 px-4 py-2 text-xs font-bold text-yellow-300">
@@ -765,6 +779,7 @@ function DashboardContent({
       {showProfile && (
         <ViewVendorModal
           vendor={{ id: Number(vendorId) }}
+          isVendor={true}
           hidePerformanceOverview={true}
           onClose={() => setShowProfile(false)}
         />

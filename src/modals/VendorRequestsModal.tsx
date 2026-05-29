@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { X, Check, Loader2, Users, KeyRound } from "lucide-react";
+import { X, Check, Loader2, Users, KeyRound, CreditCard, ArrowRight } from "lucide-react";
 import { approveVendor } from "@/services/api";
 import { toast } from "sonner";
 
@@ -24,7 +24,7 @@ interface Props {
   onVendorActioned: () => void;
 }
 
-type ModalTab = "registrations" | "resets";
+type ModalTab = "registrations" | "resets" | "bank_updates";
 
 export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
   const [tab, setTab] = useState<ModalTab>("registrations");
@@ -36,6 +36,10 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
   // ── Reset requests ─────────────────────
   const [resetRequests, setResetRequests] = useState<Vendor[]>([]);
   const [fetchingReset, setFetchingReset] = useState(true);
+
+  // ── Bank update requests ────────────────
+  const [bankRequests, setBankRequests] = useState<any[]>([]);
+  const [fetchingBank, setFetchingBank] = useState(true);
 
   async function loadVendors() {
     try {
@@ -79,9 +83,28 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
     }
   }
 
+  async function loadBankRequests() {
+    try {
+      setFetchingBank(true);
+      const res = await fetch(`${API}/get-pending-bank-requests.php?status=pending`);
+      const data = await res.json();
+      if (data.success) {
+        setBankRequests(data.requests || []);
+      } else {
+        setBankRequests([]);
+      }
+    } catch {
+      toast.error("Failed to load bank requests");
+      setBankRequests([]);
+    } finally {
+      setFetchingBank(false);
+    }
+  }
+
   useEffect(() => {
     loadVendors();
     loadResetRequests();
+    loadBankRequests();
   }, []);
 
   function removeVendor(id: number) {
@@ -91,6 +114,11 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
 
   function removeReset(id: number) {
     setResetRequests((prev) => prev.filter((v) => v.id !== id));
+    setTimeout(() => onVendorActioned(), 300);
+  }
+
+  function removeBank(vendorId: number) {
+    setBankRequests((prev) => prev.filter((r) => r.vendor_id !== vendorId));
     setTimeout(() => onVendorActioned(), 300);
   }
 
@@ -118,7 +146,7 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
             <div>
               <h2 className="text-lg font-bold text-white">Vendor Requests</h2>
               <p className="text-xs text-gray-500">
-                {vendors.length} registration · {resetRequests.length} reset
+                {vendors.length} registration · {resetRequests.length} reset · {bankRequests.length} bank updates
               </p>
             </div>
           </div>
@@ -138,6 +166,9 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
           </button>
           <button className={tabCls("resets")} onClick={() => setTab("resets")}>
             Reset Requests ({resetRequests.length})
+          </button>
+          <button className={tabCls("bank_updates")} onClick={() => setTab("bank_updates")}>
+            Bank Updates ({bankRequests.length})
           </button>
         </div>
 
@@ -169,6 +200,23 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
                   key={vendor.id}
                   vendor={vendor}
                   onDone={removeReset}
+                />
+              ))
+            )
+          )}
+
+          {/* ── BANK UPDATES ── */}
+          {tab === "bank_updates" && (
+            fetchingBank ? (
+              <Spinner />
+            ) : bankRequests.length === 0 ? (
+              <Empty icon={<CreditCard className="h-12 w-12 opacity-30 text-purple-400" />} label="No pending bank details update requests" />
+            ) : (
+              bankRequests.map((req) => (
+                <BankRequestCard
+                  key={req.vendor_id}
+                  req={req}
+                  onDone={removeBank}
                 />
               ))
             )
@@ -306,6 +354,104 @@ const ResetRequestCard = memo(({
             {loading === "reject" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
             Reject
           </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+/* ═══════════════════════════════════════════════════════════
+   BANK UPDATE CARD
+═══════════════════════════════════════════════════════════ */
+const BankRequestCard = memo(({
+  req,
+  onDone,
+}: {
+  req: any;
+  onDone: (vendorId: number) => void;
+}) => {
+  const [loading, setLoading] = useState<string | null>(null);
+  const busy = loading !== null;
+
+  async function handleAction(action: "approve" | "reject") {
+    try {
+      setLoading(action);
+      const res = await fetch(`${API}/admin-approve-bank.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vendor_id: req.vendor_id, action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || `Bank update ${action}d successfully`);
+        onDone(req.vendor_id);
+      } else {
+        toast.error(data.message || "Action failed");
+      }
+    } catch {
+      toast.error("Server error");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-5">
+      {/* Header Info */}
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-400">
+            <CreditCard className="h-3 w-3" />
+            Bank Update Requested
+          </div>
+          <h3 className="truncate text-base font-semibold text-white">{req.company_name}</h3>
+          <p className="mt-0.5 text-xs text-gray-400">Vendor: {req.vendor_name}</p>
+          <p className="text-[11px] text-gray-500">{req.email} · {req.phone}</p>
+        </div>
+        
+        <div className="flex shrink-0 gap-2">
+          <button
+            disabled={busy}
+            onClick={() => handleAction("approve")}
+            className="flex items-center gap-1 rounded-xl bg-green-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-green-500 disabled:opacity-60 cursor-pointer"
+          >
+            {loading === "approve" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            Approve
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => handleAction("reject")}
+            className="flex items-center gap-1 rounded-xl bg-red-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-red-500 disabled:opacity-60 cursor-pointer"
+          >
+            {loading === "reject" ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+            Reject
+          </button>
+        </div>
+      </div>
+
+      {/* Comparisons */}
+      <div className="grid gap-3 rounded-xl bg-black/40 p-3 sm:grid-cols-2">
+        {/* Current live bank */}
+        <div className="space-y-1 border-r border-white/5 pr-2">
+          <div className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Current Details</div>
+          <div className="text-xs font-medium text-gray-400">
+            <span className="block truncate text-gray-300">🏦 {req.current_bank?.bank_name || "N/A"}</span>
+            <span className="block mt-0.5">A/C: {req.current_bank?.account_number || "N/A"}</span>
+            <span className="block">IFSC: {req.current_bank?.ifsc_code || "N/A"}</span>
+          </div>
+        </div>
+
+        {/* Requested bank */}
+        <div className="space-y-1 pl-1">
+          <div className="text-[9px] font-bold uppercase tracking-widest text-purple-400 flex items-center gap-1">
+            Requested Details
+            <ArrowRight className="h-2.5 w-2.5" />
+          </div>
+          <div className="text-xs font-medium text-purple-300">
+            <span className="block truncate font-bold text-white">🏦 {req.requested_bank?.bank_name || "N/A"}</span>
+            <span className="block mt-0.5 font-bold text-white">A/C: {req.requested_bank?.account_number || "N/A"}</span>
+            <span className="block font-bold text-white">IFSC: {req.requested_bank?.ifsc_code || "N/A"}</span>
+          </div>
         </div>
       </div>
     </div>

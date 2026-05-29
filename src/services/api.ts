@@ -171,6 +171,8 @@ export type ProductForm = {
   stock_quantity: string;
   created_by_type: string;
   created_by_id: string;
+  approved?: number;
+  status?: string;
 };
 
 export async function addProduct(form: ProductForm) {
@@ -253,6 +255,29 @@ export async function addVendor(data: any) {
   return await request("/add-vendor.php", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function updateBankDetails(data: {
+  vendor_id: number;
+  bank_name: string;
+  account_number: string;
+  ifsc_code: string;
+}) {
+  return await request("/update-bank-details.php", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getPendingBankRequests(status: string = "pending") {
+  return await request(`/get-pending-bank-requests.php?status=${status}`);
+}
+
+export async function adminApproveBank(vendorId: number, action: "approve" | "reject") {
+  return await request("/admin-approve-bank.php", {
+    method: "POST",
+    body: JSON.stringify({ vendor_id: vendorId, action }),
   });
 }
 

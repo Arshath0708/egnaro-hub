@@ -174,6 +174,7 @@ function AdminPanel({
   
   const dashboardStats = statsRes || null;
   const pendingVendors = dashboardStats?.vendors?.pending || 0;
+  const pendingProducts = dashboardStats?.products?.pending_approval || 0;
 
   const productsTotalPages = productsData?.total_pages || 1;
   const ordersTotalPages = ordersData?.total_pages || 1;
@@ -303,9 +304,9 @@ function AdminPanel({
           >
             <Menu className="h-4 w-4 text-[#FF6600]" />
             Menu
-            {pendingVendors > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6600] text-[9px] font-bold text-white">
-                {pendingVendors}
+            {(pendingVendors + pendingProducts) > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6600] text-[9px] font-bold text-white animate-pulse">
+                {pendingVendors + pendingProducts}
               </span>
             )}
           </button>
@@ -411,10 +412,17 @@ function AdminPanel({
                       setProductModalOpen(true);
                       setMenuOpen(false);
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
+                    className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-left text-xs font-bold text-white hover:bg-white/5 cursor-pointer"
                   >
-                    <Package className="h-3.5 w-3.5 text-orange-400" />
-                    Product Requests
+                    <span className="flex items-center gap-2.5">
+                      <Package className="h-3.5 w-3.5 text-orange-400" />
+                      Product Requests
+                    </span>
+                    {pendingProducts > 0 && (
+                      <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[9px] font-black text-orange-400">
+                        {pendingProducts}
+                      </span>
+                    )}
                   </button>
 
                   <button
@@ -566,7 +574,7 @@ function AdminPanel({
             icon={
               <Package className="h-5 w-5" />
             }
-            label="Product Requests"
+            label={`Product Requests (${pendingProducts})`}
             description="Review vendor submitted products"
             accent="from-[#1a0a00] to-[#3d1800]"
             onClick={() =>

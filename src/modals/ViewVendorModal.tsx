@@ -1,19 +1,29 @@
 import { useEffect, useState } from "react";
 import { X, Building2, User, Mail, Phone, MapPin, CheckCircle, Clock, XCircle, CreditCard, Landmark, Hash, Package, IndianRupee, ShoppingCart } from "lucide-react";
-import { getVendorById } from "@/services/api";
+import { getVendorById, updateBankDetails } from "@/services/api";
 import { toast } from "sonner";
 
 export function ViewVendorModal({
   vendor,
   onClose,
   hidePerformanceOverview = false,
+  isVendor = false,
 }: {
   vendor: any;
   onClose: () => void;
   hidePerformanceOverview?: boolean;
+  isVendor?: boolean;
 }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const [isEditingBank, setIsEditingBank] = useState(false);
+  const [bankForm, setBankForm] = useState({
+    bank_name: "",
+    account_number: "",
+    ifsc_code: "",
+  });
+  const [submittingBank, setSubmittingBank] = useState(false);
 
   useEffect(() => {
     async function fetchVendor() {
@@ -36,6 +46,45 @@ export function ViewVendorModal({
   // Use API details if available, fallback to initial vendor object, merging to preserve bank details
   const details = data?.details ? { ...vendor, ...data.details } : vendor;
   const stats = data?.stats || null;
+
+  const startEditing = () => {
+    setBankForm({
+      bank_name: details.bank_name || "",
+      account_number: details.account_number || "",
+      ifsc_code: details.ifsc_code || "",
+    });
+    setIsEditingBank(true);
+  };
+
+  const handleBankSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmittingBank(true);
+      const res = await updateBankDetails({
+        vendor_id: Number(vendor.id),
+        bank_name: bankForm.bank_name,
+        account_number: bankForm.account_number,
+        ifsc_code: bankForm.ifsc_code,
+      });
+      if (res.success) {
+        toast.success("Bank details update request submitted successfully!");
+        setIsEditingBank(false);
+        // Reload details
+        setLoading(true);
+        const updated = await getVendorById(vendor.id);
+        if (updated.success && updated.vendor) {
+          setData(updated.vendor);
+        }
+      } else {
+        toast.error(res.message || "Failed to update bank details");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit bank update request");
+    } finally {
+      setSubmittingBank(false);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 backdrop-blur-md">
@@ -99,15 +148,96 @@ export function ViewVendorModal({
                     <CreditCard className="h-5 w-5 text-purple-400" />
                     Bank Information
                   </h3>
-                  <div className="space-y-4">
-                    <DetailItem icon={<Landmark />} label="Bank Name" value={details.bank_details?.bank_name || details.bank_name || "N/A"} />
-                    <DetailItem icon={<Hash />} label="Account Number" value={details.bank_details?.account_number || details.account_number || "N/A"} />
-                    <DetailItem icon={<Hash />} label="IFSC Code" value={details.bank_details?.ifsc_code || details.ifsc_code || "N/A"} />
-                    <div className="pt-2">
-                      <div className="mb-1 text-xs uppercase tracking-wider text-gray-500">Account Status</div>
-                      <StatusBadge status={details.status} />
+                  
+                  {isEditingBank ? (
+                    <form onSubmit={handleBankSubmit} className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block mb-1">Bank Name</label>
+                        <input
+                          type="text"
+                          value={bankForm.bank_name}
+                          onChange={(e) => setBankForm(p => ({ ...p, bank_name: e.target.value }))}
+                          className="w-full rounded-xl border border-white/10 bg-[#0c1322] px-4 py-2.5 text-sm text-white focus:border-purple-400 outline-none"
+                          placeholder="e.g. State Bank of India"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block mb-1">Account Number</label>
+                        <input
+                          type="text"
+                          value={bankForm.account_number}
+                          onChange={(e) => setBankForm(p => ({ ...p, account_number: e.target.value }))}
+                          className="w-full rounded-xl border border-white/10 bg-[#0c1322] px-4 py-2.5 text-sm text-white focus:border-purple-400 outline-none"
+                          placeholder="e.g. 1234567890"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block mb-1">IFSC Code</label>
+                        <input
+                          type="text"
+                          value={bankForm.ifsc_code}
+                          onChange={(e) => setBankForm(p => ({ ...p, ifsc_code: e.target.value }))}
+                          className="w-full rounded-xl border border-white/10 bg-[#0c1322] px-4 py-2.5 text-sm text-white focus:border-purple-400 outline-none"
+                          placeholder="e.g. SBIN0001234"
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          type="submit"
+                          disabled={submittingBank}
+                          className="flex-1 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-purple-500 disabled:opacity-55 cursor-pointer"
+                        >
+                          {submittingBank ? "Submitting..." : "Submit Request"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingBank(false)}
+                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-gray-300 hover:bg-white/10 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="space-y-4">
+                      <DetailItem icon={<Landmark />} label="Bank Name" value={details.bank_details?.bank_name || details.bank_name || "N/A"} />
+                      <DetailItem icon={<Hash />} label="Account Number" value={details.bank_details?.account_number || details.account_number || "N/A"} />
+                      <DetailItem icon={<Hash />} label="IFSC Code" value={details.bank_details?.ifsc_code || details.ifsc_code || "N/A"} />
+                      <div className="pt-2">
+                        <div className="mb-1 text-xs uppercase tracking-wider text-gray-500">Account Status</div>
+                        <StatusBadge status={details.status} />
+                      </div>
+
+                      {details.bank_change_status === 'pending' && (
+                        <div className="mt-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-3 text-xs text-yellow-300">
+                          <Clock className="inline h-3.5 w-3.5 mr-1 align-text-bottom text-yellow-400 animate-pulse" />
+                          Bank update pending admin approval. Live details active.
+                        </div>
+                      )}
+
+                      {details.bank_change_status === 'rejected' && (
+                        <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">
+                          <XCircle className="inline h-3.5 w-3.5 mr-1 align-text-bottom text-red-400" />
+                          Previous bank update request was rejected.
+                        </div>
+                      )}
+
+                      {isVendor && (
+                        <button
+                          type="button"
+                          onClick={startEditing}
+                          disabled={details.bank_change_status === 'pending'}
+                          className="mt-4 w-full flex items-center justify-center gap-1.5 rounded-xl bg-purple-600/20 border border-purple-500/30 px-3 py-2 text-xs font-bold text-purple-300 transition-all hover:bg-purple-600/35 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <Landmark className="h-3.5 w-3.5" />
+                          {details.bank_change_status === 'pending' ? "Update Request Pending" : "Request Bank Details Update"}
+                        </button>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* STATS */}

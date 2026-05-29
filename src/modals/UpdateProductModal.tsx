@@ -43,7 +43,9 @@ export function UpdateProductModal({
     discount: product.discount || "",
     description: product.description || "",
     stock_quantity: product.stock_quantity || "",
-    role: isAdmin ? 'admin' : 'vendor',
+    role: "admin",
+    approved: 1,
+    status: "approved",
   });
 
   useEffect(() => {
@@ -56,11 +58,7 @@ export function UpdateProductModal({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (isAdmin) {
-        return await adminUpdateProduct(form);
-      } else {
-        return await updateProduct(form);
-      }
+      return await adminUpdateProduct(form);
     },
     onSuccess: async () => {
       toast.success("Product updated successfully ");
