@@ -600,3 +600,27 @@ export async function deleteLocation(id: number) {
   });
 }
 
+/* ================= USERS ================= */
+
+export async function getUsers(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  status?: string;
+}) {
+  const queryParts = [];
+  if (params) {
+    if (params.page !== undefined) queryParts.push(`page=${params.page}`);
+    if (params.limit !== undefined) queryParts.push(`limit=${params.limit}`);
+    if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+    if (params.sortBy) queryParts.push(`sortBy=${encodeURIComponent(params.sortBy)}`);
+    if (params.sortOrder) queryParts.push(`sortOrder=${encodeURIComponent(params.sortOrder)}`);
+    if (params.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+  }
+  const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  return await request(`/get-users.php${queryString}`);
+}
+
+

@@ -1,6 +1,6 @@
 import { memo, useRef, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -142,7 +142,9 @@ export default function TrackOrder() {
   const token = useAuth((s) => s.token);
   const isLoggedIn = useAuth(selectIsLoggedIn);
 
-  const [activeTab, setActiveTab] = useState<"orders" | "account">("orders");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") === "account" ? "account" : "orders";
+  const [activeTab, setActiveTab] = useState<"orders" | "account">(initialTab);
   const [orderPage, setOrderPage] = useState(1);
 
   const [order, setOrder] = useState<
