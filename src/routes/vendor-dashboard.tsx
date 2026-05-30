@@ -1,5 +1,5 @@
 //vendor dashboard 
-import { useState, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -125,6 +125,23 @@ export default function VendorDashboard() {
   );
 }
 
+// Custom hook to debounce search values in the vendor dashboard
+function useDebounce<T>(value: T, delay: number = 300): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 function DashboardContent({
   vendorId,
   onLogout,
@@ -150,6 +167,10 @@ function DashboardContent({
   const [productStatus, setProductStatus] = useState("all");
   const [productCategory, setProductCategory] = useState("all");
 
+  // Debounced states to optimize search typing performance
+  const debouncedProductSearch = useDebounce(productSearch, 300);
+  const debouncedOrderSearch = useDebounce(orderSearch, 300);
+
   // Unpaginated full list for static statistics metrics
   const {
     data: allProducts = [],
@@ -163,11 +184,11 @@ function DashboardContent({
     data: productsRes,
     isLoading,
   } = useQuery({
-    queryKey: ["vendor-products-paginated", vendorId, productPage, productSearch, productStatus, productCategory],
+    queryKey: ["vendor-products-paginated", vendorId, productPage, debouncedProductSearch, productStatus, productCategory],
     queryFn: () => getVendorProducts(vendorId, {
       page: productPage,
       limit: 9,
-      search: productSearch,
+      search: debouncedProductSearch,
       status: productStatus === "all" ? "" : productStatus,
       category: productCategory === "all" ? "" : productCategory
     }),
@@ -183,8 +204,8 @@ function DashboardContent({
   });
 
   const { data: ordersRes, isLoading: isOrdersLoading } = useQuery({
-    queryKey: ["vendor-orders", vendorId, orderPage, orderStatus, orderSearch],
-    queryFn: () => getVendorOrders(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, 10, orderSearch),
+    queryKey: ["vendor-orders", vendorId, orderPage, orderStatus, debouncedOrderSearch],
+    queryFn: () => getVendorOrders(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, 10, debouncedOrderSearch),
   });
 
   const ordersData = (ordersRes?.orders || []) as any[];
@@ -276,30 +297,34 @@ function DashboardContent({
           {/* STATS */}
           <div className="mb-10 grid gap-4 grid-cols-2 lg:grid-cols-4">
             {/* CARD 1: PRODUCTS */}
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20">
-                  <Package className="h-7 w-7 text-cyan-400" />
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                  <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(34,211,238,0.4)_0%,transparent_70%)]" />
+                  <svg className="relative h-6 w-6 text-cyan-400 drop-shadow-[0_2px_6px_rgba(34,211,238,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" fill="rgba(34,211,238,0.05)" />
+                    <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <span className="text-gray-400 text-sm block">Total Products</span>
+                    <span className="text-gray-400 text-sm block font-medium">Total Products</span>
                     <span className="text-3xl font-black text-white mt-1 block">
                       {allProducts.length}
                     </span>
-                    <span className="text-[10px] text-gray-500 mt-1 block">Active catalog items</span>
+                    <span className="text-[10px] text-gray-500 mt-1 block font-medium">Active catalog items</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 flex justify-between gap-2 text-xs">
                     <div>
-                      <span className="text-gray-400 block mb-0.5">Approved</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Approved</span>
                       <span className="font-bold text-green-400">{approvedCount}</span>
                     </div>
                     <div className="text-center">
-                      <span className="text-gray-400 block mb-0.5">Pending</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Pending</span>
                       <span className="font-semibold text-yellow-400">{pendingCount}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-gray-400 block mb-0.5">Rejected</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Rejected</span>
                       <span className="font-semibold text-red-400">{rejectedCount}</span>
                     </div>
                   </div>
@@ -308,26 +333,30 @@ function DashboardContent({
             </div>
 
             {/* CARD 2: APPROVAL RATIO */}
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20">
-                  <BadgeCheck className="h-7 w-7 text-cyan-400" />
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                  <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(52,211,153,0.4)_0%,transparent_70%)]" />
+                  <svg className="relative h-6 w-6 text-emerald-400 drop-shadow-[0_2px_6px_rgba(52,211,153,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(52,211,153,0.05)" />
+                    <path d="m9 11 2 2 4-4" />
+                  </svg>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <span className="text-gray-400 text-sm block">Approval Status</span>
+                    <span className="text-gray-400 text-sm block font-medium">Approval Status</span>
                     <span className="text-3xl font-black text-white mt-1 block">
                       {products.length > 0 ? `${Math.round((approvedCount / products.length) * 100)}%` : "0%"}
                     </span>
-                    <span className="text-[10px] text-gray-500 mt-1 block">Verification ratio</span>
+                    <span className="text-[10px] text-gray-500 mt-1 block font-medium">Verification ratio</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 flex justify-between gap-2 text-xs">
                     <div>
-                      <span className="text-gray-400 block mb-0.5">Approved</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Approved</span>
                       <span className="font-bold text-gray-200">{approvedCount}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-gray-400 block mb-0.5">Total Listed</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Total Listed</span>
                       <span className="font-semibold text-cyan-400/90">{products.length}</span>
                     </div>
                   </div>
@@ -336,28 +365,32 @@ function DashboardContent({
             </div>
 
             {/* CARD 3: TOTAL ORDERS */}
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20">
-                  <Clock3 className="h-7 w-7 text-cyan-400" />
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                  <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(251,191,36,0.4)_0%,transparent_70%)]" />
+                  <svg className="relative h-6 w-6 text-yellow-400 drop-shadow-[0_2px_6px_rgba(251,191,36,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" fill="rgba(251,191,36,0.05)" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <span className="text-gray-400 text-sm block">Total Orders</span>
+                    <span className="text-gray-400 text-sm block font-medium">Total Orders</span>
                     <span className="text-3xl font-black text-white mt-1 block">
                       {stats?.total_orders || 0}
                     </span>
-                    <span className="text-[10px] text-gray-500 mt-1 block">Attributed order volume</span>
+                    <span className="text-[10px] text-gray-500 mt-1 block font-medium">Attributed order volume</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 flex justify-between gap-2 text-xs">
                     <div>
-                      <span className="text-gray-400 block mb-0.5">Avg Order Val</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Avg Order Val</span>
                       <span className="font-bold text-gray-200">
                         {stats?.total_orders ? inr(Math.round((stats.gross_revenue || 0) / stats.total_orders)) : inr(0)}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-gray-400 block mb-0.5">Sales Count</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Sales Count</span>
                       <span className="font-semibold text-cyan-400/90">{stats?.total_orders || 0}</span>
                     </div>
                   </div>
@@ -366,26 +399,30 @@ function DashboardContent({
             </div>
 
             {/* CARD 4: REVENUE */}
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20">
-                  <IndianRupee className="h-7 w-7 text-cyan-400" />
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                  <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(255,102,0,0.4)_0%,transparent_70%)]" />
+                  <svg className="relative h-6 w-6 text-[#FF6600] drop-shadow-[0_2px_6px_rgba(255,102,0,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="rgba(255,102,0,0.05)" />
+                  </svg>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <span className="text-gray-400 text-sm block">Actual Revenue</span>
+                    <span className="text-gray-400 text-sm block font-medium">Actual Revenue</span>
                     <span className="text-3xl font-black text-white mt-1 block">
                       {inr(stats?.net_revenue || 0)}
                     </span>
-                    <span className="text-[10px] text-gray-500 mt-1 block">Earnings apart from commission</span>
+                    <span className="text-[10px] text-gray-500 mt-1 block font-medium">Earnings apart from commission</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 flex justify-between gap-2 text-xs">
                     <div>
-                      <span className="text-gray-400 block mb-0.5">Total Revenue</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Total Revenue</span>
                       <span className="font-bold text-gray-200">{inr(stats?.gross_revenue || 0)}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-gray-400 block mb-0.5">Platform Fee</span>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Platform Fee</span>
                       <span className="font-semibold text-cyan-400/90">{inr(stats?.commission || 0)}</span>
                     </div>
                   </div>

@@ -137,6 +137,23 @@ function LayeredIconContainer({
   );
 }
 
+// Custom hook to debounce state values
+function useDebounce<T>(value: T, delay: number = 300): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 /* ================= ADMIN PANEL ================= */
 
 function AdminPanel({
@@ -165,47 +182,53 @@ function AdminPanel({
   const [userSortBy, setUserSortBy] = useState("id");
   const [userSortOrder, setUserSortOrder] = useState("DESC");
 
+  // Debounced search queries to avoid frame drops and API request storms on typing
+  const debouncedProductSearch = useDebounce(productSearch, 300);
+  const debouncedOrderSearch = useDebounce(orderSearch, 300);
+  const debouncedVendorSearch = useDebounce(vendorSearch, 300);
+  const debouncedUserSearch = useDebounce(userSearch, 300);
+
   const [activeTab, setActiveTab] = useState("orders");
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Queries
+  // Standard active queries to ensure order, product, vendor, and user list counts are synchronized immediately on load
   const { data: productsData } = useQuery({
-    queryKey: ["admin-products", productPage, productCategory, productSearch],
+    queryKey: ["admin-products", productPage, productCategory, debouncedProductSearch],
     queryFn: () => getProducts({
       page: productPage,
       limit: 10,
       category: productCategory === "all" ? "" : productCategory,
-      search: productSearch,
+      search: debouncedProductSearch,
     }),
   });
 
   const { data: ordersData } = useQuery({
-    queryKey: ["admin-orders", orderPage, orderStatus, orderSearch, orderDateFrom, orderDateTo],
+    queryKey: ["admin-orders", orderPage, orderStatus, debouncedOrderSearch, orderDateFrom, orderDateTo],
     queryFn: () => getOrders({
       page: orderPage,
       limit: 10,
       status: orderStatus === "all" ? "" : orderStatus,
-      search: orderSearch,
+      search: debouncedOrderSearch,
       date_from: orderDateFrom,
       date_to: orderDateTo,
     }),
   });
 
   const { data: vendorsData } = useQuery({
-    queryKey: ["admin-vendors", vendorPage, vendorSearch],
+    queryKey: ["admin-vendors", vendorPage, debouncedVendorSearch],
     queryFn: () => getVendors({
       page: vendorPage,
       limit: 10,
-      search: vendorSearch,
+      search: debouncedVendorSearch,
     }),
   });
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ["admin-users", userPage, userSearch, userStatusFilter, userSortBy, userSortOrder],
+    queryKey: ["admin-users", userPage, debouncedUserSearch, userStatusFilter, userSortBy, userSortOrder],
     queryFn: () => getUsers({
       page: userPage,
       limit: 10,
-      search: userSearch,
+      search: debouncedUserSearch,
       status: userStatusFilter === "all" ? "" : userStatusFilter,
       sortBy: userSortBy,
       sortOrder: userSortOrder,

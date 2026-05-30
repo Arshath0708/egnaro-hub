@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Star,
   ShoppingCart,
@@ -47,6 +47,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const add = useCart((s) => s.add);
+  const queryClient = useQueryClient();
 
   const [qty, setQty] = useState(1);
   const [showReviews, setShowReviews] = useState(false);
@@ -60,6 +61,16 @@ export default function ProductDetail() {
   const { data: product, isLoading } = useQuery<Product | null>({
     queryKey: ["product", id],
     queryFn: async () => {
+      // First try to look up in existing cached storefront products catalog
+      const cachedProducts = queryClient.getQueryData<any[]>(["products"]);
+      if (cachedProducts) {
+        const found = cachedProducts.find(
+          (p: any) => String(p.id) === String(id)
+        );
+        if (found) return found;
+      }
+
+      // Fallback: fetch products list if not in cache
       const products = await getProducts();
 
       const found = products.find(
@@ -194,14 +205,15 @@ export default function ProductDetail() {
           {/* IMAGE */}
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative aspect-square overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-md"
+            className="relative aspect-square overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-md transform-gpu"
           >
             <img
               src={product.image}
               alt={product.name}
-              className="h-full w-full object-cover"
+              decoding="async"
+              className="h-full w-full object-cover transform-gpu transition-transform duration-500 will-change-transform hover:scale-102"
             />
 
             {Number(product.discount) > 0 && (
@@ -214,9 +226,10 @@ export default function ProductDetail() {
           {/* DETAILS */}
 
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.05 }}
+            className="transform-gpu"
           >
             <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
               {product.category?.replace("-", " ")}
@@ -229,10 +242,12 @@ export default function ProductDetail() {
             {/* RATING */}
 
             <div className="mt-4 flex items-center gap-3 text-sm">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 px-2.5 py-0.5">
+                <svg className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500 drop-shadow-[0_2px_4px_rgba(234,179,8,0.2)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
 
-                <span className="font-semibold">
+                <span className="font-mono font-bold text-yellow-500 text-xs">
                   {calculatedAverage.toFixed(1)}
                 </span>
               </div>
@@ -243,7 +258,7 @@ export default function ProductDetail() {
 
               <span className="text-muted-foreground">·</span>
 
-              <span className="text-green-400">
+              <span className="text-green-400 font-bold">
                 In Stock
               </span>
             </div>
@@ -335,35 +350,45 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* FEATURES */}
-
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center gap-3">
-                  <Truck className="h-5 w-5 text-cyan-400" />
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transform-gpu transition-all hover:scale-[1.02] hover:border-cyan-500/25 duration-300">
+                <div className="flex items-center gap-3.5">
+                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 pointer-events-none">
+                    <svg className="h-5 w-5 text-cyan-400 drop-shadow-[0_2px_6px_rgba(34,211,238,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="1" y="3" width="15" height="13" rx="2" ry="2" fill="rgba(34,211,238,0.05)"/>
+                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                      <circle cx="5.5" cy="18.5" r="2.5" />
+                      <circle cx="18.5" cy="18.5" r="2.5" />
+                    </svg>
+                  </div>
 
                   <div>
-                    <div className="text-sm font-semibold">
+                    <div className="text-xs sm:text-sm font-black text-slate-100">
                       Free Shipping
                     </div>
 
-                    <div className="text-xs text-muted-foreground">
-                      Pan India
+                    <div className="text-[10px] sm:text-xs text-slate-400 font-medium">
+                      Pan India Tracked
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="h-5 w-5 text-green-400" />
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transform-gpu transition-all hover:scale-[1.02] hover:border-emerald-500/25 duration-300">
+                <div className="flex items-center gap-3.5">
+                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 pointer-events-none">
+                    <svg className="h-5 w-5 text-emerald-400 drop-shadow-[0_2px_6px_rgba(52,211,153,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(52,211,153,0.1)"/>
+                      <path d="m9 11 2 2 4-4"/>
+                    </svg>
+                  </div>
 
                   <div>
-                    <div className="text-sm font-semibold">
+                    <div className="text-xs sm:text-sm font-black text-slate-100">
                       Verified Vendor
                     </div>
 
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-[10px] sm:text-xs text-slate-400 font-medium">
                       100% Authentic
                     </div>
                   </div>

@@ -142,9 +142,6 @@ export default function TrackOrder() {
   const token = useAuth((s) => s.token);
   const isLoggedIn = useAuth(selectIsLoggedIn);
 
-  const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") === "account" ? "account" : "orders";
-  const [activeTab, setActiveTab] = useState<"orders" | "account">(initialTab);
   const [orderPage, setOrderPage] = useState(1);
 
   const [order, setOrder] = useState<
@@ -203,25 +200,7 @@ export default function TrackOrder() {
   return (
     <Shell>
       <div className="mx-auto max-w-5xl px-4 py-10">
-        
-        {isLoggedIn && (
-          <div className="mb-8 flex gap-6 border-b border-border">
-            <button
-              onClick={() => setActiveTab("orders")}
-              className={`pb-3 text-base font-bold transition-colors ${activeTab === "orders" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              My Orders
-            </button>
-            <button
-              onClick={() => setActiveTab("account")}
-              className={`pb-3 text-base font-bold transition-colors ${activeTab === "account" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              My Account
-            </button>
-          </div>
-        )}
-
-        <div className={activeTab === "orders" ? "block space-y-8" : "hidden"}>
+        <div className="space-y-8">
           {/* Search */}
           <div className="rounded-xl border border-border bg-card p-8">
           <h1 className="mb-1 font-display text-3xl font-black">
@@ -420,208 +399,10 @@ export default function TrackOrder() {
           </div>
         )}
         </div>
-
-        {activeTab === "account" && <AccountTab />}
       </div>
     </Shell>
   );
-}
-
-const AccountTab = memo(function AccountTab() {
-  const token = useAuth((s) => s.token);
-  const queryClient = useQueryClient();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["userProfile", token],
-    queryFn: () => getUser(token!),
-    enabled: !!token,
-  });
-
-  const user = data?.user;
-
-  useEffect(() => {
-    if (data?.message === "Invalid or expired token") {
-      useAuth.getState().logout();
-      toast.error("Your session has expired. Please log in again.");
-    }
-  }, [data]);
-
-  const [editProfile, setEditProfile] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-
-  const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddr, setNewAddr] = useState({ label: "Home", street: "", city: "", state: "", pincode: "" });
-
-  const updateProfileMutation = useMutation({
-    mutationFn: async ({ name, phone }: { name: string; phone: string }) => {
-      return await updateProfile(token!, name, phone);
-    },
-    onSuccess: (res: any) => {
-      if (res?.success) {
-        toast.success("Profile updated successfully");
-        setEditProfile(false);
-      } else {
-        toast.error(res?.message || "Failed to update profile");
-      }
-      queryClient.invalidateQueries({ queryKey: ["userProfile", token] });
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to update profile");
-    }
-  });
-
-  const addressMutation = useMutation({
-    mutationFn: async ({ action, payload }: { action: string; payload: any }) => {
-      return await manageAddress(token!, action, payload);
-    },
-    onSuccess: (res: any) => {
-      if (res?.success) {
-        toast.success("Addresses updated successfully");
-        setShowAddAddress(false);
-        setNewAddr({ label: "Home", street: "", city: "", state: "", pincode: "" });
-      } else {
-        toast.error(res?.message || "Failed to update address");
-      }
-      queryClient.invalidateQueries({ queryKey: ["userProfile", token] });
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to update address");
-    }
-  });
-
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading account...</div>;
-  if (!user) return null;
-
-  return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      {/* Profile Details */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Personal Information</h2>
-          {!editProfile && (
-            <div className="flex items-center gap-4">
-              <Link 
-                to="/login?step=forgot-email" 
-                className="text-sm font-semibold text-muted-foreground hover:text-white transition-colors"
-              >
-                Reset Password
-              </Link>
-              <button
-                onClick={() => {
-                  setName(user.fullName);
-                  setPhone(user.phone || "");
-                  setEditProfile(true);
-                }}
-                className="text-sm font-semibold text-primary hover:underline"
-              >
-                Edit
-              </button>
-            </div>
-          )}
-        </div>
-
-        {editProfile ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold">Full Name</label>
-              <input value={name} onChange={e => setName(e.target.value)} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold">Phone Number</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background" />
-            </div>
-            <div className="col-span-full mt-2 flex justify-end gap-2">
-              <button onClick={() => setEditProfile(false)} disabled={updateProfileMutation.isPending} className="rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-accent disabled:opacity-50">Cancel</button>
-              <button onClick={() => updateProfileMutation.mutate({ name, phone })} disabled={updateProfileMutation.isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <div className="text-xs text-muted-foreground">Full Name</div>
-              <div className="font-semibold">{user.fullName}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Email Address</div>
-              <div className="font-semibold">{user.email}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Phone Number</div>
-              <div className="font-semibold">{user.phone || "Not provided"}</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Addresses */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Saved Addresses</h2>
-          <button onClick={() => setShowAddAddress(true)} className="text-sm font-semibold text-primary hover:underline">
-            + Add New
-          </button>
-        </div>
-
-        {showAddAddress && (
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            addressMutation.mutate({ action: "add", payload: newAddr });
-          }} className="mb-8 rounded-lg border border-border bg-accent/50 p-4">
-            <h3 className="mb-4 text-sm font-bold">Add New Address</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="col-span-full">
-                <input required placeholder="Street Address" value={newAddr.street} onChange={e => setNewAddr({...newAddr, street: e.target.value})} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background" />
-              </div>
-              <input required placeholder="City" value={newAddr.city} onChange={e => setNewAddr({...newAddr, city: e.target.value})} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background" />
-              <input required placeholder="State" value={newAddr.state} onChange={e => setNewAddr({...newAddr, state: e.target.value})} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background" />
-              <input required placeholder="Pincode" value={newAddr.pincode} onChange={e => setNewAddr({...newAddr, pincode: e.target.value})} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background" />
-              <select value={newAddr.label} onChange={e => setNewAddr({...newAddr, label: e.target.value})} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none bg-background">
-                <option>Home</option>
-                <option>Work</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowAddAddress(false)} disabled={addressMutation.isPending} className="rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-background disabled:opacity-50">Cancel</button>
-              <button type="submit" disabled={addressMutation.isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                {addressMutation.isPending ? "Saving..." : "Save Address"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {user.addresses?.length === 0 ? (
-          <div className="text-center text-sm text-muted-foreground py-4">No addresses saved yet.</div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {user.addresses?.map((addr: any, i: number) => {
-              const isDefault = i === user.default_address_index;
-              return (
-                <div key={i} className={`relative rounded-lg border p-4 ${isDefault ? "border-primary bg-primary/5" : "border-border bg-background"}`}>
-                  {isDefault && <span className="absolute right-4 top-4 text-xs font-bold text-primary">Default</span>}
-                  <div className="mb-2 font-bold">{addr.label}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {addr.street}<br/>
-                    {addr.city}, {addr.state} {addr.pincode}
-                  </div>
-                  <div className="mt-4 flex gap-3 text-xs font-semibold">
-                    {!isDefault && (
-                      <button disabled={addressMutation.isPending} onClick={() => addressMutation.mutate({ action: "set_default", payload: { index: i } })} className="text-primary hover:underline disabled:opacity-50">Set Default</button>
-                    )}
-                    <button disabled={addressMutation.isPending} onClick={() => addressMutation.mutate({ action: "delete", payload: { index: i } })} className="text-red-500 hover:underline disabled:opacity-50">Delete</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-});
+};
 
 const OrderDetails = memo(function OrderDetails({
   order,

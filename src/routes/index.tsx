@@ -236,9 +236,12 @@ function TrustBar() {
           {trustBadges.map((badge, i) => (
             <div
               key={badge}
-              className="flex items-center gap-2 text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors duration-200 whitespace-nowrap flex-shrink-0"
             >
-              <BadgeCheck className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+              <svg className="h-4 w-4 text-emerald-400 drop-shadow-[0_2px_6px_rgba(52,211,153,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(52,211,153,0.15)"/>
+                <path d="m9 11 2 2 4-4"/>
+              </svg>
 
               {badge}
 
@@ -258,28 +261,70 @@ function TrustBar() {
 /* ───────────────────────────────────────────────────────────── */
 
 function StatsStrip() {
+  const statsMedallions = [
+    {
+      value: "Trusted",
+      label: "Businesses Across India",
+      medallion: (
+        <svg className="h-5 w-5 text-yellow-500 drop-shadow-[0_2px_8px_rgba(234,179,8,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="rgba(234,179,8,0.1)"/>
+        </svg>
+      )
+    },
+    {
+      value: "Secure",
+      label: "Payments & Transactions",
+      medallion: (
+        <svg className="h-5 w-5 text-[#FF6600] drop-shadow-[0_2px_8px_rgba(255,102,0,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="rgba(255,102,0,0.1)"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      )
+    },
+    {
+      value: "Pan India",
+      label: "Fast Delivery",
+      medallion: (
+        <svg className="h-5 w-5 text-cyan-400 drop-shadow-[0_2px_8px_rgba(34,211,238,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" fill="rgba(34,211,238,0.1)"/>
+          <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      )
+    },
+    {
+      value: "Premium",
+      label: "Verified Products",
+      medallion: (
+        <svg className="h-5 w-5 text-purple-400 drop-shadow-[0_2px_8px_rgba(192,132,252,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="rgba(192,132,252,0.1)"/>
+          <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      )
+    }
+  ];
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-12">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((s, i) => (
+        {statsMedallions.map((s, i) => (
           <motion.div
             key={s.label}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: i * 0.07 }}
-            className="glass rounded-2xl p-6 flex flex-col gap-3"
+            transition={{ duration: 0.4, delay: i * 0.05 }}
+            className="glass rounded-2xl p-6 flex flex-col gap-4 transform-gpu transition-all hover:scale-[1.02]"
           >
-            <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center">
-              <s.icon className="h-4 w-4 text-white" />
+            <div className="h-11 w-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+              {s.medallion}
             </div>
 
             <div>
-              <div className="font-display text-2xl font-bold">
+              <div className="font-display text-2xl font-bold tracking-tight text-white">
                 {s.value}
               </div>
 
-              <div className="text-xs text-muted-foreground mt-0.5">
+              <div className="text-xs text-slate-400 mt-0.5">
                 {s.label}
               </div>
             </div>
@@ -640,8 +685,9 @@ function Hero() {
               {slide.left_image ? (
                 <div className="relative h-56 w-full overflow-hidden lg:h-72">
                   <img
-                     src={slide.left_image}
+                    src={slide.left_image}
                     alt={slide.left_title}
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -728,27 +774,61 @@ function DealsBanner() {
 /* ───────────────────────────────────────────────────────────── */
 
 function WhyChooseUs() {
-  const items = [
+  const chooseUsItems = [
     {
-      icon: Truck,
+      medallion: (
+        <div className="relative">
+          <div className="absolute inset-0 rounded-xl bg-cyan-500/10 blur-sm opacity-50 pointer-events-none" />
+          <svg className="relative h-6 w-6 text-cyan-400 drop-shadow-[0_4px_10px_rgba(34,211,238,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1" y="3" width="15" height="13" rx="2" ry="2" fill="rgba(34,211,238,0.05)"/>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="18.5" cy="18.5" r="2.5" />
+          </svg>
+        </div>
+      ),
       title: "Fast Delivery",
       desc: "Pan India tracked shipping.",
       stat: "2-5 days",
     },
     {
-      icon: ShieldCheck,
+      medallion: (
+        <div className="relative">
+          <div className="absolute inset-0 rounded-xl bg-green-500/10 blur-sm opacity-50 pointer-events-none" />
+          <svg className="relative h-6 w-6 text-green-400 drop-shadow-[0_4px_10px_rgba(74,222,128,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(74,222,128,0.05)"/>
+            <path d="m9 11 2 2 4-4"/>
+          </svg>
+        </div>
+      ),
       title: "Authentic Products",
       desc: "Direct from verified manufacturers.",
       stat: "100% verified",
     },
     {
-      icon: Award,
+      medallion: (
+        <div className="relative">
+          <div className="absolute inset-0 rounded-xl bg-[#FF6600]/10 blur-sm opacity-50 pointer-events-none" />
+          <svg className="relative h-6 w-6 text-[#FF6600] drop-shadow-[0_4px_10px_rgba(255,102,0,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="7" fill="rgba(255,102,0,0.05)"/>
+            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+          </svg>
+        </div>
+      ),
       title: "25+ Years Trust",
       desc: "Powered by Ansel Power System.",
       stat: "Since 1998",
     },
     {
-      icon: Headphones,
+      medallion: (
+        <div className="relative">
+          <div className="absolute inset-0 rounded-xl bg-purple-500/10 blur-sm opacity-50 pointer-events-none" />
+          <svg className="relative h-6 w-6 text-purple-400 drop-shadow-[0_4px_10px_rgba(192,132,252,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6" fill="rgba(192,132,252,0.05)"/>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+          </svg>
+        </div>
+      ),
       title: "Premium Support",
       desc: "Dedicated B2B support team.",
       stat: "24/7 support",
@@ -762,24 +842,24 @@ function WhyChooseUs() {
       subtitle="Enterprise-grade buying experience."
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {items.map((it, i) => (
+        {chooseUsItems.map((it, i) => (
           <motion.div
             key={it.title}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: i * 0.07 }}
-            className="group glass rounded-2xl p-6 hover-lift border border-glass-border"
+            transition={{ duration: 0.4, delay: i * 0.05 }}
+            className="group glass rounded-3xl p-6 border border-glass-border transform-gpu transition-all hover:scale-[1.02] hover:-translate-y-0.5 duration-300"
           >
-            <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center mb-5">
-              <it.icon className="h-5 w-5 text-white" />
+            <div className="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-5">
+              {it.medallion}
             </div>
 
-            <div className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.12em] text-primary mb-2">
+            <div className="font-mono text-[0.68rem] font-black uppercase tracking-[0.12em] text-[#FF6600] mb-2">
               {it.stat}
             </div>
 
-            <div className="font-display font-bold text-base text-slate-200">
+            <div className="font-display font-black text-base text-slate-200">
               {it.title}
             </div>
 

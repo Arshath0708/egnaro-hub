@@ -166,7 +166,7 @@ export function Header() {
               </NavLink>
             ))}
             <NavLink
-              to="/track-order"
+              to="/my-account"
               className={({ isActive }) =>
                 `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${
                   isActive
@@ -218,7 +218,7 @@ export function Header() {
                   }`}
                 >
                   <Link
-                    to="/track-order"
+                    to="/my-account"
                     className="flex items-center gap-2 px-4 py-3 text-xs font-semibold text-[#64748b] transition-colors hover:bg-white/5 hover:text-white"
                     onClick={() => setUserMenuOpen(false)}
                   >
@@ -459,7 +459,7 @@ export function Header() {
 
                   <div className="space-y-1">
                     <NavLink
-                      to="/track-order?tab=account"
+                      to="/my-account"
                       onClick={() => setOpen(false)}
                       className={({ isActive }) =>
                         `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${
