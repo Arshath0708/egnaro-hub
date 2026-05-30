@@ -440,7 +440,7 @@ export default function ProductsPage() {
         <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 lg:hidden">
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-[#FF6600] px-6 py-3.5 font-bold text-white shadow-lg shadow-[#FF6600]/30 hover:bg-[#e65c00] active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-2 rounded-full bg-[#FF6600] px-6 py-3.5 font-bold text-white shadow-lg shadow-[#FF6600]/30 hover:bg-[#e65c00] active:scale-95 transition-[transform,border-color,background-color,color] cursor-pointer"
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span>Filters & Sort</span>
@@ -592,7 +592,7 @@ export default function ProductsPage() {
                             handleSortChange(o.value);
                             setMobileFiltersOpen(false);
                           }}
-                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-all cursor-pointer ${
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-[transform,border-color,background-color,color] cursor-pointer ${
                             active
                               ? "bg-[#FF6600]/10 font-semibold text-[#FF6600]"
                               : "text-muted-foreground hover:bg-white/5 hover:text-white"

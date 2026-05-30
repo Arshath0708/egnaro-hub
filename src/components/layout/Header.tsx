@@ -74,8 +74,17 @@ export function Header() {
   }, [location.search]);
 
   // Scroll listener for sticky styling
+  const ticking = useRef(false);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onScroll = () => {
+      if (!ticking.current) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 8);
+          ticking.current = false;
+        });
+        ticking.current = true;
+      }
+    };
     onScroll();
 
     window.addEventListener("scroll", onScroll, { passive: true });

@@ -351,7 +351,7 @@ export default function ProductDetail() {
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transform-gpu transition-all hover:scale-[1.02] hover:border-cyan-500/25 duration-300">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transform-gpu transition-[transform,border-color,background-color,color] hover:scale-[1.02] hover:border-cyan-500/25 duration-300">
                 <div className="flex items-center gap-3.5">
                   <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 pointer-events-none">
                     <svg className="h-5 w-5 text-cyan-400 drop-shadow-[0_2px_6px_rgba(34,211,238,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -374,7 +374,7 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transform-gpu transition-all hover:scale-[1.02] hover:border-emerald-500/25 duration-300">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transform-gpu transition-[transform,border-color,background-color,color] hover:scale-[1.02] hover:border-emerald-500/25 duration-300">
                 <div className="flex items-center gap-3.5">
                   <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 pointer-events-none">
                     <svg className="h-5 w-5 text-emerald-400 drop-shadow-[0_2px_6px_rgba(52,211,153,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -424,7 +424,7 @@ export default function ProductDetail() {
             <div className="mt-8 flex justify-center md:justify-start">
               <button
                 onClick={() => setShowReviews(!showReviews)}
-                className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold transition-all hover:bg-white/10 hover:text-primary"
+                className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold transition-[transform,border-color,background-color,color] hover:bg-white/10 hover:text-primary"
               >
                 {showReviews ? "Hide Reviews" : "See Reviews"}
                 <ChevronRight
@@ -612,7 +612,7 @@ export default function ProductDetail() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
                             key={index}
-                            className="glass group rounded-[2rem] p-6 transition-all hover:bg-white/[0.04]"
+                            className="glass group rounded-[2rem] p-6 transition-[transform,border-color,background-color,color] hover:bg-white/[0.04]"
                           >
                             <div className="mb-4 flex items-start justify-between">
                               <div className="flex items-center gap-3">

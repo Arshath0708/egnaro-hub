@@ -183,7 +183,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
   const login = useAuth((s) => s.login);
   const isLoggedIn = useAuth(selectIsLoggedIn);
 
-  const redirectTo = searchParams.get("redirect") || "/track-order";
+  const redirectTo = searchParams.get("redirect") || "/my-account";
 
   useEffect(() => {
     if (isLoggedIn) {

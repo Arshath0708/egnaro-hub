@@ -127,7 +127,7 @@ export const ProductCard = memo(function ProductCard({
             {/* ADD TO CART ICON BUTTON */}
             <button
               onClick={handleAdd}
-              className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-primary text-white shadow-lg transition-all active:scale-95 hover:bg-white hover:text-primary"
+              className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-primary text-white shadow-lg transition-[transform,background-color,color] active:scale-95 hover:bg-white hover:text-primary"
             >
               <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>

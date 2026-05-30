@@ -200,6 +200,8 @@ function AdminPanel({
       category: productCategory === "all" ? "" : productCategory,
       search: debouncedProductSearch,
     }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: ordersData } = useQuery({
@@ -212,6 +214,8 @@ function AdminPanel({
       date_from: orderDateFrom,
       date_to: orderDateTo,
     }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: vendorsData } = useQuery({
@@ -221,6 +225,8 @@ function AdminPanel({
       limit: 10,
       search: debouncedVendorSearch,
     }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -233,16 +239,22 @@ function AdminPanel({
       sortBy: userSortBy,
       sortOrder: userSortOrder,
     }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: statsRes } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: getAdminStats,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: apiCategories = [] } = useQuery({
     queryKey: ["admin-categories"],
     queryFn: getCategories,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const allProducts = (productsData?.products || []) as any[];

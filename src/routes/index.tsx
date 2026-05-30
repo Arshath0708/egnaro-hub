@@ -390,7 +390,8 @@ function CategoryCardLarge({
           src={category.image}
           alt={category.name}
           loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-all duration-1000 group-hover:scale-110"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-[transform,opacity] duration-1000 group-hover:scale-110"
         />
 
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
@@ -437,7 +438,8 @@ function CategoryCardSmall({
           src={category.image}
           alt={category.name}
           loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-all duration-1000 group-hover:scale-110"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-[transform,opacity] duration-1000 group-hover:scale-110"
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />

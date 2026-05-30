@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useSpring, useTransform } from "framer-motion";
 import { ArrowUp } from "lucide-react";
 
@@ -6,6 +6,7 @@ export function BackToTop() {
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const ticking = useRef(false);
 
   const springProgress = useSpring(progress, { stiffness: 80, damping: 20 });
 
@@ -15,10 +16,16 @@ export function BackToTop() {
   const circumference = 2 * Math.PI * normalised;
 
   const handleScroll = useCallback(() => {
-    const total = document.documentElement.scrollHeight - window.innerHeight;
-    const current = total > 0 ? window.scrollY / total : 0;
-    setProgress(current);
-    setIsVisible(window.scrollY > 200);
+    if (!ticking.current) {
+      window.requestAnimationFrame(() => {
+        const total = document.documentElement.scrollHeight - window.innerHeight;
+        const current = total > 0 ? window.scrollY / total : 0;
+        setProgress(current);
+        setIsVisible(window.scrollY > 200);
+        ticking.current = false;
+      });
+      ticking.current = true;
+    }
   }, []);
 
   useEffect(() => {

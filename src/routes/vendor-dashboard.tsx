@@ -107,7 +107,7 @@ export default function VendorDashboard() {
 
             <Link
               to="/vendor-register"
-              className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-4 font-semibold text-white transition-all hover:scale-105"
+              className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-4 font-semibold text-white transition-[transform,background-color] hover:scale-105"
             >
               Open Vendor Access
             </Link>
@@ -177,6 +177,8 @@ function DashboardContent({
   } = useQuery<Product[]>({
     queryKey: ["vendor-products-all", vendorId],
     queryFn: () => getVendorProducts(vendorId),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Paginated query for the listing grid
@@ -192,6 +194,8 @@ function DashboardContent({
       status: productStatus === "all" ? "" : productStatus,
       category: productCategory === "all" ? "" : productCategory
     }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const products = (productsRes?.products || []) as Product[];
@@ -201,11 +205,15 @@ function DashboardContent({
   const { data: stats } = useQuery({
     queryKey: ["vendor-stats", vendorId],
     queryFn: () => getVendorStats(vendorId),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: ordersRes, isLoading: isOrdersLoading } = useQuery({
     queryKey: ["vendor-orders", vendorId, orderPage, orderStatus, debouncedOrderSearch],
     queryFn: () => getVendorOrders(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, 10, debouncedOrderSearch),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const ordersData = (ordersRes?.orders || []) as any[];
@@ -297,9 +305,9 @@ function DashboardContent({
           {/* STATS */}
           <div className="mb-10 grid gap-4 grid-cols-2 lg:grid-cols-4">
             {/* CARD 1: PRODUCTS */}
-            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-[transform,border-color,box-shadow] hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-[transform,border-color] duration-300 transform-gpu">
                   <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(34,211,238,0.4)_0%,transparent_70%)]" />
                   <svg className="relative h-6 w-6 text-cyan-400 drop-shadow-[0_2px_6px_rgba(34,211,238,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5z" fill="rgba(34,211,238,0.05)" />
@@ -333,9 +341,9 @@ function DashboardContent({
             </div>
 
             {/* CARD 2: APPROVAL RATIO */}
-            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-[transform,border-color,box-shadow] hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-[transform,border-color] duration-300 transform-gpu">
                   <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(52,211,153,0.4)_0%,transparent_70%)]" />
                   <svg className="relative h-6 w-6 text-emerald-400 drop-shadow-[0_2px_6px_rgba(52,211,153,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(52,211,153,0.05)" />
@@ -365,9 +373,9 @@ function DashboardContent({
             </div>
 
             {/* CARD 3: TOTAL ORDERS */}
-            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-[transform,border-color,box-shadow] hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-[transform,border-color] duration-300 transform-gpu">
                   <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(251,191,36,0.4)_0%,transparent_70%)]" />
                   <svg className="relative h-6 w-6 text-yellow-400 drop-shadow-[0_2px_6px_rgba(251,191,36,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" fill="rgba(251,191,36,0.05)" />
@@ -399,9 +407,9 @@ function DashboardContent({
             </div>
 
             {/* CARD 4: REVENUE */}
-            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-all hover:scale-[1.02] duration-300">
+            <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-[transform,border-color,box-shadow] hover:scale-[1.02] duration-300">
               <div>
-                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-all duration-300 transform-gpu">
+                <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-[transform,border-color] duration-300 transform-gpu">
                   <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(255,102,0,0.4)_0%,transparent_70%)]" />
                   <svg className="relative h-6 w-6 text-[#FF6600] drop-shadow-[0_2px_6px_rgba(255,102,0,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="12" y1="1" x2="12" y2="23" />
@@ -436,13 +444,13 @@ function DashboardContent({
             <TabsList className="mb-8 grid grid-cols-2 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10 max-w-md mx-auto">
               <TabsTrigger
                 value="products"
-                className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer"
+                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer"
               >
                 Products ({allProducts.length})
               </TabsTrigger>
               <TabsTrigger
                 value="orders"
-                className="w-full rounded-[16px] py-3.5 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer"
+                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer"
               >
                 Orders ({totalRows})
               </TabsTrigger>

@@ -48,7 +48,7 @@ function OrdersMedallion() {
   return (
     <div className="relative">
       {/* Dynamic back-glow glow ring */}
-      <div className="absolute inset-0 rounded-full bg-[#FF6600]/10 blur-md opacity-70 transition-all duration-500 group-hover:bg-[#FF6600]/25 group-hover:blur-xl" />
+      <div className="absolute inset-0 rounded-full bg-[#FF6600]/10 blur-md opacity-70 transition-[transform,border-color,background-color,box-shadow,color] duration-500 group-hover:bg-[#FF6600]/25 group-hover:blur-xl" />
       <svg
         className="relative w-15 h-15 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_8px_16px_rgba(255,102,0,0.15)]"
         viewBox="0 0 100 100"
@@ -92,7 +92,7 @@ function OrdersMedallion() {
 function AddressesMedallion() {
   return (
     <div className="relative">
-      <div className="absolute inset-0 rounded-full bg-green-500/10 blur-md opacity-70 transition-all duration-500 group-hover:bg-green-500/25 group-hover:blur-xl" />
+      <div className="absolute inset-0 rounded-full bg-green-500/10 blur-md opacity-70 transition-[transform,border-color,background-color,box-shadow,color] duration-500 group-hover:bg-green-500/25 group-hover:blur-xl" />
       <svg
         className="relative w-15 h-15 transform transition-transform duration-500 group-hover:scale-110 group-hover:-translate-y-0.5 drop-shadow-[0_8px_16px_rgba(34,197,94,0.15)]"
         viewBox="0 0 100 100"
@@ -127,7 +127,7 @@ function AddressesMedallion() {
 function SecurityMedallion() {
   return (
     <div className="relative">
-      <div className="absolute inset-0 rounded-full bg-[#00ddff]/10 blur-md opacity-70 transition-all duration-500 group-hover:bg-[#00ddff]/25 group-hover:blur-xl" />
+      <div className="absolute inset-0 rounded-full bg-[#00ddff]/10 blur-md opacity-70 transition-[transform,border-color,background-color,box-shadow,color] duration-500 group-hover:bg-[#00ddff]/25 group-hover:blur-xl" />
       <svg
         className="relative w-15 h-15 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-6deg] drop-shadow-[0_8px_16px_rgba(0,221,255,0.15)]"
         viewBox="0 0 100 100"
@@ -161,7 +161,7 @@ function SecurityMedallion() {
 function HelpMedallion() {
   return (
     <div className="relative">
-      <div className="absolute inset-0 rounded-full bg-yellow-500/10 blur-md opacity-70 transition-all duration-500 group-hover:bg-yellow-500/25 group-hover:blur-xl" />
+      <div className="absolute inset-0 rounded-full bg-yellow-500/10 blur-md opacity-70 transition-[transform,border-color,background-color,box-shadow,color] duration-500 group-hover:bg-yellow-500/25 group-hover:blur-xl" />
       <svg
         className="relative w-15 h-15 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12 drop-shadow-[0_8px_16px_rgba(234,179,8,0.15)]"
         viewBox="0 0 100 100"
@@ -201,7 +201,7 @@ function HelpMedallion() {
 function GoldMedallion() {
   return (
     <div className="relative">
-      <div className="absolute inset-0 rounded-full bg-amber-500/10 blur-md opacity-70 transition-all duration-500 group-hover:bg-amber-500/25 group-hover:blur-xl" />
+      <div className="absolute inset-0 rounded-full bg-amber-500/10 blur-md opacity-70 transition-[transform,border-color,background-color,box-shadow,color] duration-500 group-hover:bg-amber-500/25 group-hover:blur-xl" />
       <svg
         className="relative w-15 h-15 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-6deg] drop-shadow-[0_8px_16px_rgba(245,158,11,0.2)]"
         viewBox="0 0 100 100"
@@ -462,12 +462,12 @@ export default function MyAccount() {
                   onClick={() => setActiveSubTab("orders")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(255,102,0,0.06),0_0_30px_rgba(255,102,0,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(255,102,0,0.06),0_0_30px_rgba(255,102,0,0.03)]"
                 >
                   {/* Subtle inner hover glow gradient */}
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-[#FF6600]/0 via-transparent to-white/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
                   
-                  <div className="absolute top-6 right-6 text-slate-500 transition-all duration-300 group-hover:text-[#FF6600] group-hover:translate-x-1">
+                  <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-[#FF6600] group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
                   </div>
                   
@@ -481,7 +481,7 @@ export default function MyAccount() {
                   <p className="text-xs text-slate-400 leading-relaxed mb-6">
                     Track live deliveries, view purchase histories, and fetch transaction receipts.
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6600]/10 border border-[#FF6600]/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-[#FF6600] uppercase transition-all group-hover:bg-[#FF6600]/20">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6600]/10 border border-[#FF6600]/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-[#FF6600] uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-[#FF6600]/20">
                     View Orders ({orders.length})
                   </span>
                 </motion.div>
@@ -491,9 +491,9 @@ export default function MyAccount() {
                   onClick={() => setActiveSubTab("addresses")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(34,197,94,0.06),0_0_30px_rgba(34,197,94,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(34,197,94,0.06),0_0_30px_rgba(34,197,94,0.03)]"
                 >
-                  <div className="absolute top-6 right-6 text-slate-500 transition-all duration-300 group-hover:text-green-400 group-hover:translate-x-1">
+                  <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-green-400 group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
                   </div>
 
@@ -507,7 +507,7 @@ export default function MyAccount() {
                   <p className="text-xs text-slate-400 leading-relaxed mb-6">
                     Manage coordinate directories, add home/work entries, or configure primary endpoints.
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-green-400 uppercase transition-all group-hover:bg-green-500/20">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-green-400 uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-green-500/20">
                     Configure Addresses ({addresses.length})
                   </span>
                 </motion.div>
@@ -517,9 +517,9 @@ export default function MyAccount() {
                   onClick={() => setActiveSubTab("security")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(0,221,255,0.06),0_0_30px_rgba(0,221,255,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(0,221,255,0.06),0_0_30px_rgba(0,221,255,0.03)]"
                 >
-                  <div className="absolute top-6 right-6 text-slate-500 transition-all duration-300 group-hover:text-[#00ddff] group-hover:translate-x-1">
+                  <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-[#00ddff] group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
                   </div>
 
@@ -533,7 +533,7 @@ export default function MyAccount() {
                   <p className="text-xs text-slate-400 leading-relaxed mb-6">
                     Modify profile parameters, update verified phones, or request a password key reset.
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00ddff]/10 border border-[#00ddff]/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-[#00ddff] uppercase transition-all group-hover:bg-[#00ddff]/20">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00ddff]/10 border border-[#00ddff]/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-[#00ddff] uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-[#00ddff]/20">
                     Configure Security
                   </span>
                 </motion.div>
@@ -543,9 +543,9 @@ export default function MyAccount() {
                   onClick={() => setActiveSubTab("help")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(234,179,8,0.06),0_0_30px_rgba(234,179,8,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(234,179,8,0.06),0_0_30px_rgba(234,179,8,0.03)]"
                 >
-                  <div className="absolute top-6 right-6 text-slate-500 transition-all duration-300 group-hover:text-yellow-400 group-hover:translate-x-1">
+                  <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-yellow-400 group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
                   </div>
 
@@ -559,7 +559,7 @@ export default function MyAccount() {
                   <p className="text-xs text-slate-400 leading-relaxed mb-6">
                     Launch assistance tickets, consult shopping helplines, or review store guidelines.
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-yellow-400 uppercase transition-all group-hover:bg-yellow-500/20">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-yellow-400 uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-yellow-500/20">
                     Contact Help Desk
                   </span>
                 </motion.div>
@@ -597,7 +597,7 @@ export default function MyAccount() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-6 mb-8 gap-4">
                   <button
                     onClick={() => setActiveSubTab(null)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer select-none"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:text-white transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer select-none"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     <span>Back to Account Hub</span>
@@ -850,7 +850,7 @@ export default function MyAccount() {
                       <button
                         type="submit"
                         disabled={updateProfileMutation.isPending}
-                        className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-all cursor-pointer disabled:opacity-50"
+                        className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer disabled:opacity-50"
                       >
                         {updateProfileMutation.isPending ? "Updating Credentials..." : "Save Profile Details"}
                       </button>
@@ -927,7 +927,7 @@ export default function MyAccount() {
 
                       <button
                         type="submit"
-                        className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-all cursor-pointer"
+                        className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer"
                       >
                         Create Support Ticket
                       </button>
@@ -1040,7 +1040,7 @@ export default function MyAccount() {
                 <button
                   type="submit"
                   disabled={addressMutation.isPending}
-                  className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-all cursor-pointer shadow-md disabled:opacity-50 mt-4"
+                  className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer shadow-md disabled:opacity-50 mt-4"
                 >
                   {addressMutation.isPending ? "Saving Location..." : "Save Delivery Address"}
                 </button>
