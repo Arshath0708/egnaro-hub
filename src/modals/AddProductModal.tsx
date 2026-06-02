@@ -183,7 +183,7 @@ export function AddProductModal({
                     value={form.category}
                     onValueChange={(val) => setForm((p) => ({ ...p, category: val }))}
                   >
-                    <SelectTrigger className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:ring-1 focus:ring-[#FF6600] outline-none">
+                    <SelectTrigger className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:ring-1 focus:ring-primary outline-none">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>

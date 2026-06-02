@@ -122,12 +122,12 @@ export function ViewUserModal({ user, onClose }: Props) {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/5 bg-[#FF6600]/5 p-5 space-y-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 border border-[#FF6600]/25 text-[#FF6600]">
+                <div className="rounded-2xl border border-white/5 bg-primary/5 p-5 space-y-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 border border-primary/25 text-primary">
                     <IndianRupee className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-2xl font-black text-[#FF6600]">{inr(user.total_spent)}</div>
+                    <div className="text-2xl font-black text-primary">{inr(user.total_spent)}</div>
                     <div className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mt-1">Gross Spend (GMV)</div>
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export function ViewUserModal({ user, onClose }: Props) {
             {/* COLUMN 2: ADDRESSES */}
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 flex flex-col h-full max-h-[420px] overflow-hidden">
               <h3 className="flex items-center gap-2 text-xs font-extrabold text-white uppercase tracking-wider pb-4 border-b border-white/5">
-                <MapPin className="h-4 w-4 text-[#FF6600]" />
+                <MapPin className="h-4 w-4 text-primary" />
                 Delivery Registers ({user.address_count})
               </h3>
               

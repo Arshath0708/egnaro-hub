@@ -410,10 +410,10 @@ function DashboardContent({
             <div className="group rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex flex-col justify-between transform-gpu transition-[transform,border-color,box-shadow] hover:scale-[1.02] duration-300">
               <div>
                 <div className="mb-5 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/80 overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] group-hover:border-white/20 transition-[transform,border-color] duration-300 transform-gpu">
-                  <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,rgba(255,102,0,0.4)_0%,transparent_70%)]" />
-                  <svg className="relative h-6 w-6 text-[#FF6600] drop-shadow-[0_2px_6px_rgba(255,102,0,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div className="absolute inset-0 opacity-40 blur-md transition-opacity duration-300 bg-[radial-gradient(circle,var(--primary)_0%,transparent_70%)]" />
+                  <svg className="relative h-6 w-6 text-primary drop-shadow-[0_2px_6px_rgba(249,115,22,0.3)] z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="12" y1="1" x2="12" y2="23" />
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="rgba(255,102,0,0.05)" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="currentColor" fillOpacity="0.05" />
                   </svg>
                 </div>
                 <div className="space-y-4">
@@ -963,7 +963,7 @@ const VendorOrderRow = memo(({ order }: { order: any }) => {
             </div>
             <div className="text-right">
               <span className="text-xs text-gray-500 block">Grand Total</span>
-              <span className="text-xl font-black text-[#FF6600] mt-0.5 block">
+              <span className="text-xl font-black text-primary mt-0.5 block">
                 {inr(order.total)}
               </span>
             </div>

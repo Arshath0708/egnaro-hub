@@ -166,7 +166,7 @@ export function Header() {
                 className={({ isActive }) =>
                   `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${
                     isActive
-                      ? "bg-[#FF6600]/10 text-[#FF6600] font-bold"
+                      ? "bg-primary/10 text-primary font-bold"
                       : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
                   }`
                 }
@@ -179,7 +179,7 @@ export function Header() {
               className={({ isActive }) =>
                 `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${
                   isActive
-                    ? "bg-[#FF6600]/10 text-[#FF6600] font-bold"
+                    ? "bg-primary/10 text-primary font-bold"
                     : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
                 }`
               }
@@ -213,7 +213,7 @@ export function Header() {
                   onClick={() => setUserMenuOpen((o) => !o)}
                   className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold transition-all hover:bg-white/5 text-white cursor-pointer"
                 >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FF6600] text-[10px] font-bold text-white">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
                     {displayName[0].toUpperCase()}
                   </span>
                   <span>{displayName}</span>
@@ -231,7 +231,7 @@ export function Header() {
                     className="flex items-center gap-2 px-4 py-3 text-xs font-semibold text-[#64748b] transition-colors hover:bg-white/5 hover:text-white"
                     onClick={() => setUserMenuOpen(false)}
                   >
-                    <User className="h-3.5 w-3.5 text-[#FF6600]" />
+                    <User className="h-3.5 w-3.5 text-primary" />
                     <span>My Account</span>
                   </Link>
 
@@ -249,7 +249,7 @@ export function Header() {
             ) : (
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF6600] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#e65c00] active:scale-95 transition-all shadow-md shadow-[#FF6600]/10"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover active:scale-95 transition-all shadow-md shadow-primary/10"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Login</span>
@@ -263,7 +263,7 @@ export function Header() {
             >
               <ShoppingCart className="h-4.5 w-4.5" />
               {count > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#FF6600] px-1 text-[10px] font-bold text-white shadow-md shadow-[#FF6600]/30 animate-pulse">
+                <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-md shadow-primary/30 animate-pulse">
                   {count}
                 </span>
               )}
@@ -298,7 +298,7 @@ export function Header() {
               >
                 <ShoppingCart className="h-4.5 w-4.5" />
                 {count > 0 && (
-                  <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#FF6600] px-1 text-[9px] font-bold text-white shadow-md shadow-[#FF6600]/30 animate-pulse">
+                  <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-md shadow-primary/30 animate-pulse">
                     {count}
                   </span>
                 )}
@@ -322,7 +322,7 @@ export function Header() {
             className="relative flex items-center w-full group mt-1"
           >
             <div className="absolute left-4.5 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-slate-500 transition-colors group-focus-within:text-[#FF6600]" />
+              <Search className="h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             </div>
             
             <input
@@ -330,12 +330,12 @@ export function Header() {
               placeholder="Search premium electronics, hardware..."
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              className="w-full h-11 pl-11 pr-24 rounded-2xl border border-white/10 bg-[#080C14]/60 text-xs text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-[#FF6600]/80 focus:ring-2 focus:ring-[#FF6600]/10 hover:border-white/15 font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+              className="w-full h-11 pl-11 pr-24 rounded-2xl border border-white/10 bg-[#080C14]/60 text-xs text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-primary/80 focus:ring-2 focus:ring-primary/10 hover:border-white/15 font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
             />
             
             <button
               type="submit"
-              className="absolute right-1.5 h-8 px-4 rounded-xl bg-[#FF6600] text-[9px] font-bold text-white uppercase tracking-widest hover:bg-[#e65c00] transition-colors cursor-pointer"
+              className="absolute right-1.5 h-8 px-4 rounded-xl bg-primary text-[9px] font-bold text-primary-foreground uppercase tracking-widest hover:bg-primary-hover transition-colors cursor-pointer"
             >
               Search
             </button>
@@ -375,7 +375,7 @@ export function Header() {
                 
                 {/* 3.1 Header Bar (64px height, completely removed logo) */}
                 <div className="h-[64px] bg-white/[0.03] border-b border-white/[0.07] px-5 flex items-center justify-between shrink-0">
-                  <div className="text-[10px] font-bold tracking-widest text-[#FF6600] uppercase font-display">
+                  <div className="text-[10px] font-bold tracking-widest text-primary uppercase font-display">
                     Menu Directory
                   </div>
 
@@ -388,7 +388,7 @@ export function Header() {
                     >
                       <ShoppingCart className="h-[22px] w-[22px]" />
                       {count > 0 && (
-                        <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-gradient-to-r from-[#FF6600] to-[#FF8000] px-1 text-[9px] font-bold text-white shadow-md">
+                        <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-md">
                           {count}
                         </span>
                       )}
@@ -408,7 +408,7 @@ export function Header() {
                 <div className="bg-white/[0.02] border-b border-white/[0.06] px-5 py-3.5 shrink-0 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     {user && (
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FF6600]/20 border border-[#FF6600]/30 text-[11px] font-bold text-[#FF6600]">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 border border-primary/30 text-[11px] font-bold text-primary">
                         {displayName[0].toUpperCase()}
                       </span>
                     )}
@@ -420,7 +420,7 @@ export function Header() {
                     <Link
                       to="/login"
                       onClick={() => setOpen(false)}
-                      className="rounded-full bg-gradient-to-r from-[#FF6600] to-[#FF8000] px-4 py-1.5 text-[0.78rem] font-bold text-white shadow-md active:scale-95 transition-transform"
+                      className="rounded-full bg-primary px-4 py-1.5 text-[0.78rem] font-bold text-primary-foreground shadow-md active:scale-95 transition-transform"
                     >
                       Sign In
                     </Link>
@@ -445,11 +445,11 @@ export function Header() {
                           onClick={() => setOpen(false)}
                           className={`mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${
                             isActive
-                              ? "border-l-3 border-[#FF6600] bg-[#FF6600]/[0.07] text-[#f1f5f9]"
+                              ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
                               : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
                           }`}
                         >
-                          <Icon className={`h-5 w-5 shrink-0 ${isActive ? "text-[#FF6600]" : "text-[#64748b]"}`} />
+                          <Icon className={`h-5 w-5 shrink-0 ${isActive ? "text-primary" : "text-[#64748b]"}`} />
                           <span className="text-[0.95rem] font-semibold font-sans">{n.label}</span>
                         </NavLink>
                       );
@@ -473,7 +473,7 @@ export function Header() {
                       className={({ isActive }) =>
                         `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${
                           isActive
-                            ? "border-l-3 border-[#FF6600] bg-[#FF6600]/[0.07] text-[#f1f5f9]"
+                            ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
                             : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
                         }`
                       }
@@ -509,7 +509,7 @@ export function Header() {
                       className={({ isActive }) =>
                         `mx-3 flex h-[52px] items-center justify-between px-[1.25rem] rounded-xl bg-[#f59e0b]/[0.04] transition-all duration-200 ${
                           isActive
-                            ? "border-l-3 border-[#FF6600] bg-[#FF6600]/[0.07] text-[#f1f5f9]"
+                            ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
                             : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
                         }`
                       }
@@ -529,7 +529,7 @@ export function Header() {
                       className={({ isActive }) =>
                         `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl bg-[#f59e0b]/[0.04] transition-all duration-200 ${
                           isActive
-                            ? "border-l-3 border-[#FF6600] bg-[#FF6600]/[0.07] text-[#f1f5f9]"
+                            ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
                             : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
                         }`
                       }
@@ -571,7 +571,7 @@ export function Header() {
                 <Link
                   to="/products"
                   onClick={() => setOpen(false)}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-[#FF6600] to-[#FF8000] flex items-center justify-center gap-2 text-sm font-bold text-white shadow-lg shadow-[#FF6600]/20 active:scale-98 transition-transform font-display animate-none"
+                  className="w-full h-12 rounded-xl bg-primary flex items-center justify-center gap-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 active:scale-98 transition-transform font-display animate-none"
                 >
                   <span>Start Shopping</span>
                   <span>→</span>

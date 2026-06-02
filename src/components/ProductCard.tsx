@@ -28,7 +28,7 @@ export const ProductCard = memo(function ProductCard({
   const reviews = Number(product.total_reviews || 0);
 
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] transform-gpu transition-[transform,border-color,background-color] duration-300 will-change-transform hover:-translate-y-1.5 hover:border-[#FF6600]/40 hover:bg-white/[0.08] hover:shadow-[0_20px_40px_-15px_rgba(255,102,0,0.12)]">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] transform-gpu transition-[transform,border-color,background-color] duration-300 will-change-transform hover:-translate-y-1.5 hover:border-primary/40 hover:bg-white/[0.08] hover:shadow-glow">
       
       <Link to={`/product/${product.id}`} className="flex flex-1 flex-col">
         
@@ -48,7 +48,7 @@ export const ProductCard = memo(function ProductCard({
           {/* BADGES */}
           <div className="absolute inset-x-3 top-3 flex justify-between items-start">
             {Number(product.discount) > 0 ? (
-              <div className="rounded-full bg-[#FF6600]/10 border border-[#FF6600]/30 px-3.5 py-1 font-mono text-[0.68rem] font-black uppercase tracking-[0.1em] text-[#FF6600] shadow-lg backdrop-blur-md">
+              <div className="rounded-full bg-primary/10 border border-primary/30 px-3.5 py-1 font-mono text-[0.68rem] font-black uppercase tracking-[0.1em] text-primary shadow-lg backdrop-blur-md">
                 {product.discount}% OFF
               </div>
             ) : <div />}
@@ -102,7 +102,7 @@ export const ProductCard = memo(function ProductCard({
               <p className="line-clamp-2 font-sans text-[0.875rem] leading-[1.65] text-slate-400">
                 {product.description || "Premium high-quality product from Egnaro Mart, designed for excellence and durability."}
               </p>
-              <span className="mt-1 inline-block font-mono text-[0.68rem] font-bold text-[#FF6600] opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="mt-1 inline-block font-mono text-[0.68rem] font-bold text-primary opacity-0 transition-opacity group-hover:opacity-100">
                 See More →
               </span>
             </div>

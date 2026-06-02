@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState, useEffect } from "react";
 
 import {
@@ -47,6 +47,7 @@ const EMPTY_FORM: FormState = {
 export default function CheckoutPage() {
   const nav = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
@@ -152,14 +153,20 @@ export default function CheckoutPage() {
       .filter((x) => x.product);
   }, [items, products]);
 
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
+    () => localStorage.getItem("egnaro_coupon") || null
+  );
+
   const subtotal = detailed.reduce(
     (s, i) => s + i.product.price * i.quantity,
     0
   );
 
+  const discountAmount = appliedCoupon === "EGNARO10" ? subtotal * 0.10 : 0;
+
   const shipping = subtotal >= 5000 ? 0 : 99;
 
-  const total = subtotal + shipping;
+  const total = subtotal - discountAmount + shipping;
 
   const upiLink = `upi://pay?pa=samsonelectronics50@oksbi&pn=EgnaroMart&am=${total}&cu=INR`;
 
@@ -278,6 +285,13 @@ Please find my payment screenshot attached.
           }
         }
 
+        // Invalidate queries so that the statistics and order list refresh in background
+        queryClient.invalidateQueries({ queryKey: ["user-orders-list"] });
+        queryClient.invalidateQueries({ queryKey: ["userOrders"] });
+        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+
+        localStorage.removeItem("egnaro_coupon");
         clear();
 
         nav(`/order-success?orderId=${data.order_id}`);
@@ -574,7 +588,7 @@ Please find my payment screenshot attached.
                       <div className="mt-6 flex flex-col sm:flex-row gap-3 w-full">
                         <a
                           href={upiLink}
-                          className="w-full sm:w-auto text-center justify-center rounded-xl bg-[#FF6600] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#e65c00] hover:shadow-glow cursor-pointer"
+                          className="w-full sm:w-auto text-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover hover:shadow-glow cursor-pointer"
                         >
                           Pay with Any UPI App
                         </a>
@@ -695,6 +709,16 @@ Please find my payment screenshot attached.
 
                 <span>{inr(subtotal)}</span>
               </div>
+
+              {appliedCoupon && (
+                <div className="flex justify-between text-green-400">
+                  <span className="text-muted-foreground text-green-400">
+                    Coupon Discount (10%)
+                  </span>
+
+                  <span className="font-bold">-{inr(discountAmount)}</span>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 <span className="text-muted-foreground">

@@ -30,10 +30,10 @@ function PageLoader() {
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
       <div className="relative flex items-center justify-center">
         {/* Animated glowing orbit */}
-        <div className="h-16 w-16 animate-spin rounded-full border-2 border-transparent border-t-[#FF6600] border-r-[#ffd700] shadow-[0_0_20px_rgba(255,102,0,0.3)]" />
+        <div className="h-16 w-16 animate-spin rounded-full border-2 border-transparent border-t-primary border-r-[#ffd700] shadow-[0_0_20px_rgba(255,102,0,0.3)]" />
         <div className="absolute h-10 w-10 animate-ping rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 opacity-20" />
       </div>
-      <p className="mt-4 font-display text-xs font-bold uppercase tracking-[0.2em] text-[#FF6600] animate-pulse">
+      <p className="mt-4 font-display text-xs font-bold uppercase tracking-[0.2em] text-primary animate-pulse">
         Loading...
       </p>
     </div>

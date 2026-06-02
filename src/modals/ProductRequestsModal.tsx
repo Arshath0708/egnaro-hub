@@ -114,7 +114,7 @@ export function ProductRequestsModal({ onClose, onProductActioned }: Props) {
           <AnimatePresence mode="popLayout">
             {fetching ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="text-xs font-semibold text-gray-500 tracking-wider">Syncing active catalog requests...</span>
               </div>
             ) : products.length === 0 ? (
@@ -210,7 +210,7 @@ const ProductCard = memo(
                     {product.category}
                   </span>
                 </div>
-                <p className="mt-1 text-base font-black text-[#FF6600]">
+                <p className="mt-1 text-base font-black text-primary">
                   ₹{product.price.toLocaleString('en-IN')}
                 </p>
                 <p className="mt-1.5 text-xs text-gray-400 leading-relaxed line-clamp-2 italic">

@@ -61,7 +61,7 @@ export function LocationSelect({
           </label>
         )}
         {loading && (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#FF6600]" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
         )}
       </div>
 
@@ -70,7 +70,7 @@ export function LocationSelect({
         onValueChange={onValueChange}
         disabled={disabled || loading}
       >
-        <SelectTrigger className="w-full h-11 rounded-xl border border-white/10 bg-[#090d1a]/60 backdrop-blur-md px-4 text-sm text-white placeholder:text-gray-500 shadow-lg shadow-black/20 focus:ring-1 focus:ring-[#FF6600] focus:border-[#FF6600] transition-all duration-200 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed">
+        <SelectTrigger className="w-full h-11 rounded-xl border border-white/10 bg-[#090d1a]/60 backdrop-blur-md px-4 text-sm text-white placeholder:text-gray-500 shadow-lg shadow-black/20 focus:ring-1 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent className="max-h-[300px] border border-white/10 bg-[#090d1a] backdrop-blur-xl shadow-2xl p-1.5">
@@ -97,7 +97,7 @@ export function LocationSelect({
               <div className="my-1 h-px bg-white/5" />
               <SelectItem
                 value="other"
-                className="font-semibold text-[#FF6600] focus:bg-[#FF6600] focus:text-white"
+                className="font-semibold text-primary focus:bg-primary focus:text-white"
               >
                 <div className="flex items-center gap-1.5">
                   <Plus className="h-3.5 w-3.5" />
@@ -125,10 +125,10 @@ export function LocationSelect({
                 placeholder={customPlaceholder}
                 value={customValue}
                 onChange={(e) => onCustomValueChange(e.target.value)}
-                className="w-full h-11 rounded-xl border border-[#FF6600]/30 bg-[#0c1224]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all duration-200"
+                className="w-full h-11 rounded-xl border border-primary/30 bg-[#0c1224]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
               />
               <div className="flex items-center gap-1 text-[10px] text-gray-500 mt-1 pl-1">
-                <AlertCircle className="h-3 w-3 text-[#FF6600]" />
+                <AlertCircle className="h-3 w-3 text-primary" />
                 <span>{helperText}</span>
               </div>
             </div>

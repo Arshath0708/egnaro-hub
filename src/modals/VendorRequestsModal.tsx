@@ -163,7 +163,7 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
       >
         {/* Glow orbs */}
         <div className="absolute -top-12 -left-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-emerald-500" />
-        <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-[#FF6600]" />
+        <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-primary" />
 
         {/* HEADER */}
         <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 relative z-10">
@@ -202,7 +202,7 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
                 onClick={() => setTab(t.id as ModalTab)}
                 className={`flex-1 py-3 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 relative cursor-pointer ${
                   active
-                    ? "bg-[#FF6600] text-white shadow-lg shadow-[#FF6600]/25"
+                    ? "bg-primary text-white shadow-lg shadow-primary/25"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -345,7 +345,7 @@ const VendorCard = memo(({ vendor, onAction }: { vendor: Vendor; onAction: (id: 
               </span>
             )}
           </div>
-          <p className="text-xs font-bold text-[#FF6600] uppercase tracking-wider">{vendor.vendor_name}</p>
+          <p className="text-xs font-bold text-primary uppercase tracking-wider">{vendor.vendor_name}</p>
           <div className="text-xs text-gray-400 space-y-0.5">
             <p>✉️ {vendor.email}</p>
             <p>📞 {vendor.phone}</p>
@@ -432,7 +432,7 @@ const ResetRequestCard = memo(({
           <button
             disabled={busy}
             onClick={() => handleAction("approve_reset")}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-[#FF6600] hover:bg-[#e65c00] px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white transition active:scale-95 disabled:opacity-50 cursor-pointer shadow-lg shadow-[#FF6600]/15"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-primary hover:bg-primary-hover px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white transition active:scale-95 disabled:opacity-50 cursor-pointer shadow-lg shadow-primary/15"
           >
             {loading === "approve_reset" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             Approve Reset
@@ -550,7 +550,7 @@ const BankRequestCard = memo(({
 function Spinner() {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
-      <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <span className="text-xs font-semibold text-gray-500 tracking-wider">Syncing operational requests...</span>
     </div>
   );

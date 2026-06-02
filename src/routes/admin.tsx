@@ -91,7 +91,7 @@ type Order = {
 };
 
 const inputClass =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-400 outline-none backdrop-blur-xl transition-all focus:border-[#FF6600]";
+  "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-400 outline-none backdrop-blur-xl transition-all focus:border-primary";
 
 export default function AdminPage() {
   const isAdmin = useAuth(selectIsAdmin);
@@ -363,7 +363,7 @@ function AdminPanel({
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600]">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                 Control Console
               </span>
             </div>
@@ -381,7 +381,7 @@ function AdminPanel({
               whileHover={{ y: -2, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowAddProduct(true)}
-              className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#FF6600] to-[#FF8000] px-6 py-3.5 font-bold text-white shadow-lg shadow-[#FF6600]/15 hover:shadow-glow cursor-pointer transition-all duration-300"
+              className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-hover px-6 py-3.5 font-bold text-white shadow-lg shadow-primary/15 hover:shadow-glow cursor-pointer transition-all duration-300"
             >
               <Plus className="h-4.5 w-4.5" />
               Add Product
@@ -403,10 +403,10 @@ function AdminPanel({
             onClick={() => setMenuOpen(true)}
             className="flex md:hidden items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 cursor-pointer"
           >
-            <Menu className="h-4 w-4 text-[#FF6600]" />
+            <Menu className="h-4 w-4 text-primary" />
             Menu
             {(pendingVendors + pendingProducts) > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6600] text-[9px] font-bold text-white animate-pulse">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white animate-pulse">
                 {pendingVendors + pendingProducts}
               </span>
             )}
@@ -428,7 +428,7 @@ function AdminPanel({
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-[#FF6600]" />
+                    <Shield className="h-5 w-5 text-primary" />
                     <span className="font-display text-base font-black text-white uppercase tracking-wider">
                       Controls
                     </span>
@@ -462,7 +462,7 @@ function AdminPanel({
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
                           active
-                            ? "bg-[#FF6600] text-white shadow-lg shadow-[#FF6600]/10"
+                            ? "bg-primary text-white shadow-lg shadow-primary/10"
                             : "text-gray-400 hover:bg-white/5 hover:text-white"
                         }`}
                       >
@@ -700,28 +700,28 @@ function AdminPanel({
           <TabsList className="mb-10 hidden md:grid md:grid-cols-4 h-auto w-full gap-3 rounded-[28px] bg-white/[0.02] p-2 border border-white/5">
             <TabsTrigger
               value="orders"
-              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/25 hover:text-white cursor-pointer"
+              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
               Orders ({filteredOrders.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="products"
-              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/25 hover:text-white cursor-pointer"
+              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
               Product Management ({filteredProducts.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="vendors"
-              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/25 hover:text-white cursor-pointer"
+              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
               Vendor Management ({filteredVendors.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="users"
-              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-[#FF6600] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#FF6600]/25 hover:text-white cursor-pointer"
+              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
               User Management ({usersData?.total_rows || 0})
             </TabsTrigger>
@@ -741,7 +741,7 @@ function AdminPanel({
                       placeholder="Search orders by ID, customer name, phone, or vendor attribution..."
                       value={orderSearch}
                       onChange={(e) => handleOrderSearchChange(e.target.value)}
-                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-[#FF6600] transition-colors"
+                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-primary transition-colors"
                     />
                   </div>
                   
@@ -754,7 +754,7 @@ function AdminPanel({
                         value={orderStatus}
                         onValueChange={handleOrderStatusChange}
                       >
-                        <SelectTrigger className="w-[150px] h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600]">
+                        <SelectTrigger className="w-[150px] h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-primary">
                           <SelectValue placeholder="Select Status" />
                         </SelectTrigger>
                         <SelectContent className="border border-white/10 bg-[#0a0a0a] text-white rounded-2xl">
@@ -774,7 +774,7 @@ function AdminPanel({
                         type="date"
                         value={orderDateFrom}
                         onChange={(e) => handleOrderDateFromChange(e.target.value)}
-                        className="h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-[#FF6600] [color-scheme:dark] cursor-pointer"
+                        className="h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-primary [color-scheme:dark] cursor-pointer"
                       />
                     </div>
 
@@ -785,7 +785,7 @@ function AdminPanel({
                         type="date"
                         value={orderDateTo}
                         onChange={(e) => handleOrderDateToChange(e.target.value)}
-                        className="h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-[#FF6600] [color-scheme:dark] cursor-pointer"
+                        className="h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-primary [color-scheme:dark] cursor-pointer"
                       />
                     </div>
 
@@ -859,7 +859,7 @@ function AdminPanel({
                       placeholder="Search products by name, category, or creator/vendor..."
                       value={productSearch}
                       onChange={(e) => handleProductSearchChange(e.target.value)}
-                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
+                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-primary"
                     />
                   </div>
                   <div className="flex items-center gap-3">
@@ -868,7 +868,7 @@ function AdminPanel({
                       value={productCategory}
                       onValueChange={handleProductCategoryChange}
                     >
-                      <SelectTrigger className="w-[180px] h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600] capitalize">
+                      <SelectTrigger className="w-[180px] h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-primary capitalize">
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent className="border border-white/10 bg-[#0a0a0a] text-white rounded-2xl capitalize">
@@ -974,14 +974,14 @@ function AdminPanel({
                                 <span className="text-xs font-bold text-white tracking-wide uppercase">
                                   {p.created_by_type || "Vendor"}
                                 </span>
-                                <span className="text-[10px] font-semibold text-[#FF6600]/85">
+                                <span className="text-[10px] font-semibold text-primary/85">
                                   {p.creator_name || "Unknown"}
                                 </span>
                               </div>
                             </TableCell>
 
                             <TableCell className="text-white">
-                              <span className="text-base font-extrabold text-[#FF6600]">
+                              <span className="text-base font-extrabold text-primary">
                                 ₹{p.price.toLocaleString('en-IN')}
                               </span>
                             </TableCell>
@@ -1094,7 +1094,7 @@ function AdminPanel({
                       placeholder="Search active onboarded vendors by owner name, company name, or contact email..."
                       value={vendorSearch}
                       onChange={(e) => handleVendorSearchChange(e.target.value)}
-                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
+                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-primary"
                     />
                   </div>
                 </div>
@@ -1152,7 +1152,7 @@ function AdminPanel({
                                 <div className="flex flex-col gap-0.5">
                                   <span>{vendor.company_name}</span>
                                   {vendor.city && vendor.state && (
-                                    <span className="inline-flex items-center text-[10px] text-[#FF6600] font-bold">
+                                    <span className="inline-flex items-center text-[10px] text-primary font-bold">
                                       📍 {vendor.city}, {vendor.state}
                                     </span>
                                   )}
@@ -1234,7 +1234,7 @@ function AdminPanel({
                         setUserSearch(e.target.value);
                         setUserPage(1);
                       }}
-                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-[#FF6600]"
+                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-primary"
                     />
                   </div>
 
@@ -1248,7 +1248,7 @@ function AdminPanel({
                         setUserPage(1);
                       }}
                     >
-                      <SelectTrigger className="w-[180px] h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-[#FF6600]">
+                      <SelectTrigger className="w-[180px] h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:ring-1 focus:ring-primary">
                         <SelectValue placeholder="All Customers" />
                       </SelectTrigger>
                       <SelectContent className="border border-white/10 bg-[#0a0a0a] text-white rounded-2xl">
@@ -1377,7 +1377,7 @@ function AdminPanel({
                             <TableCell className="font-extrabold text-white text-center">
                               {user.total_orders}
                             </TableCell>
-                            <TableCell className="font-extrabold text-[#FF6600] text-right">
+                            <TableCell className="font-extrabold text-primary text-right">
                               ₹{user.total_spent.toLocaleString('en-IN')}
                             </TableCell>
                             <TableCell className="text-gray-400 font-bold text-center">
@@ -1626,10 +1626,10 @@ function ActionButton({
       {/* Title & Description */}
       <div className="w-full">
         <div className="flex items-center gap-1.5 justify-between w-full">
-          <span className="text-sm font-extrabold text-white tracking-wide leading-tight group-hover:text-[#FF6600] transition-colors duration-300">
+          <span className="text-sm font-extrabold text-white tracking-wide leading-tight group-hover:text-primary transition-colors duration-300">
             {label}
           </span>
-          <Plus className="h-4 w-4 text-gray-500 transition-all duration-300 group-hover:text-[#FF6600] group-hover:rotate-90 group-hover:scale-110" />
+          <Plus className="h-4 w-4 text-gray-500 transition-all duration-300 group-hover:text-primary group-hover:rotate-90 group-hover:scale-110" />
         </div>
 
         <p className="mt-1 text-[11px] font-medium leading-normal text-gray-400">
@@ -1664,7 +1664,7 @@ function StatCard({
   count,
   action,
   glowColor = "rgba(255, 102, 0, 0.3)",
-  accent = "from-[#FF6600]/10 to-transparent",
+  accent = "from-primary/10 to-transparent",
 }: {
   icon: React.ReactNode;
   label: string;
@@ -1844,7 +1844,7 @@ const OrderRow = memo(
             <div className="grid gap-6 md:grid-cols-3">
               {/* CUSTOMER INFO */}
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600]">Customer</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Customer</p>
                 <p className="text-sm font-extrabold text-white">{order.customer_name}</p>
                 <p className="text-xs text-gray-400">📞 {order.phone}</p>
                 {(order as any).email && <p className="text-xs text-gray-400 break-all">✉️ {(order as any).email}</p>}
@@ -1853,7 +1853,7 @@ const OrderRow = memo(
 
               {/* VENDOR ATTR */}
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600]">Attributed Vendor</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Attributed Vendor</p>
                 {(order as any).vendor_name ? (
                   <>
                     <p className="text-sm font-extrabold text-cyan-400">
@@ -1878,7 +1878,7 @@ const OrderRow = memo(
 
               {/* ORDER ITEMS */}
               <div className="space-y-3">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600]">Products Ordered</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Products Ordered</p>
                 <div className="space-y-2">
                   {parsedItems.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-2 hover:bg-white/5 transition-colors">
@@ -1889,7 +1889,7 @@ const OrderRow = memo(
                       />
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-xs font-extrabold text-white">{item.name}</p>
-                        <p className="text-[10px] text-gray-500">Qty: {item.quantity} × <span className="text-[#FF6600] font-bold">₹{item.price}</span></p>
+                        <p className="text-[10px] text-gray-500">Qty: {item.quantity} × <span className="text-primary font-bold">₹{item.price}</span></p>
                       </div>
                     </div>
                   ))}
@@ -1903,7 +1903,7 @@ const OrderRow = memo(
             <div className="mt-6 pt-4.5 border-t border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Grand Total:</span>
-                <span className="text-xl font-black text-[#FF6600]">₹{Number(order.total).toLocaleString('en-IN')}</span>
+                <span className="text-xl font-black text-primary">₹{Number(order.total).toLocaleString('en-IN')}</span>
               </div>
             </div>
           </div>
@@ -1939,7 +1939,7 @@ const OrderRow = memo(
               disabled={updating}
               onChange={(e) => setEstimatedDays(e.target.value)}
               placeholder="e.g. 21 May 2026"
-              className="w-full rounded-xl border border-white/10 bg-[#0a0a0a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-[#FF6600] transition-all mb-3.5"
+              className="w-full rounded-xl border border-white/10 bg-[#0a0a0a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all mb-3.5"
             />
             <button
               disabled={updating}

@@ -50,7 +50,7 @@ export function ViewProductModal({
         className="relative z-10 w-full max-w-5xl rounded-[32px] border border-white/5 bg-gradient-to-b from-[#0a0f1d] to-[#05070a] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden"
       >
         {/* Glow orbs */}
-        <div className="absolute -top-12 -left-12 h-48 w-48 rounded-full blur-3xl opacity-15 pointer-events-none bg-[#FF6600]" />
+        <div className="absolute -top-12 -left-12 h-48 w-48 rounded-full blur-3xl opacity-15 pointer-events-none bg-primary" />
         <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full blur-3xl opacity-15 pointer-events-none bg-cyan-500" />
 
         <div className="p-8 lg:p-10 relative z-10">
@@ -110,9 +110,9 @@ export function ViewProductModal({
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-white/5 bg-[#FF6600]/5 p-5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600]">Active Selling Price</p>
-                  <p className="text-2xl font-black text-[#FF6600] mt-1">{inr(product.price)}</p>
+                <div className="rounded-2xl border border-white/5 bg-primary/5 p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Active Selling Price</p>
+                  <p className="text-2xl font-black text-primary mt-1">{inr(product.price)}</p>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Original / MRP Price</p>
@@ -159,7 +159,7 @@ export function ViewProductModal({
                     }}
                   />
                   {product.discount > 0 && (
-                    <div className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-[#FF6600] to-[#FF8000] px-4 py-1.5 text-[10px] font-black uppercase text-white shadow-lg shadow-[#FF6600]/20">
+                    <div className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-primary to-primary-hover px-4 py-1.5 text-[10px] font-black uppercase text-white shadow-lg shadow-primary/20">
                       {product.discount}% OFF
                     </div>
                   )}

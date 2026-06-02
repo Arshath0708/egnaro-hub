@@ -48,9 +48,9 @@ function OrdersMedallion() {
   return (
     <div className="relative">
       {/* Dynamic back-glow glow ring */}
-      <div className="absolute inset-0 rounded-full bg-[#FF6600]/10 blur-md opacity-70 transition-[transform,border-color,background-color,box-shadow,color] duration-500 group-hover:bg-[#FF6600]/25 group-hover:blur-xl" />
+      <div className="absolute inset-0 rounded-full bg-primary/10 blur-md opacity-70 transition-[transform,border-color,background-color,box-shadow,color] duration-500 group-hover:bg-primary/25 group-hover:blur-xl" />
       <svg
-        className="relative w-15 h-15 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_8px_16px_rgba(255,102,0,0.15)]"
+        className="relative w-15 h-15 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_8px_16px_rgba(249,115,22,0.15)] text-primary"
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -58,19 +58,19 @@ function OrdersMedallion() {
         <defs>
           <linearGradient id="cubeTop" x1="50" y1="20" x2="50" y2="48" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#ff9f68" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#FF6600" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.4" />
           </linearGradient>
           <linearGradient id="cubeLeft" x1="24" y1="35" x2="50" y2="78" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#FF6600" stopOpacity="0.75" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.75" />
             <stop offset="100%" stopColor="#7a2a00" stopOpacity="0.35" />
           </linearGradient>
           <linearGradient id="cubeRight" x1="50" y1="48" x2="76" y2="78" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#eab308" stopOpacity="0.65" />
-            <stop offset="100%" stopColor="#FF6600" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.2" />
           </linearGradient>
           <radialGradient id="cubeGlow" cx="50" cy="50" r="38" fx="50" fy="50" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#FF6600" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#FF6600" stopOpacity="0" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </radialGradient>
         </defs>
         <circle cx="50" cy="50" r="38" fill="url(#cubeGlow)" />
@@ -335,7 +335,7 @@ export default function MyAccount() {
     return (
       <Shell>
         <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#020617] text-white">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-transparent border-t-[#FF6600] border-r-[#FF6600]/30" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-transparent border-t-primary border-r-primary/30" />
           <p className="mt-4 font-sans text-xs font-semibold tracking-widest text-slate-400 uppercase animate-pulse">
             Loading your dashboard...
           </p>
@@ -348,6 +348,15 @@ export default function MyAccount() {
   const addresses: Address[] = userProfileData?.addresses || profile?.addresses || [];
   const defaultAddressIndex = userProfileData?.default_address_index ?? profile?.default_address_index ?? 0;
   const orders = Array.isArray(ordersRes) ? ordersRes : ordersRes?.orders || [];
+
+  const productsOrdered = orders.reduce((totalAcc: number, o: any) => {
+    const items = Array.isArray(o.items)
+      ? o.items
+      : typeof o.items === "string"
+      ? JSON.parse(o.items)
+      : [];
+    return totalAcc + items.reduce((itemAcc: number, item: any) => itemAcc + (Number(item.quantity || item.qty || 0) || 0), 0);
+  }, 0);
 
   // Greeting name - strictly resolved, uppercase formatted
   const displayGreetingName = (profile?.fullName || profile?.name || user?.name || "Customer").toUpperCase();
@@ -394,7 +403,7 @@ export default function MyAccount() {
     <Shell>
       <div className="min-h-screen bg-[#030712] text-white font-sans py-10 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Ambient Radial Lighting Effects */}
-        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-[#FF6600]/5 blur-[130px] rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-primary/5 blur-[130px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none" />
 
         <div className="mx-auto max-w-7xl relative z-10">
@@ -407,40 +416,99 @@ export default function MyAccount() {
             animate={{ opacity: 1, y: 0 }}
             className="relative mb-10 rounded-3xl border border-white/5 bg-gradient-to-br from-white/5 to-white/0 p-6 md:p-8 backdrop-blur-2xl overflow-hidden shadow-2xl"
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#FF6600]/5 via-transparent to-white/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-white/5 pointer-events-none" />
             
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-              <div className="flex items-center gap-4.5">
-                <div className="relative">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-[#FF6600] to-yellow-500 blur-sm opacity-40 animate-pulse" />
-                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 border-2 border-white/10 text-white font-display text-xl font-black uppercase shadow-inner">
-                    {displayGreetingName ? displayGreetingName[0] : "C"}
+            <div className="flex flex-col gap-8">
+              {/* Profile Details Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 border-b border-white/5 pb-6">
+                <div className="flex items-center gap-4.5">
+                  <div className="relative">
+                    <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary to-yellow-500 blur-sm opacity-40 animate-pulse" />
+                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 border-2 border-white/10 text-white font-display text-xl font-black uppercase shadow-inner">
+                      {displayGreetingName ? displayGreetingName[0] : "C"}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full border border-[#FF6600]/20 bg-[#FF6600]/10 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-[#FF6600] mb-2">
-                    <Sparkles className="h-3 w-3" />
-                    Verified Customer
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-primary mb-2">
+                      <Sparkles className="h-3 w-3" />
+                      Verified Customer
+                    </div>
+                    <h1 className="text-xl md:text-2xl font-display font-black tracking-tight text-white uppercase">
+                      Hello, {displayGreetingName}
+                    </h1>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {profile?.email || user?.email} • Shopping workspace portal
+                    </p>
                   </div>
-                  <h1 className="text-xl md:text-2xl font-display font-black tracking-tight text-white uppercase">
-                    Hello, {displayGreetingName}
-                  </h1>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {profile?.email || user?.email} • Shopping workspace portal
-                  </p>
                 </div>
+                
+                <button
+                  onClick={() => {
+                    useAuth.getState().logout();
+                    navigate("/login");
+                    toast.success("Successfully logged out.");
+                  }}
+                  className="rounded-xl border border-white/10 bg-white/5 hover:bg-red-500/10 hover:border-red-500/20 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-red-400 transition-all select-none cursor-pointer self-start sm:self-center"
+                >
+                  Sign Out
+                </button>
               </div>
 
-              {/* Fast Stats panel */}
-              <div className="flex items-center gap-4 border-t border-white/5 pt-4 sm:border-t-0 sm:pt-0">
-                <div className="bg-white/5 border border-white/5 rounded-2xl px-5 py-3.5 text-center min-w-[95px]">
-                  <span className="block text-slate-500 text-[10px] font-bold tracking-widest uppercase">My Purchases</span>
-                  <span className="block text-lg font-black text-white mt-1">{orders.length}</span>
+              {/* 5-Column Stats Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                {/* 1. Total Orders */}
+                <div 
+                  onClick={() => navigate("/track-order")}
+                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                >
+                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Total Orders</span>
+                  <span className="block text-2xl font-black text-white mt-2">{orders.length}</span>
+                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View History →</span>
                 </div>
-                <div className="bg-white/5 border border-white/5 rounded-2xl px-5 py-3.5 text-center min-w-[95px]">
-                  <span className="block text-slate-500 text-[10px] font-bold tracking-widest uppercase">Saved Locations</span>
-                  <span className="block text-lg font-black text-white mt-1">{addresses.length}</span>
+
+                {/* 2. Products Ordered */}
+                <div 
+                  onClick={() => navigate("/track-order")}
+                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                >
+                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Products Ordered</span>
+                  <span className="block text-2xl font-black text-primary mt-2">{productsOrdered}</span>
+                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View Items →</span>
+                </div>
+
+                {/* 3. Saved Addresses */}
+                <div 
+                  onClick={() => setActiveSubTab("addresses")}
+                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-green-500/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                >
+                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Saved Addresses</span>
+                  <span className="block text-2xl font-black text-white mt-2">{addresses.length}</span>
+                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-green-400 transition-colors">Manage →</span>
+                </div>
+
+                {/* 4. Account Details */}
+                <div 
+                  onClick={() => setActiveSubTab("security")}
+                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-[#00ddff]/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                >
+                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Account Details</span>
+                  <span className="block text-sm font-black text-[#00ddff] mt-3.5 uppercase tracking-wider">
+                    {profile?.fullName && profile?.phone ? "Complete" : "Incomplete"}
+                  </span>
+                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-[#00ddff] transition-colors">Edit Profile →</span>
+                </div>
+
+                {/* 5. Security Settings */}
+                <div 
+                  onClick={() => setActiveSubTab("security")}
+                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-yellow-500/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                >
+                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Security Settings</span>
+                  <span className="block text-sm font-black text-emerald-400 mt-3.5 uppercase tracking-wider flex items-center justify-center gap-1">
+                    <ShieldCheck className="h-4.5 w-4.5 text-emerald-400" /> SECURED
+                  </span>
+                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-yellow-400 transition-colors">Configure →</span>
                 </div>
               </div>
             </div>
@@ -458,17 +526,17 @@ export default function MyAccount() {
                 exit={{ opacity: 0 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
               >
-                {/* 2.1 Track Purchases card */}
+                {/* 2.1 Track Purchase */}
                 <motion.div
                   onClick={() => navigate("/track-order")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(255,102,0,0.06),0_0_30px_rgba(255,102,0,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-glow"
                 >
                   {/* Subtle inner hover glow gradient */}
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-[#FF6600]/0 via-transparent to-white/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-primary/0 via-transparent to-white/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
                   
-                  <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-[#FF6600] group-hover:translate-x-1">
+                  <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-primary group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
                   </div>
                   
@@ -476,13 +544,13 @@ export default function MyAccount() {
                     <OrdersMedallion />
                   </div>
                   
-                  <h3 className="font-display text-lg font-black text-white mb-2 tracking-tight transition-colors duration-300 group-hover:text-[#FF6600]">
+                  <h3 className="font-display text-lg font-black text-white mb-2 tracking-tight transition-colors duration-300 group-hover:text-primary">
                     Your Orders
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed mb-6">
                     Track live deliveries, view purchase histories, and fetch transaction receipts.
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF6600]/10 border border-[#FF6600]/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-[#FF6600] uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-[#FF6600]/20">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-primary uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-primary/20">
                     View Orders ({orders.length})
                   </span>
                 </motion.div>
@@ -587,7 +655,7 @@ export default function MyAccount() {
                     <span>Back to Account Hub</span>
                   </button>
 
-                  <h2 className="text-lg font-display font-black uppercase tracking-wider text-[#FF6600]">
+                  <h2 className="text-lg font-display font-black uppercase tracking-wider text-primary">
                     {activeSubTab === "orders" && "Purchased Orders History"}
                     {activeSubTab === "addresses" && "Saved Delivery Addresses"}
                     {activeSubTab === "security" && "Personal Details & Security"}
@@ -611,7 +679,7 @@ export default function MyAccount() {
                           });
                           setShowAddressModal(true);
                         }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#FF6600] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white cursor-pointer hover:bg-[#e65c00]"
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white cursor-pointer hover:bg-primary-hover"
                       >
                         <Plus className="h-4.5 w-4.5" />
                         Add New Address
@@ -632,7 +700,7 @@ export default function MyAccount() {
                             <div
                               key={i}
                               className={`relative rounded-2xl border p-5 bg-slate-950/60 shadow-md ${
-                                isDefault ? "border-[#FF6600]/40 shadow-[0_4px_20px_rgba(255,102,0,0.05)]" : "border-white/5"
+                                isDefault ? "border-primary/40 shadow-glow" : "border-white/5"
                               }`}
                             >
                               <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -666,7 +734,7 @@ export default function MyAccount() {
                                   {addr.label || "Address"}
                                 </span>
                                 {isDefault && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#FF6600]/10 border border-[#FF6600]/20 px-3 py-1 text-[9px] font-bold text-[#FF6600] uppercase tracking-wider">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-[9px] font-bold text-primary uppercase tracking-wider">
                                     Default
                                   </span>
                                 )}
@@ -687,7 +755,7 @@ export default function MyAccount() {
                                       payload: { index: i },
                                     });
                                   }}
-                                  className="mt-4 text-[10px] font-bold tracking-wider uppercase text-[#FF6600] hover:underline cursor-pointer"
+                                  className="mt-4 text-[10px] font-bold tracking-wider uppercase text-primary hover:underline cursor-pointer"
                                 >
                                   Set as Default
                                 </button>
@@ -718,7 +786,7 @@ export default function MyAccount() {
                               required
                               value={profileName}
                               onChange={(e) => setProfileName(e.target.value)}
-                              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-white/10 bg-slate-950/60 text-xs text-white outline-none transition-colors focus:border-[#FF6600]"
+                              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-white/10 bg-slate-950/60 text-xs text-white outline-none transition-colors focus:border-primary"
                             />
                           </div>
                         </div>
@@ -731,7 +799,7 @@ export default function MyAccount() {
                               type="tel"
                               value={profilePhone}
                               onChange={(e) => setProfilePhone(e.target.value)}
-                              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-white/10 bg-slate-950/60 text-xs text-white outline-none transition-colors focus:border-[#FF6600]"
+                              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-white/10 bg-slate-950/60 text-xs text-white outline-none transition-colors focus:border-primary"
                             />
                           </div>
                         </div>
@@ -754,7 +822,7 @@ export default function MyAccount() {
                       <button
                         type="submit"
                         disabled={updateProfileMutation.isPending}
-                        className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer disabled:opacity-50"
+                        className="w-full rounded-2xl bg-primary py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-primary-hover active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer disabled:opacity-50"
                       >
                         {updateProfileMutation.isPending ? "Updating Credentials..." : "Save Profile Details"}
                       </button>
@@ -807,7 +875,7 @@ export default function MyAccount() {
                       }}
                       className="space-y-4"
                     >
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-[#FF6600] border-b border-white/5 pb-2">Submit Support Request</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-primary border-b border-white/5 pb-2">Submit Support Request</h4>
                       
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Reason</label>
@@ -825,13 +893,13 @@ export default function MyAccount() {
                           rows={4}
                           required
                           placeholder="Provide details including related order IDs..."
-                          className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4.5 py-3.5 text-xs text-white outline-none transition-colors focus:border-[#FF6600]"
+                          className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4.5 py-3.5 text-xs text-white outline-none transition-colors focus:border-primary"
                         />
                       </div>
 
                       <button
                         type="submit"
-                        className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer"
+                        className="w-full rounded-2xl bg-primary py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-primary-hover active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer"
                       >
                         Create Support Ticket
                       </button>
@@ -944,7 +1012,7 @@ export default function MyAccount() {
                 <button
                   type="submit"
                   disabled={addressMutation.isPending}
-                  className="w-full rounded-2xl bg-[#FF6600] py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#e65c00] active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer shadow-md disabled:opacity-50 mt-4"
+                  className="w-full rounded-2xl bg-primary py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-primary-hover active:scale-98 transition-[transform,border-color,background-color,box-shadow,color] cursor-pointer shadow-md disabled:opacity-50 mt-4"
                 >
                   {addressMutation.isPending ? "Saving Location..." : "Save Delivery Address"}
                 </button>

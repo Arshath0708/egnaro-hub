@@ -440,12 +440,12 @@ export default function ProductsPage() {
         <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 lg:hidden">
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-[#FF6600] px-6 py-3.5 font-bold text-white shadow-lg shadow-[#FF6600]/30 hover:bg-[#e65c00] active:scale-95 transition-[transform,border-color,background-color,color] cursor-pointer"
+            className="flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-bold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary-hover active:scale-95 transition-[transform,border-color,background-color,color] cursor-pointer"
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span>Filters & Sort</span>
             {(currentCat || currentState || currentCity || currentTown) && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#FF6600]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-primary">
                 {[currentCat, currentState, currentCity, currentTown].filter(Boolean).length}
               </span>
             )}
@@ -467,7 +467,7 @@ export default function ProductsPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
                   <div className="flex items-center gap-2">
-                    <SlidersHorizontal className="h-4 w-4 text-[#FF6600]" />
+                    <SlidersHorizontal className="h-4 w-4 text-primary" />
                     <span className="font-display text-base font-black text-white uppercase tracking-wider animate-pulse">
                       Filter & Sort
                     </span>
@@ -543,7 +543,7 @@ export default function ProductsPage() {
                         onClick={() => setMobileFiltersOpen(false)}
                         className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
                           !currentCat
-                            ? "bg-[#FF6600]/10 font-semibold text-[#FF6600]"
+                            ? "bg-primary/10 font-semibold text-primary"
                             : "text-muted-foreground hover:bg-white/5"
                         }`}
                       >
@@ -565,7 +565,7 @@ export default function ProductsPage() {
                             onClick={() => setMobileFiltersOpen(false)}
                             className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
                               active
-                                ? "bg-[#FF6600]/10 font-semibold text-[#FF6600]"
+                                ? "bg-primary/10 font-semibold text-primary"
                                 : "text-muted-foreground hover:bg-white/5"
                             }`}
                           >
@@ -594,7 +594,7 @@ export default function ProductsPage() {
                           }}
                           className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-[transform,border-color,background-color,color] cursor-pointer ${
                             active
-                              ? "bg-[#FF6600]/10 font-semibold text-[#FF6600]"
+                              ? "bg-primary/10 font-semibold text-primary"
                               : "text-muted-foreground hover:bg-white/5 hover:text-white"
                           }`}
                         >
@@ -670,7 +670,7 @@ const Sidebar = memo(
 
         <div className="glass rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <SlidersHorizontal className="h-4 w-4 text-[#FF6600]" />
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
             Location Filter
           </div>
 
@@ -714,7 +714,7 @@ const Sidebar = memo(
 
         <div className="glass rounded-2xl p-5">
           <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-            <SlidersHorizontal className="h-4 w-4 text-[#FF6600]" />
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
             Categories
           </div>
 
@@ -759,7 +759,7 @@ const Sidebar = memo(
           </div>
 
           <Select value={currentSort} onValueChange={onSortChange}>
-            <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-[#FF6600]">
+            <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary">
               <SelectValue placeholder="Sort" />
             </SelectTrigger>
             <SelectContent>

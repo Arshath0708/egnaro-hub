@@ -41,7 +41,7 @@ export function SplashScreen() {
           className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#020617] overflow-hidden select-none"
         >
           {/* Subtle ambient glowing orb behind the logo card */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full bg-[#FF6600]/10 blur-[120px] pointer-events-none animate-pulse" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full bg-primary/10 blur-[120px] pointer-events-none animate-pulse" />
 
           {/* Luxury Card Container */}
           <div className="relative flex flex-col items-center max-w-xs px-8 text-center">
@@ -88,7 +88,7 @@ export function SplashScreen() {
             >
               {/* Active glow streak */}
               <div
-                className="h-full bg-gradient-to-r from-[#FF6600] to-yellow-400 rounded-full transition-all duration-[30ms] ease-out shadow-[0_0_10px_rgba(255,102,0,0.5)]"
+                className="h-full bg-gradient-to-r from-primary to-yellow-400 rounded-full transition-all duration-[30ms] ease-out shadow-[0_0_10px_rgba(255,102,0,0.5)]"
                 style={{ width: `${progress}%` }}
               />
             </motion.div>

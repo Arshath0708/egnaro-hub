@@ -30,7 +30,7 @@ const defaultSlide = (n: number): SlideData => ({
 });
 
 const inputClass =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition-all focus:border-[#FF6600]";
+  "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition-all focus:border-primary";
 
 export function HomeContentModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -113,7 +113,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
             {/* HEADER */}
             <div className="mb-8 flex items-start justify-between">
               <div>
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#FF6600]/20 bg-[#FF6600]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#FF6600]">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                   <LayoutTemplate className="h-4 w-4" />
                   Content Management
                 </div>
@@ -132,7 +132,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
 
             {loading ? (
               <div className="flex h-64 flex-col items-center justify-center gap-4 text-gray-400">
-                <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span>Loading slide content...</span>
               </div>
             ) : (
@@ -145,7 +145,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                       onClick={() => setActiveSlide(s.number)}
                       className={`flex-1 rounded-xl py-3 text-sm font-bold transition-all ${
                         activeSlide === s.number
-                          ? "bg-[#FF6600] text-white shadow-lg"
+                          ? "bg-primary text-white shadow-lg"
                           : "text-gray-400 hover:text-white"
                       }`}
                     >
@@ -200,7 +200,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                       <label className="mb-2 block text-sm font-medium text-gray-300">
                         Right Image
                       </label>
-                      <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#FF6600]/30 bg-[#FF6600]/5 p-5 transition hover:bg-[#FF6600]/10">
+                      <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5 transition hover:bg-primary/10">
                         {current.left_image ? (
                           <img
                             src={current.left_image}
@@ -208,9 +208,9 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                             className="h-32 w-full rounded-xl object-cover"
                           />
                         ) : (
-                          <ImagePlus className="h-8 w-8 text-[#FF6600]" />
+                          <ImagePlus className="h-8 w-8 text-primary" />
                         )}
-                        <span className="text-sm font-semibold text-[#FF6600]">
+                        <span className="text-sm font-semibold text-primary">
                           {uploading ? "Uploading..." : current.left_image ? "Change Image" : "Upload Image"}
                         </span>
                         <input
@@ -270,7 +270,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                   <button
                     onClick={handleSave}
                     disabled={saving || uploading}
-                    className="flex items-center gap-2 rounded-2xl bg-[#FF6600] px-8 py-3 font-bold text-white transition hover:bg-[#e65c00] disabled:opacity-60"
+                    className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-3 font-bold text-white transition hover:bg-primary-hover disabled:opacity-60"
                   >
                     {saving ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

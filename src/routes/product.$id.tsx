@@ -217,7 +217,7 @@ export default function ProductDetail() {
             />
 
             {Number(product.discount) > 0 && (
-              <div className="absolute left-4 top-4 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-2 text-sm font-bold text-white shadow-xl">
+              <div className="absolute left-4 top-4 rounded-xl bg-primary/10 border border-primary/30 px-3.5 py-1.5 font-mono text-xs font-black uppercase tracking-[0.1em] text-primary shadow-xl backdrop-blur-md">
                 {product.discount}% OFF
               </div>
             )}
@@ -231,7 +231,7 @@ export default function ProductDetail() {
             transition={{ delay: 0.05 }}
             className="transform-gpu"
           >
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
               {product.category?.replace("-", " ")}
             </div>
 
@@ -343,7 +343,7 @@ export default function ProductDetail() {
                     add(product.id.toString(), qty);
                     nav("/checkout");
                   }}
-                  className="flex-1 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-yellow-300 py-4 font-bold text-black shadow-[0_10px_40px_rgba(0,255,255,0.25)] transition hover:scale-[1.02]"
+                  className="flex-1 rounded-2xl gradient-primary py-4 font-bold text-primary-foreground shadow-glow transition hover:scale-[1.02] shimmer"
                 >
                   Buy Now
                 </button>
@@ -575,7 +575,7 @@ export default function ProductDetail() {
 
                         <button
                           type="submit"
-                          className="w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 py-4 text-sm font-black text-black transition hover:scale-[1.02] hover:shadow-glow"
+                          className="w-full rounded-2xl gradient-primary py-4 text-sm font-black text-primary-foreground transition hover:scale-[1.02] hover:shadow-glow shimmer"
                         >
                           Submit Review
                         </button>
@@ -616,7 +616,7 @@ export default function ProductDetail() {
                           >
                             <div className="mb-4 flex items-start justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent font-bold text-black">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 border border-primary/30 font-bold text-primary">
                                   {review.customer_name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>

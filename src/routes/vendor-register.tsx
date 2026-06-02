@@ -482,7 +482,7 @@ export default function VendorRegister() {
                         placeholder="Enter custom City..."
                         value={customCity}
                         onChange={(e) => setCustomCity(e.target.value)}
-                        className="w-full h-11 rounded-xl border border-[#FF6600]/30 bg-[#090d1a]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all duration-200"
+                        className="w-full h-11 rounded-xl border border-primary/30 bg-[#090d1a]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                       />
                     </div>
                   ) : (
@@ -511,7 +511,7 @@ export default function VendorRegister() {
                         placeholder="Enter custom Town..."
                         value={customTown}
                         onChange={(e) => setCustomTown(e.target.value)}
-                        className="w-full h-11 rounded-xl border border-[#FF6600]/30 bg-[#090d1a]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all duration-200"
+                        className="w-full h-11 rounded-xl border border-primary/30 bg-[#090d1a]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                       />
                     </div>
                   ) : (

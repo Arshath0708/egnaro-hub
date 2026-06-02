@@ -244,7 +244,7 @@ export function LocationsModal({ onClose }: Props) {
                     value={customState}
                     onChange={(e) => setCustomState(e.target.value)}
                     placeholder="Type new state..."
-                    className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-[#FF6600]"
+                    className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary"
                   />
                 ) : (
                   <LocationSelect
@@ -285,7 +285,7 @@ export function LocationsModal({ onClose }: Props) {
                     onChange={(e) => setCustomCity(e.target.value)}
                     disabled={!activeState}
                     placeholder={activeState ? "Type new city..." : "Select state first"}
-                    className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-[#FF6600] disabled:opacity-40 disabled:pointer-events-none"
+                    className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary disabled:opacity-40 disabled:pointer-events-none"
                   />
                 ) : (
                   <LocationSelect
@@ -308,7 +308,7 @@ export function LocationsModal({ onClose }: Props) {
                   onChange={(e) => setTownInput(e.target.value)}
                   disabled={!activeState || !activeCity}
                   placeholder={activeState && activeCity ? "Type Town/Area..." : "Complete scope first"}
-                  className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-[#FF6600] disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary disabled:opacity-40 disabled:pointer-events-none"
                 />
               </div>
             </div>
@@ -335,7 +335,7 @@ export function LocationsModal({ onClose }: Props) {
 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-500">
-                <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="text-xs font-semibold">Indexing active scopes...</span>
               </div>
             ) : locations.length === 0 ? (
@@ -357,7 +357,7 @@ export function LocationsModal({ onClose }: Props) {
                   >
                     <span className="text-xs font-bold text-gray-300 truncate">{loc.state}</span>
                     <span className="text-xs font-semibold text-gray-400 truncate">{loc.city}</span>
-                    <span className="text-xs font-extrabold text-[#FF6600] truncate flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-primary truncate flex items-center justify-between">
                       {loc.town}
                       <button
                         onClick={() => setDeletingLoc(loc)}

@@ -27,41 +27,29 @@ import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { getProducts, getCategories, getHomeContent } from "@/services/api";
 
 const CATEGORY_META: Record<string, { image: string, accent: string }> = {
+  "accessories": {
+    image: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&h=600&q=80",
+    accent: "from-rose-600/20 to-rose-600/5",
+  },
   "electronics": {
-    image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=1200",
+    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&h=600&q=80",
     accent: "from-blue-600/20 to-blue-600/5",
   },
-  "mobiles": {
-    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1200",
-    accent: "from-indigo-600/20 to-indigo-600/5",
+  "fashion": {
+    image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=800&h=600&q=80",
+    accent: "from-amber-600/20 to-amber-600/5",
   },
-  "electricals": {
-    image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=1200",
-    accent: "from-yellow-600/20 to-yellow-600/5",
-  },
-  "hardware": {
-    image: "https://images.unsplash.com/photo-1530124566582-a618bc2615ad?q=80&w=1200",
-    accent: "from-orange-600/20 to-orange-600/5",
-  },
-  "motor pumps": {
-    image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=1200",
-    accent: "from-cyan-600/20 to-cyan-600/5",
-  },
-  "home appliances": {
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1200",
+  "gadgets": {
+    image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&h=600&q=80",
     accent: "from-purple-600/20 to-purple-600/5",
   },
-  "industrial": {
-    image: "https://images.unsplash.com/photo-1513828583688-c52646db42da?q=80&w=1200",
-    accent: "from-emerald-600/20 to-emerald-600/5",
-  },
   "groceries": {
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1200",
+    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&h=600&q=80",
     accent: "from-green-600/20 to-green-600/5",
   },
-  "accessories": {
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200",
-    accent: "from-rose-600/20 to-rose-600/5",
+  "mobiles": {
+    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&h=600&q=80",
+    accent: "from-indigo-600/20 to-indigo-600/5",
   }
 };
 
@@ -104,12 +92,18 @@ export default function Home() {
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
-  const categories = apiCategories.map((cat: any) => ({
-    id: cat.id,
-    name: cat.name,
-    image: CATEGORY_META[cat.name.toLowerCase()]?.image || "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=1200",
-    accent: CATEGORY_META[cat.name.toLowerCase()]?.accent || "from-gray-500/20 to-gray-500/5",
-  }));
+  const categories = useMemo(() => {
+    const featuredNames = ["accessories", "electronics", "fashion", "gadgets", "groceries", "mobiles"];
+    return featuredNames
+      .map((name) => apiCategories.find((cat: any) => cat.name.toLowerCase() === name))
+      .filter((cat): cat is any => !!cat)
+      .map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+        image: CATEGORY_META[cat.name.toLowerCase()]?.image || "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=1200",
+        accent: CATEGORY_META[cat.name.toLowerCase()]?.accent || "from-gray-500/20 to-gray-500/5",
+      }));
+  }, [apiCategories]);
 
 
   const featured = products.slice(0, 4);
@@ -275,8 +269,8 @@ function StatsStrip() {
       value: "Secure",
       label: "Payments & Transactions",
       medallion: (
-        <svg className="h-5 w-5 text-[#FF6600] drop-shadow-[0_2px_8px_rgba(255,102,0,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="rgba(255,102,0,0.1)"/>
+        <svg className="h-5 w-5 text-primary drop-shadow-[0_2px_8px_rgba(249,115,22,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="currentColor" fillOpacity="0.1"/>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
       )
@@ -810,9 +804,9 @@ function WhyChooseUs() {
     {
       medallion: (
         <div className="relative">
-          <div className="absolute inset-0 rounded-xl bg-[#FF6600]/10 blur-sm opacity-50 pointer-events-none" />
-          <svg className="relative h-6 w-6 text-[#FF6600] drop-shadow-[0_4px_10px_rgba(255,102,0,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="8" r="7" fill="rgba(255,102,0,0.05)"/>
+          <div className="absolute inset-0 rounded-xl bg-primary/10 blur-sm opacity-50 pointer-events-none" />
+          <svg className="relative h-6 w-6 text-primary drop-shadow-[0_4px_10px_rgba(249,115,22,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="7" fill="currentColor" fillOpacity="0.05"/>
             <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
           </svg>
         </div>
@@ -857,7 +851,7 @@ function WhyChooseUs() {
               {it.medallion}
             </div>
 
-            <div className="font-mono text-[0.68rem] font-black uppercase tracking-[0.12em] text-[#FF6600] mb-2">
+            <div className="font-mono text-[0.68rem] font-black uppercase tracking-[0.12em] text-primary mb-2">
               {it.stat}
             </div>
 

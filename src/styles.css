@@ -17,6 +17,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -49,8 +50,9 @@
   --card-foreground: oklch(0.97 0.01 250);
   --popover: oklch(0.19 0.025 265);
   --popover-foreground: oklch(0.97 0.01 250);
-  --primary: oklch(0.78 0.18 75);
-  --primary-foreground: oklch(0.18 0.03 270);
+  --primary: oklch(0.65 0.25 45); /* Official Brand Orange */
+  --primary-hover: oklch(0.58 0.23 45); /* Official Brand Orange Hover */
+  --primary-foreground: oklch(1 0 0); /* White */
   --secondary: oklch(0.26 0.03 265);
   --secondary-foreground: oklch(0.97 0.01 250);
   --muted: oklch(0.24 0.025 265);
@@ -65,17 +67,17 @@
   --warning-foreground: oklch(0.18 0.03 80);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.78 0.18 75 / 60%);
+  --ring: oklch(0.65 0.25 45 / 60%);
   --glass: oklch(0.22 0.03 265 / 55%);
   --glass-border: oklch(1 0 0 / 10%);
 
   --gradient-hero: radial-gradient(ellipse 80% 60% at 20% 0%, oklch(0.45 0.2 285 / 35%), transparent 60%),
-                   radial-gradient(ellipse 70% 50% at 90% 30%, oklch(0.62 0.2 75 / 25%), transparent 60%),
+                   radial-gradient(ellipse 70% 50% at 90% 30%, oklch(0.65 0.25 45 / 15%), transparent 60%),
                    linear-gradient(180deg, oklch(0.18 0.025 270), oklch(0.14 0.02 265));
-  --gradient-primary: linear-gradient(135deg, oklch(0.78 0.18 75), oklch(0.7 0.2 45));
+  --gradient-primary: linear-gradient(135deg, oklch(0.65 0.25 45), oklch(0.58 0.23 45));
   --gradient-accent: linear-gradient(135deg, oklch(0.65 0.22 285), oklch(0.55 0.24 320));
   --gradient-card: linear-gradient(160deg, oklch(0.24 0.03 265 / 80%), oklch(0.18 0.025 265 / 60%));
-  --shadow-glow: 0 0 40px -8px oklch(0.78 0.18 75 / 35%);
+  --shadow-glow: 0 0 40px -8px oklch(0.65 0.25 45 / 35%);
   --shadow-glow-accent: 0 0 50px -10px oklch(0.65 0.22 285 / 45%);
   --shadow-elegant: 0 20px 60px -20px oklch(0 0 0 / 60%), 0 1px 0 0 oklch(1 0 0 / 5%) inset;
   --transition-smooth: 350ms cubic-bezier(0.4, 0, 0.2, 1);

@@ -31,7 +31,7 @@ export default function AdminLogin() {
         
         {/* Minimal diffused glowing backing (highly blurred, low opacity, stable) */}
         <div className="absolute top-[-20%] left-[-10%] h-[60%] w-[50%] rounded-full blur-[200px] opacity-10 pointer-events-none bg-slate-500/10" />
-        <div className="absolute bottom-[-20%] right-[-10%] h-[60%] w-[50%] rounded-full blur-[200px] opacity-10 pointer-events-none bg-[#FF6600]/5" />
+        <div className="absolute bottom-[-20%] right-[-10%] h-[60%] w-[50%] rounded-full blur-[200px] opacity-10 pointer-events-none bg-primary/5" />
 
         {/* LEFT COLUMN: EXECUTIVE BRANDING & OPERATIONAL OVERVIEW (Desktop/Tablet Only) */}
         <div className="w-full md:w-[35%] lg:w-[45%] p-8 lg:p-16 flex-col justify-between border-b md:border-b-0 md:border-r border-white/5 bg-slate-950/10 backdrop-blur-sm relative z-10 hidden md:flex">
@@ -39,7 +39,7 @@ export default function AdminLogin() {
           {/* Header crest */}
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-[#0e1420]/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-              <Shield className="h-5.5 w-5.5 text-[#FF6600]" />
+              <Shield className="h-5.5 w-5.5 text-primary" />
             </div>
             <div>
               <span className="font-display font-black text-sm text-white tracking-widest uppercase">
@@ -54,7 +54,7 @@ export default function AdminLogin() {
           {/* Main Business Core Details */}
           <div className="my-auto space-y-8 max-w-lg py-12 lg:py-0">
             <div className="space-y-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#FF6600] block">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary block">
                 Administrative Operations Node
               </span>
               <h2 className="text-2xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight font-display">
@@ -88,7 +88,7 @@ export default function AdminLogin() {
                   SECURITY CIPHER
                 </span>
                 <div className="flex items-center gap-1.5 text-sm font-semibold text-white">
-                  <ShieldCheck className="h-4 w-4 text-[#FF6600]" />
+                  <ShieldCheck className="h-4 w-4 text-primary" />
                   <span>AES-256 Encrypted</span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium font-sans">PCI-DSS Compliant Infrastructure</p>
@@ -145,7 +145,7 @@ export default function AdminLogin() {
             {/* MOBILE COMPACT BRANDING HEADER - Only visible on Mobile */}
             <div className="flex md:hidden flex-col items-center text-center mb-8">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#0e1420]/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] mb-4">
-                <Shield className="h-6.5 w-6.5 text-[#FF6600]" />
+                <Shield className="h-6.5 w-6.5 text-primary" />
               </div>
               <h1 className="font-display font-black text-xl text-white tracking-widest uppercase leading-none">
                 Egnaro Hub
@@ -164,7 +164,7 @@ export default function AdminLogin() {
                   <span>Secure Infrastructure</span>
                 </div>
                 <div className="flex items-center gap-1.5 rounded-full border border-white/5 bg-[#0e1420]/40 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  <ShieldCheck className="h-3.5 w-3.5 text-[#FF6600]" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                   <span>PCI-DSS Secured</span>
                 </div>
               </div>
@@ -230,7 +230,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
    HIGH-TRUST INPUT TEXT BOXES
 ========================================================= */
 const premiumInputClass =
-  "w-full rounded-xl border border-white/10 bg-[#080C14]/60 pl-11 pr-4 py-3.5 text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-[#FF6600]/80 focus:ring-2 focus:ring-[#FF6600]/10 hover:border-white/15 font-medium";
+  "w-full rounded-xl border border-white/10 bg-[#080C14]/60 pl-11 pr-4 py-3.5 text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-primary/80 focus:ring-2 focus:ring-primary/10 hover:border-white/15 font-medium";
 
 /* =========================================================
    TACTILE PLATFORM ACTION BUTTONS
@@ -240,7 +240,7 @@ function PrimaryButton({ loading, label, loadingLabel }: { loading: boolean; lab
     <button
       type="submit"
       disabled={loading}
-      className="w-full rounded-xl bg-[#FF6600] py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#e65c00] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#FF6600]/10"
+      className="w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
     >
       {loading ? (
         <>
@@ -261,7 +261,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer mb-2"
     >
-      <ArrowLeft className="h-3.5 w-3.5 text-[#FF6600]" />
+      <ArrowLeft className="h-3.5 w-3.5 text-primary" />
       Back to Sign In
     </button>
   );
@@ -271,7 +271,7 @@ function StepHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: s
   return (
     <div className="text-center space-y-3 pb-1">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#080C14]/80 shadow-inner relative overflow-hidden">
-        <div className="text-[#FF6600]">{icon}</div>
+        <div className="text-primary">{icon}</div>
       </div>
       <div className="space-y-1">
         <h1 className="text-2xl font-black text-white tracking-tight leading-none font-display">
@@ -332,7 +332,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
     <Card>
       <div className="text-center space-y-3 pb-1 hidden md:block">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#080C14]/80 shadow-inner relative overflow-hidden">
-          <Shield className="h-5 w-5 text-[#FF6600]" />
+          <Shield className="h-5 w-5 text-primary" />
         </div>
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-white tracking-tight leading-none font-display">
@@ -347,7 +347,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
       <form onSubmit={handleLogin} className="space-y-4">
         <Field label="System Identifier (Email)">
           <div className="relative group">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-[#FF6600]" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             <input 
               type="email" 
               required 
@@ -361,7 +361,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
         
         <Field label="Security Passkey">
           <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-[#FF6600]" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             <input 
               type={showPassword ? "text" : "password"} 
               required 
@@ -384,7 +384,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
           <button 
             type="button" 
             onClick={onForgot}
-            className="text-xs font-semibold text-[#FF6600] hover:text-[#FF8000] cursor-pointer transition-colors"
+            className="text-xs font-semibold text-primary hover:text-primary-hover cursor-pointer transition-colors"
           >
             Forgot Password?
           </button>
@@ -443,7 +443,7 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
       <form onSubmit={handleSend} className="space-y-4">
         <Field label="Admin Email Account">
           <div className="relative group">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-[#FF6600]" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             <input 
               type="email" 
               placeholder="admin@egnaromart.com" 
@@ -529,7 +529,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
             value={otp} 
             required
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            className="w-full rounded-xl border border-white/10 bg-[#080C14]/60 py-3.5 text-center text-xl tracking-[0.4em] font-extrabold focus:tracking-[0.4em] text-white placeholder:text-slate-600 outline-none transition-all duration-200 focus:border-[#FF6600]/80 focus:ring-2 focus:ring-[#FF6600]/10 hover:border-white/15 font-mono"
+            className="w-full rounded-xl border border-white/10 bg-[#080C14]/60 py-3.5 text-center text-xl tracking-[0.4em] font-extrabold focus:tracking-[0.4em] text-white placeholder:text-slate-600 outline-none transition-all duration-200 focus:border-primary/80 focus:ring-2 focus:ring-primary/10 hover:border-white/15 font-mono"
           />
         </Field>
         
@@ -538,7 +538,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
 
       <p className="text-center text-xs text-slate-500 font-semibold">
         Didn't receive it?{" "}
-        <button type="button" onClick={handleResend} className="text-[#FF6600] hover:text-[#FF8000] font-bold cursor-pointer transition-colors">
+        <button type="button" onClick={handleResend} className="text-primary hover:text-primary-hover font-bold cursor-pointer transition-colors">
           Resend OTP
         </button>
       </p>
@@ -608,7 +608,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
           
           <button 
             onClick={onDone}
-            className="w-full rounded-xl bg-[#FF6600] py-3.5 text-sm font-semibold text-white hover:bg-[#e65c00] transition-colors cursor-pointer"
+            className="w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-white hover:bg-primary-hover transition-colors cursor-pointer"
           >
             Return to Sign In
           </button>
@@ -630,7 +630,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
       <form onSubmit={handleReset} className="space-y-4">
         <Field label="New Administrative Passkey">
           <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-[#FF6600]" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             <input 
               type={showNewPw ? "text" : "password"} 
               placeholder="••••••••" 
@@ -652,7 +652,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
         
         <Field label="Confirm Passkey Registry">
           <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-[#FF6600]" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             <input 
               type={showConfirmPw ? "text" : "password"} 
               placeholder="••••••••" 

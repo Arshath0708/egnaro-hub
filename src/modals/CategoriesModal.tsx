@@ -269,14 +269,14 @@ export function CategoriesModal({ onClose }: Props) {
         className="relative z-10 w-full max-w-3xl max-h-[90vh] flex flex-col rounded-[32px] border border-white/5 bg-gradient-to-b from-[#0a0f1d] to-[#05070a] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden"
       >
         {/* Glow orbs */}
-        <div className="absolute -top-12 -left-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-[#FF6600]" />
+        <div className="absolute -top-12 -left-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-primary" />
         <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full blur-3xl opacity-15 pointer-events-none bg-cyan-500" />
 
         {/* HEADER */}
         <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 relative z-10">
           <div className="flex items-center gap-3">
             <LayeredIconContainer
-              icon={<FolderOpen className="h-5 w-5 text-[#FF6600]" />}
+              icon={<FolderOpen className="h-5 w-5 text-primary" />}
               glowColor="rgba(255, 102, 0, 0.4)"
             />
             <div>
@@ -300,7 +300,7 @@ export function CategoriesModal({ onClose }: Props) {
           
           {/* ADD FORM */}
           <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-[#FF6600] flex items-center gap-1.5">
+            <div className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5" />
               <span>Register Scoped Catalog Category</span>
             </div>
@@ -312,7 +312,7 @@ export function CategoriesModal({ onClose }: Props) {
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="e.g. Rice & Pulses"
-                  className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-[#FF6600] transition-colors"
+                  className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary transition-colors"
                 />
               </div>
 
@@ -359,7 +359,7 @@ export function CategoriesModal({ onClose }: Props) {
             <button
               onClick={handleAdd}
               disabled={isPending || locationsLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF6600] to-[#FF8000] py-3 text-xs font-extrabold uppercase tracking-wider text-white transition hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer shadow-lg shadow-[#FF6600]/15"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-hover py-3 text-xs font-extrabold uppercase tracking-wider text-white transition hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer shadow-lg shadow-primary/15"
             >
               {addMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -378,7 +378,7 @@ export function CategoriesModal({ onClose }: Props) {
 
             {categoriesLoading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-500">
-                <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="text-xs font-semibold">Indexing active categories...</span>
               </div>
             ) : categories.length === 0 ? (
@@ -399,7 +399,7 @@ export function CategoriesModal({ onClose }: Props) {
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
                           placeholder="Category Name"
-                          className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-1.5 text-xs text-white outline-none focus:border-[#FF6600]"
+                          className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-1.5 text-xs text-white outline-none focus:border-primary"
                         />
                       </div>
                       
@@ -449,7 +449,7 @@ export function CategoriesModal({ onClose }: Props) {
                       </span>
                       {(cat.state || cat.city || cat.town) ? (
                         <span className="text-[10px] font-semibold text-gray-400 flex items-center gap-1.5 flex-wrap">
-                          <span className="inline-flex items-center rounded bg-[#FF6600]/10 border border-[#FF6600]/20 px-1.5 py-0.5 text-[8.5px] font-black text-[#FF6600] uppercase tracking-wider">Scope</span>
+                          <span className="inline-flex items-center rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[8.5px] font-black text-primary uppercase tracking-wider">Scope</span>
                           <span className="text-white font-bold">{cat.state}</span>
                           <span>→</span>
                           <span className="text-gray-300">{cat.city}</span>

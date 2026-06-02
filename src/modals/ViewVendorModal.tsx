@@ -162,7 +162,7 @@ export function ViewVendorModal({
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-gray-500">
-              <Loader2 className="h-8 w-8 animate-spin text-[#FF6600]" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="text-xs font-semibold">Syncing operational data logs...</span>
             </div>
           ) : (
@@ -171,7 +171,7 @@ export function ViewVendorModal({
                 {/* CONTACT INFO */}
                 <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 space-y-4">
                   <h3 className="flex items-center gap-2 text-sm font-extrabold text-white tracking-wide uppercase">
-                    <User className="h-4 w-4 text-[#FF6600]" />
+                    <User className="h-4 w-4 text-primary" />
                     Merchant Contact Information
                   </h3>
                   <div className="space-y-3.5">
@@ -192,7 +192,7 @@ export function ViewVendorModal({
                 {/* BANK DETAILS */}
                 <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
                   <h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold text-white tracking-wide uppercase">
-                    <CreditCard className="h-4 w-4 text-[#FF6600]" />
+                    <CreditCard className="h-4 w-4 text-primary" />
                     Settlement Bank Ledger
                   </h3>
                   
@@ -204,7 +204,7 @@ export function ViewVendorModal({
                           type="text"
                           value={bankForm.bank_name}
                           onChange={(e) => setBankForm(p => ({ ...p, bank_name: e.target.value }))}
-                          className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-[#FF6600] outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-primary outline-none"
                           placeholder="e.g. HDFC Bank Ltd"
                           required
                         />
@@ -215,7 +215,7 @@ export function ViewVendorModal({
                           type="text"
                           value={bankForm.account_number}
                           onChange={(e) => setBankForm(p => ({ ...p, account_number: e.target.value }))}
-                          className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-[#FF6600] outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-primary outline-none"
                           placeholder="e.g. 501002345678"
                           required
                         />
@@ -226,7 +226,7 @@ export function ViewVendorModal({
                           type="text"
                           value={bankForm.ifsc_code}
                           onChange={(e) => setBankForm(p => ({ ...p, ifsc_code: e.target.value }))}
-                          className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-[#FF6600] outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-primary outline-none"
                           placeholder="e.g. HDFC0000123"
                           required
                         />
@@ -235,7 +235,7 @@ export function ViewVendorModal({
                         <button
                           type="submit"
                           disabled={submittingBank}
-                          className="flex-1 rounded-xl bg-[#FF6600] py-2.5 text-xs font-extrabold uppercase tracking-wider text-white hover:bg-[#e65c00] disabled:opacity-55 cursor-pointer shadow-lg shadow-[#FF6600]/15"
+                          className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-extrabold uppercase tracking-wider text-white hover:bg-primary-hover disabled:opacity-55 cursor-pointer shadow-lg shadow-primary/15"
                         >
                           {submittingBank ? "Submitting..." : "Submit Sync Request"}
                         </button>
@@ -296,7 +296,7 @@ export function ViewVendorModal({
                     <StatMini icon={<Package />} label="Listed Catalog" value={stats.products.total} color="text-cyan-400" bg="bg-cyan-500/5" />
                     <StatMini icon={<ShoppingCart />} label="Orders Served" value={stats.orders.total} color="text-orange-400" bg="bg-orange-400/5" />
                     <StatMini icon={<IndianRupee />} label="Gross GMV" value={`₹${stats.orders.total_revenue.toLocaleString('en-IN')}`} color="text-emerald-400" bg="bg-emerald-500/5" />
-                    <StatMini icon={<CheckCircle />} label="Approved Items" value={stats.products.approved} color="text-[#FF6600]" bg="bg-[#FF6600]/5" />
+                    <StatMini icon={<CheckCircle />} label="Approved Items" value={stats.products.approved} color="text-primary" bg="bg-primary/5" />
                   </div>
                 </div>
               )}

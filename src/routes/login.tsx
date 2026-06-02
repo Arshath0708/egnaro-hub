@@ -21,7 +21,7 @@ export default function Login() {
     <div className="relative min-h-screen w-full bg-[#080c14] overflow-hidden flex items-center justify-center p-4">
       
       {/* Soft, extremely muted ambient light behind the card */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full blur-[160px] opacity-[0.03] bg-gradient-to-tr from-[#FF6600] to-violet-500 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full blur-[160px] opacity-[0.03] bg-gradient-to-tr from-primary to-violet-500 pointer-events-none" />
       
       {/* Subtle tech background grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
@@ -99,7 +99,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
    CLEAN & CRISP INPUT BOXES
 ========================================================= */
 const premiumInputClass =
-  "w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600]/30 hover:border-white/15 font-medium";
+  "w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary/30 hover:border-white/15 font-medium";
 
 /* =========================================================
    COMPACT PLATFORM BUTTONS
@@ -109,7 +109,7 @@ function PrimaryButton({ loading, label, loadingLabel }: { loading: boolean; lab
     <button
       type="submit"
       disabled={loading}
-      className="w-full rounded-xl bg-[#FF6600] py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#e65c00] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#FF6600]/10"
+      className="w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
     >
       {loading ? (
         <>
@@ -129,7 +129,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer mb-2"
     >
-      <ArrowLeft className="h-3.5 w-3.5 text-[#FF6600]" />
+      <ArrowLeft className="h-3.5 w-3.5 text-primary" />
       Back to Sign In
     </button>
   );
@@ -139,7 +139,7 @@ function StepHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: s
   return (
     <div className="text-center space-y-2 pb-1">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-slate-950/80 backdrop-blur-xl shadow-inner">
-        <div className="text-[#FF6600]">{icon}</div>
+        <div className="text-primary">{icon}</div>
       </div>
       <div className="space-y-0.5">
         <h1 className="text-xl font-bold text-white tracking-tight leading-none font-display">
@@ -215,7 +215,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
     <Card>
       <div className="text-center space-y-2 pb-1">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-slate-950/80 backdrop-blur-xl shadow-inner">
-          <Lock className="h-5 w-5 text-[#FF6600]" />
+          <Lock className="h-5 w-5 text-primary" />
         </div>
         <div className="space-y-0.5">
           <h1 className="text-xl font-bold text-white tracking-tight leading-none font-display">
@@ -271,7 +271,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
           <button 
             type="button" 
             onClick={onForgot}
-            className="text-xs font-semibold text-[#FF6600] hover:text-[#FF8000] cursor-pointer"
+            className="text-xs font-semibold text-primary hover:text-primary-hover cursor-pointer"
           >
             Forgot Password?
           </button>
@@ -282,7 +282,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
 
       <p className="text-center text-xs text-slate-400 font-semibold mt-4">
         Don't have an account?{" "}
-        <Link to="/register" className="font-bold text-[#FF6600] hover:text-[#FF8000] ml-1">
+        <Link to="/register" className="font-bold text-primary hover:text-primary-hover ml-1">
           Create account
         </Link>
       </p>
@@ -429,7 +429,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
 
       <p className="text-center text-xs text-slate-500 font-semibold mt-2">
         Didn't receive it?{" "}
-        <button onClick={handleResend} className="text-[#FF6600] hover:text-[#FF8000] font-bold cursor-pointer">
+        <button onClick={handleResend} className="text-primary hover:text-primary-hover font-bold cursor-pointer">
           Resend OTP
         </button>
       </p>
@@ -499,7 +499,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
           
           <button 
             onClick={onDone}
-            className="w-full rounded-xl bg-[#FF6600] py-3 text-sm font-semibold text-white hover:bg-[#e65c00] transition-colors cursor-pointer"
+            className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer"
           >
             Return to Sign In
           </button>
