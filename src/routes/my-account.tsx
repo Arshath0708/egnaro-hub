@@ -259,6 +259,7 @@ export default function MyAccount() {
   const [activeSubTab, setActiveSubTab] = useState<"orders" | "addresses" | "security" | "help" | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(null);
+  const [addressToDeleteIndex, setAddressToDeleteIndex] = useState<number | null>(null);
 
   // Forms states
   const [profileName, setProfileName] = useState("");
@@ -459,7 +460,7 @@ export default function MyAccount() {
               >
                 {/* 2.1 Track Purchases card */}
                 <motion.div
-                  onClick={() => setActiveSubTab("orders")}
+                  onClick={() => navigate("/track-order")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
                   className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(255,102,0,0.06),0_0_30px_rgba(255,102,0,0.03)]"
@@ -564,23 +565,6 @@ export default function MyAccount() {
                   </span>
                 </motion.div>
 
-                {/* 2.5 Rewards & Loyalty level card */}
-                <div className="group relative rounded-3xl border border-white/5 bg-[#0e1626]/10 p-8 backdrop-blur-2xl shadow-2xl opacity-65">
-                  <div className="absolute top-6 right-6 text-[9px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider border border-amber-500/20">
-                    Member Tier
-                  </div>
-                  
-                  <div className="mb-6 flex justify-start">
-                    <GoldMedallion />
-                  </div>
-
-                  <h3 className="font-display text-lg font-black text-white mb-2 tracking-tight">
-                    Egnaro Gold
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Gain prioritized shipping, unlock localized vendor bonuses, and fetch reward tokens.
-                  </p>
-                </div>
               </motion.div>
             ) : (
               
@@ -610,86 +594,6 @@ export default function MyAccount() {
                     {activeSubTab === "help" && "Marketplace Support Tickets"}
                   </h2>
                 </div>
-
-                {/* 3.1 Your Orders Tab expanded */}
-                {activeSubTab === "orders" && (
-                  <div className="space-y-6">
-                    {isOrdersLoading ? (
-                      <p className="text-xs text-slate-500 animate-pulse uppercase tracking-wider text-center py-6">Loading purchases...</p>
-                    ) : orders.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Package className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-                        <h4 className="font-semibold text-slate-300 text-sm">No purchases located</h4>
-                        <p className="text-xs text-slate-500 mt-2">Place your first order inside the shop catalogue!</p>
-                      </div>
-                    ) : (
-                      orders.map((o: any, idx: number) => {
-                        let parsedItems = [];
-                        try {
-                          parsedItems = typeof o.items === "string" ? JSON.parse(o.items) : o.items || [];
-                        } catch (err) {
-                          // defensive parse
-                        }
-
-                        return (
-                          <div
-                            key={o.id || o.order_id || idx}
-                            className="rounded-2xl border border-white/5 bg-slate-950/60 p-5 shadow-lg"
-                          >
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-4 mb-4 gap-4">
-                              <div>
-                                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Order ID</span>
-                                <span className="block text-xs font-bold text-[#FF6600] mt-0.5">{o.order_id || `EGN-${o.id}`}</span>
-                              </div>
-                              <div>
-                                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</span>
-                                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[9px] font-bold uppercase tracking-wider mt-1 ${
-                                  o.status === "completed" || o.status === "delivered"
-                                    ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                                    : o.status === "cancelled"
-                                    ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                                    : "bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/20 animate-pulse"
-                                }`}>
-                                  {o.status || "processing"}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total</span>
-                                <span className="block text-xs font-black text-white mt-0.5">{inr(o.total)}</span>
-                              </div>
-                              <button
-                                onClick={() => navigate(`/track-order?id=${o.order_id || o.id}`)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF6600]/10 border border-[#FF6600]/20 text-[#FF6600] hover:bg-[#FF6600]/25 px-4 py-2 text-[10px] font-bold uppercase tracking-wider cursor-pointer"
-                              >
-                                Track Package
-                              </button>
-                            </div>
-
-                            <div className="space-y-3">
-                              {parsedItems.map((item: any, iIdx: number) => (
-                                <div key={iIdx} className="flex items-center gap-4">
-                                  {item.image && (
-                                    <img
-                                      src={item.image}
-                                      alt={item.name}
-                                      className="h-10 w-10 object-cover rounded-lg border border-white/5 bg-slate-900"
-                                    />
-                                  )}
-                                  <div className="flex-1">
-                                    <h5 className="text-xs font-bold text-slate-200">{item.name}</h5>
-                                    <span className="block text-[10px] text-slate-500 mt-0.5">
-                                      Qty: {item.quantity || item.qty || 1} • {inr(item.price)}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
 
                 {/* 3.2 Saved Shipping Locations expanded */}
                 {activeSubTab === "addresses" && (
@@ -744,7 +648,7 @@ export default function MyAccount() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (confirm("Are you sure you want to delete this address?")) {
+                                    setAddressToDeleteIndex(i); if (false) {
                                       addressMutation.mutate({
                                         action: "delete",
                                         payload: { index: i },
@@ -1045,6 +949,74 @@ export default function MyAccount() {
                   {addressMutation.isPending ? "Saving Location..." : "Save Delivery Address"}
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ==========================================
+          5. MODAL DIALOG: DELETE ADDRESS CONFIRMATION
+         ========================================== */}
+      <AnimatePresence>
+        {addressToDeleteIndex !== null && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center px-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setAddressToDeleteIndex(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#0c1220] p-6 shadow-2xl backdrop-blur-2xl z-10"
+            >
+              <button
+                onClick={() => setAddressToDeleteIndex(null)}
+                className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+
+              <div className="text-center py-4">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
+                  <Trash2 className="h-6 w-6" />
+                </div>
+
+                <h3 className="font-display text-lg font-black text-white mb-2 uppercase tracking-wider">
+                  Delete Shipping Address
+                </h3>
+
+                <p className="text-xs text-slate-400 leading-relaxed px-4">
+                  Are you sure you want to permanently delete this address? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setAddressToDeleteIndex(null)}
+                  className="flex-1 rounded-2xl bg-white/5 border border-white/10 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    addressMutation.mutate({
+                      action: "delete",
+                      payload: { index: addressToDeleteIndex },
+                    });
+                    setAddressToDeleteIndex(null);
+                  }}
+                  className="flex-1 rounded-2xl bg-red-500 py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-600 transition-all cursor-pointer"
+                >
+                  Delete Address
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

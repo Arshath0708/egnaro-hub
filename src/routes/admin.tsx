@@ -1080,7 +1080,7 @@ function AdminPanel({
                       Approved Vendors
                     </p>
                     <h2 className="mt-2 text-4xl font-black text-white">
-                      {dashboardStats?.vendors?.active || 0}
+                      {dashboardStats?.vendors?.active || ((dashboardStats?.vendors?.total || 0) - (dashboardStats?.vendors?.pending || 0))}
                     </h2>
                   </div>
                 </div>
@@ -2055,7 +2055,7 @@ function VendorsBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: 
           </div>
           <div className="flex justify-between rounded-xl bg-green-500/10 p-4 border border-green-500/10">
             <span className="text-green-400 font-semibold">Active</span>
-            <span className="font-bold text-green-400 text-lg">{stats?.active || 0}</span>
+            <span className="font-bold text-green-400 text-lg">{stats?.active || ((stats?.total || 0) - (stats?.pending || 0))}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-orange-500/10 p-4 border border-orange-500/10">
             <span className="text-orange-400 font-semibold">Pending</span>

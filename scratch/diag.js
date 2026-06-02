@@ -1,5 +1,3 @@
-const fetch = require('node-fetch'); // wait, let's use dynamic import or standard fetch since Node 18+ has global fetch
-
 async function runDiagnostics() {
   const endpoints = [
     'https://egnaromart.com/api/get-admin-stats.php',

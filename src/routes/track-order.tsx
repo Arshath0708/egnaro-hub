@@ -138,6 +138,9 @@ function buildOrder(raw: any): Order {
 }
 
 export default function TrackOrder() {
+  const [searchParams] = useSearchParams();
+  const searchId = searchParams.get("id");
+
   const inputRef = useRef<HTMLInputElement>(null);
   const token = useAuth((s) => s.token);
   const isLoggedIn = useAuth(selectIsLoggedIn);
@@ -166,9 +169,9 @@ export default function TrackOrder() {
   }, [userOrdersData]);
 
   const mutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (idOverride?: string) =>
       trackOrder(
-        inputRef.current?.value.trim() ?? "",
+        idOverride || inputRef.current?.value.trim() || "",
         token ?? undefined
       ),
 
@@ -191,15 +194,38 @@ export default function TrackOrder() {
         setOrder("none");
       }
     },
-
     onError: () => {
       setOrder("none");
     },
   });
 
+  useEffect(() => {
+    if (searchId) {
+      if (inputRef.current) {
+        inputRef.current.value = searchId;
+      }
+      if (isLoggedIn) {
+        mutation.mutate(searchId);
+      } else {
+        setOrder("login");
+      }
+    }
+  }, [searchId, isLoggedIn]);
+
   return (
     <Shell>
       <div className="mx-auto max-w-5xl px-4 py-10">
+        {/* Back Link */}
+        <div className="mb-6">
+          <Link
+            to="/my-account"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card hover:bg-accent px-4 py-2.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-all select-none cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span>Back to My Account</span>
+          </Link>
+        </div>
+
         <div className="space-y-8">
           {/* Search */}
           <div className="rounded-xl border border-border bg-card p-8">
@@ -223,7 +249,7 @@ export default function TrackOrder() {
                 return;
               }
 
-              mutation.mutate();
+              mutation.mutate(undefined);
             }}
             className="flex flex-col gap-3 sm:flex-row"
           >
@@ -325,9 +351,36 @@ export default function TrackOrder() {
                         </div>
                       </div>
                       
-                      <div className="mb-4 text-sm text-muted-foreground line-clamp-1">
+                      <div className="mb-2 text-xs font-bold text-muted-foreground">
                         {uo.items.length} {uo.items.length === 1 ? "item" : "items"}
                       </div>
+
+                      {/* Sleek inline items list with image & name */}
+                      {uo.items && uo.items.length > 0 && (
+                        <div className="mb-4 space-y-2 border-t border-border pt-3">
+                          {uo.items.map((item: any, iIdx: number) => (
+                            <div key={iIdx} className="flex items-center gap-3">
+                              {item.image ? (
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="h-8 w-8 object-cover rounded-lg border border-border bg-muted flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="h-8 w-8 rounded-lg border border-border bg-muted flex items-center justify-center flex-shrink-0">
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-foreground truncate">{item.name}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                  Qty: {item.quantity || item.qty || 1} • {inr(item.price || 0)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between">
                         <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize tracking-wide">
