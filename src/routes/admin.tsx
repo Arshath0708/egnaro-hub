@@ -54,11 +54,13 @@ import {
   getUsers,
   updateOrderStatus,
   getPendingProducts,
-  getPendingVendors
+  getPendingVendors,
+  getSupportRequests,
+  handleSupportRequest
 } from "@/services/api";
 import { sanitizeInput } from "@/lib/validation";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 
 import {
   Tabs,
@@ -195,6 +197,8 @@ function AdminPanel({
 
   const [activeTab, setActiveTab] = useState("orders");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [supportStatusFilter, setSupportStatusFilter] = useState("all");
+  const [supportTypeFilter, setSupportTypeFilter] = useState("all");
 
   // Standard active queries to ensure order, product, vendor, and user list counts are synchronized immediately on load
   const { data: productsData } = useQuery({
@@ -284,6 +288,15 @@ function AdminPanel({
   const pendingVendors = pendingVendorsData?.length || 0;
   const pendingProducts = pendingProductsData?.length || 0;
 
+  const { data: supportRequestsRes } = useQuery({
+    queryKey: ["admin-support-requests"],
+    queryFn: () => getSupportRequests(),
+    staleTime: 30 * 1000,
+  });
+  const supportRequests = supportRequestsRes?.requests || [];
+
+  const [viewingSupportRequest, setViewingSupportRequest] = useState<any | null>(null);
+
   const productsTotalPages = productsData?.total_pages || 1;
   const ordersTotalPages = ordersData?.total_pages || 1;
   const vendorsTotalPages = vendorsData?.total_pages || 1;
@@ -332,6 +345,12 @@ function AdminPanel({
   const filteredOrders = orders;
   const filteredVendors = allVendors;
 
+  const filteredSupportRequests = supportRequests.filter((req: any) => {
+    if (supportStatusFilter !== "all" && req.status !== supportStatusFilter) return false;
+    if (supportTypeFilter !== "all" && req.request_type !== supportTypeFilter) return false;
+    return true;
+  });
+
   const uniqueCategories = apiCategories.map((cat: any) => cat.name);
 
   // Helper wrappers to reset pages on filter/search change
@@ -373,6 +392,7 @@ function AdminPanel({
     queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     queryClient.invalidateQueries({ queryKey: ["pending-products"] });
     queryClient.invalidateQueries({ queryKey: ["pending-vendors"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-support-requests"] });
   }, [queryClient]);
 
   return (
@@ -471,6 +491,7 @@ function AdminPanel({
                     { id: "products", label: "Products", count: allProducts.length },
                     { id: "vendors", label: "Vendors", count: allVendors.length },
                     { id: "users", label: "Users", count: usersData?.total_rows || 0 },
+                    { id: "support", label: "Support Requests", count: supportRequests.length },
                   ].map((tab) => {
                     const active = activeTab === tab.id;
                     return (
@@ -716,7 +737,7 @@ function AdminPanel({
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="mb-10 hidden md:grid md:grid-cols-4 h-auto w-full gap-3 rounded-[28px] bg-white/[0.02] p-2 border border-white/5">
+          <TabsList className="mb-10 hidden md:grid md:grid-cols-5 h-auto w-full gap-3 rounded-[28px] bg-white/[0.02] p-2 border border-white/5">
             <TabsTrigger
               value="orders"
               className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
@@ -743,6 +764,13 @@ function AdminPanel({
               className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
               User Management ({usersData?.total_rows || 0})
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="support"
+              className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
+            >
+              Support Center ({supportRequests.length})
             </TabsTrigger>
           </TabsList>
 
@@ -1449,6 +1477,118 @@ function AdminPanel({
               </Section>
             </TabsContent>
           )}
+
+          {activeTab === "support" && (
+            <TabsContent value="support" className="animate-fadeIn">
+              <Section title="Vendor Support Center">
+                <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center rounded-[2rem] border border-white/5 bg-white/[0.02] p-5 backdrop-blur-md">
+                  <div className="flex flex-col gap-1.5 min-w-[200px]">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Filter Status</label>
+                    <Select value={supportStatusFilter} onValueChange={setSupportStatusFilter}>
+                      <SelectTrigger className="h-11 rounded-xl border-white/10 bg-slate-950/40 text-white">
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-950 border-white/10 text-white">
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
+                        <SelectItem value="Rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 min-w-[200px]">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Request Type</label>
+                    <Select value={supportTypeFilter} onValueChange={setSupportTypeFilter}>
+                      <SelectTrigger className="h-11 rounded-xl border-white/10 bg-slate-950/40 text-white">
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-950 border-white/10 text-white">
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="Delivery Date Change">Delivery Date Change</SelectItem>
+                        <SelectItem value="Order Issue">Order Issue</SelectItem>
+                        <SelectItem value="Inventory Issue">Inventory Issue</SelectItem>
+                        <SelectItem value="Courier Issue">Courier Issue</SelectItem>
+                        <SelectItem value="General Message">General Message</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {filteredSupportRequests.length === 0 ? (
+                  <div className="py-16 text-center text-gray-500">
+                    <svg className="mx-auto mb-4 h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <p className="font-semibold text-gray-400">No support requests match the filters</p>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-950/40">
+                    <Table>
+                      <TableHeader className="bg-white/[0.02]">
+                        <TableRow className="border-b border-white/5 hover:bg-transparent">
+                          <TableHead className="py-4 pl-6 text-xs font-bold text-gray-400">Vendor</TableHead>
+                          <TableHead className="py-4 text-xs font-bold text-gray-400">Type</TableHead>
+                          <TableHead className="py-4 text-xs font-bold text-gray-400">Context / Details</TableHead>
+                          <TableHead className="py-4 text-xs font-bold text-gray-400">Submitted At</TableHead>
+                          <TableHead className="py-4 text-xs font-bold text-gray-400">Status</TableHead>
+                          <TableHead className="py-4 pr-6 text-right text-xs font-bold text-gray-400">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredSupportRequests.map((req: any) => (
+                          <TableRow key={req.id} className="border-b border-white/5 hover:bg-white/[0.01] transition-colors">
+                            <TableCell className="py-4 pl-6 font-extrabold text-white">
+                              {req.vendor_company_name || `ID: ${req.vendor_id}`}
+                            </TableCell>
+                            <TableCell className="font-semibold text-white">
+                              {req.request_type}
+                            </TableCell>
+                            <TableCell className="text-gray-300 max-w-xs truncate">
+                              {req.order_id && (
+                                <span className="text-[10px] bg-white/5 border border-white/10 rounded px-1.5 py-0.5 mr-2 font-mono text-gray-400">
+                                  Order #{req.order_id}
+                                </span>
+                              )}
+                              {req.request_type === "Delivery Date Change"
+                                ? `${req.current_delivery_date} → ${req.requested_delivery_date}`
+                                : req.subject || req.message}
+                            </TableCell>
+                            <TableCell className="text-gray-400 text-xs font-medium">
+                              {new Date(req.created_at).toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                                req.status === "Approved" 
+                                  ? "bg-green-500/10 text-green-400 border-green-500/20"
+                                  : req.status === "Rejected"
+                                  ? "bg-red-500/10 text-red-400 border-red-500/20"
+                                  : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                              }`}>
+                                {req.status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right py-4 pr-6">
+                              <button
+                                onClick={() => setViewingSupportRequest(req)}
+                                className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                                  req.status === "Pending"
+                                    ? "bg-primary text-white hover:bg-primary-hover shadow-lg shadow-primary/10"
+                                    : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10"
+                                }`}
+                              >
+                                {req.status === "Pending" ? "Review" : "View"}
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </Section>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* MODALS */}
@@ -1598,6 +1738,14 @@ function AdminPanel({
           <ProductsBreakdownModal
             stats={dashboardStats?.products || {}}
             onClose={() => setShowProductsBreakdownModal(false)}
+          />,
+          document.body
+        )}
+
+        {viewingSupportRequest && createPortal(
+          <AdminSupportReviewModal
+            request={viewingSupportRequest}
+            onClose={() => setViewingSupportRequest(null)}
           />,
           document.body
         )}
@@ -1790,29 +1938,45 @@ const OrderRow = memo(
       try {
         setUpdating(true);
 
-        const res = await fetch(
-          "https://egnaromart.com/api/update-order-status.php",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              order_id: order.order_id,
-              status: newStatus,
-              estimated_days: newEstimatedDays,
-            }),
-          }
+        const data = await updateOrderStatus(
+          order.order_id,
+          newStatus,
+          newEstimatedDays
         );
-
-        const data = await res.json();
 
         if (data.success) {
           setStatus(data.status || newStatus);
           if (data.estimated_days) setEstimatedDays(data.estimated_days);
-          queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-          queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+          
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["orders"] }),
+            queryClient.invalidateQueries({ queryKey: ["order"] }),
+            queryClient.invalidateQueries({ queryKey: ["order-details"] }),
+            queryClient.invalidateQueries({ queryKey: ["track-order"] }),
+            queryClient.invalidateQueries({ queryKey: ["user-orders-list"] }),
+            queryClient.invalidateQueries({ queryKey: ["user-profile"] }),
+            queryClient.invalidateQueries({ queryKey: ["userOrders"] }),
+            queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
+            queryClient.invalidateQueries({ queryKey: ["admin-orders"] }),
+            queryClient.invalidateQueries({ queryKey: ["admin-stats"] }),
+            queryClient.invalidateQueries({ queryKey: ["vendor-orders"] }),
+            queryClient.invalidateQueries({ queryKey: ["vendor-stats"] }),
+          ]);
+
+          await Promise.all([
+            queryClient.refetchQueries({ queryKey: ["orders"] }),
+            queryClient.refetchQueries({ queryKey: ["order"] }),
+            queryClient.refetchQueries({ queryKey: ["order-details"] }),
+            queryClient.refetchQueries({ queryKey: ["track-order"] }),
+            queryClient.refetchQueries({ queryKey: ["user-orders-list"] }),
+            queryClient.refetchQueries({ queryKey: ["user-profile"] }),
+            queryClient.refetchQueries({ queryKey: ["userOrders"] }),
+            queryClient.refetchQueries({ queryKey: ["userProfile"] }),
+            queryClient.refetchQueries({ queryKey: ["admin-orders"] }),
+            queryClient.refetchQueries({ queryKey: ["admin-stats"] }),
+            queryClient.refetchQueries({ queryKey: ["vendor-orders"] }),
+            queryClient.refetchQueries({ queryKey: ["vendor-stats"] }),
+          ]);
 
           toast.success(
             "Order updated successfully"
@@ -1918,6 +2082,23 @@ const OrderRow = memo(
                 </div>
               </div>
             </div>
+
+            {((order as any).courier_partner || (order as any).tracking_number) && (
+              <div className="mt-6 rounded-2xl border border-white/5 bg-white/[0.02] p-4 flex flex-wrap gap-6">
+                {((order as any).courier_partner) && (
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Courier Partner</span>
+                    <span className="text-xs text-white font-semibold mt-0.5 block">{(order as any).courier_partner}</span>
+                  </div>
+                )}
+                {((order as any).tracking_number) && (
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Tracking Number</span>
+                    <span className="text-xs text-white font-semibold mt-0.5 block">{(order as any).tracking_number}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-6 pt-4.5 border-t border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -2124,6 +2305,174 @@ function ProductsBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose:
             <span className="text-amber-400 font-semibold">Pending Approval</span>
             <span className="font-bold text-amber-400 text-lg">{stats?.pending_approval || 0}</span>
           </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function AdminSupportReviewModal({
+  request,
+  onClose,
+}: {
+  request: any;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [adminNote, setAdminNote] = useState("");
+  const isPending = request.status === "Pending";
+
+  const actionMutation = useMutation({
+    mutationFn: async (action: "approve" | "reject") => {
+      const res = await handleSupportRequest({
+        request_id: Number(request.id),
+        action,
+        admin_note: adminNote,
+      });
+      if (!res.success) {
+        throw new Error(res.message || "Failed to process request");
+      }
+      return res;
+    },
+    onSuccess: (data: any, action: "approve" | "reject") => {
+      toast.success(`Request successfully ${action === "approve" ? "approved" : "rejected"}!`);
+      queryClient.invalidateQueries({ queryKey: ["admin-support-requests"] });
+      if (request.request_type === "Delivery Date Change") {
+        queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["track-order"] });
+        queryClient.invalidateQueries({ queryKey: ["user-orders-list"] });
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+      }
+      onClose();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "An error occurred.");
+    }
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        className="w-full max-w-lg rounded-[36px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl relative"
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 h-8 w-8 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
+        >
+          ✕
+        </button>
+
+        <h2 className="mb-6 text-2xl font-black text-white tracking-tight">Review Support Request</h2>
+
+        <div className="space-y-4">
+          <div className="flex justify-between border-b border-white/5 pb-2 text-sm">
+            <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Vendor</span>
+            <span className="text-white font-bold">
+              {request.vendor_company_name || `ID: ${request.vendor_id}`}
+            </span>
+          </div>
+
+          <div className="flex justify-between border-b border-white/5 pb-2 text-sm">
+            <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Request Type</span>
+            <span className="text-white font-bold">{request.request_type}</span>
+          </div>
+
+          {request.order_id && (
+            <div className="flex justify-between border-b border-white/5 pb-2 text-sm">
+              <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Order ID</span>
+              <span className="text-primary font-bold">#{request.order_id}</span>
+            </div>
+          )}
+
+          {request.request_type === "Delivery Date Change" && (
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-4 space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-400">Current delivery date on Order:</span>
+                <span className="text-gray-300 font-bold">{request.current_delivery_date}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-400">Requested new delivery date:</span>
+                <span className="text-primary font-bold">{request.requested_delivery_date}</span>
+              </div>
+              <div className="text-[10px] text-amber-400 font-semibold bg-amber-500/10 rounded-xl p-2.5 mt-2 border border-amber-500/10">
+                ⚠ Note: Approving this will immediately update the Order's estimated delivery date to "{request.requested_delivery_date}" in the database.
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Details / Description</span>
+            <div className="rounded-2xl border border-white/5 bg-slate-900/60 p-4 text-xs text-gray-300 leading-relaxed max-h-[150px] overflow-y-auto whitespace-pre-line">
+              {request.message || request.subject || "No details provided"}
+            </div>
+          </div>
+
+          {isPending ? (
+            <div className="space-y-3 pt-2">
+              <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider block font-bold">Admin Note / Response</span>
+              <textarea
+                placeholder="Provide a reason for approval/rejection or instructions for the vendor..."
+                value={adminNote}
+                onChange={(e) => setAdminNote(e.target.value)}
+                rows={3}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white outline-none focus:border-primary placeholder:text-gray-600 transition resize-none"
+              />
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => actionMutation.mutate("reject")}
+                  disabled={actionMutation.isPending}
+                  className="rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-5 py-3 text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 cursor-pointer"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => actionMutation.mutate("approve")}
+                  disabled={actionMutation.isPending}
+                  className="rounded-2xl bg-gradient-to-r from-primary to-primary-hover text-white px-6 py-3 text-xs font-bold uppercase tracking-wider hover:scale-[1.02] transition disabled:opacity-50 cursor-pointer"
+                >
+                  Approve & Update
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-2 border-t border-white/5">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Status</span>
+                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                  request.status === "Approved" 
+                    ? "bg-green-500/10 text-green-400 border-green-500/20"
+                    : "bg-red-500/10 text-red-400 border-red-500/20"
+                }`}>
+                  {request.status}
+                </span>
+              </div>
+              {request.admin_note && (
+                <div className="space-y-1">
+                  <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider block">Admin Response Note</span>
+                  <div className="rounded-2xl border border-white/5 bg-slate-900/60 p-4 text-xs text-gray-300 leading-relaxed whitespace-pre-line">
+                    {request.admin_note}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={onClose}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10 transition cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

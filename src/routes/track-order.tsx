@@ -136,6 +136,8 @@ function buildOrder(raw: any): Order {
 
     address: "",
     payment: "cod",
+    trackingNumber: raw.tracking_number ?? undefined,
+    courierPartner: raw.courier_partner ?? undefined,
   };
 }
 
@@ -153,10 +155,24 @@ export default function TrackOrder() {
     Order | null | "none" | "login"
   >(null);
 
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(searchId || null);
+
   const { data: userOrdersData, isLoading: isLoadingOrders } = useQuery({
     queryKey: ["userOrders", token, orderPage],
     queryFn: () => getUserOrders(token!, { page: orderPage, limit: 6 }),
     enabled: !!isLoggedIn && !!token,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
+
+  const { data: trackOrderData, isLoading: isLoadingTrack, error: trackError } = useQuery({
+    queryKey: ["track-order", activeOrderId, token],
+    queryFn: () => trackOrder(activeOrderId!, token ?? undefined),
+    enabled: !!activeOrderId && isLoggedIn,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const userOrders: Order[] = Array.isArray(userOrdersData?.orders)
@@ -172,49 +188,48 @@ export default function TrackOrder() {
     }
   }, [userOrdersData, queryClient]);
 
-  const mutation = useMutation({
-    mutationFn: (idOverride?: string) =>
-      trackOrder(
-        idOverride || inputRef.current?.value.trim() || "",
-        token ?? undefined
-      ),
+  useEffect(() => {
+    if (!activeOrderId) {
+      setOrder(null);
+      return;
+    }
 
-    onSuccess: (data: any) => {
-      if (data?.message === "Missing token" || data?.message === "Invalid or expired token") {
-        setOrder("login");
-        return;
-      }
+    if (!isLoggedIn) {
+      setOrder("login");
+      return;
+    }
 
-      if (!data || data.success === false) {
-        setOrder("none");
-        return;
-      }
+    if (isLoadingTrack) {
+      return;
+    }
 
-      if (data.order) {
-        setOrder(buildOrder(data.order));
-      } else if (data.orders && data.orders.length > 0) {
-        setOrder(buildOrder(data.orders[0]));
-      } else {
-        setOrder("none");
-      }
-    },
-    onError: () => {
+    if (trackError || !trackOrderData || trackOrderData.success === false) {
       setOrder("none");
-    },
-  });
+      return;
+    }
+
+    if (trackOrderData.message === "Missing token" || trackOrderData.message === "Invalid or expired token") {
+      setOrder("login");
+      return;
+    }
+
+    if (trackOrderData.order) {
+      setOrder(buildOrder(trackOrderData.order));
+    } else if (trackOrderData.orders && trackOrderData.orders.length > 0) {
+      setOrder(buildOrder(trackOrderData.orders[0]));
+    } else {
+      setOrder("none");
+    }
+  }, [trackOrderData, isLoadingTrack, trackError, activeOrderId, isLoggedIn]);
 
   useEffect(() => {
     if (searchId) {
       if (inputRef.current) {
         inputRef.current.value = searchId;
       }
-      if (isLoggedIn) {
-        mutation.mutate(searchId);
-      } else {
-        setOrder("login");
-      }
+      setActiveOrderId(searchId);
     }
-  }, [searchId, isLoggedIn]);
+  }, [searchId]);
 
   return (
     <Shell>
@@ -256,11 +271,11 @@ export default function TrackOrder() {
               const query = sanitizeInput(inputRef.current.value);
               inputRef.current.value = query;
 
-              mutation.mutate(query);
+              setActiveOrderId(query);
             }}
             className="flex flex-col gap-3 sm:flex-row"
           >
-            <fieldset disabled={mutation.isPending} className="flex flex-col gap-3 sm:flex-row w-full border-none p-0 m-0 min-w-0">
+            <fieldset disabled={isLoadingTrack} className="flex flex-col gap-3 sm:flex-row w-full border-none p-0 m-0 min-w-0">
             <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3">
               <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
 
@@ -274,10 +289,10 @@ export default function TrackOrder() {
 
             <button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={isLoadingTrack}
               className="whitespace-nowrap rounded-lg bg-primary px-6 py-2.5 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
-              {mutation.isPending
+              {isLoadingTrack
                 ? "Tracking…"
                 : "Track Order"}
             </button>
@@ -346,7 +361,12 @@ export default function TrackOrder() {
                   {userOrders.map((uo: Order) => (
                     <div
                       key={uo.order_id}
-                      onClick={() => setOrder(uo)}
+                      onClick={() => {
+                        setActiveOrderId(uo.order_id);
+                        if (inputRef.current) {
+                          inputRef.current.value = uo.order_id;
+                        }
+                      }}
                       className="cursor-pointer rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg"
                     >
                       <div className="mb-4 flex items-center justify-between">
@@ -436,6 +456,7 @@ export default function TrackOrder() {
             {isLoggedIn && (
               <button
                 onClick={() => {
+                  setActiveOrderId(null);
                   setOrder(null);
                   if (inputRef.current) inputRef.current.value = "";
                 }}
@@ -635,6 +656,22 @@ const ShippingCard = memo(
             label="Placed"
             value={dateTime(order.createdAt)}
           />
+
+          {order.courierPartner && (
+            <InfoRow
+              icon={Truck}
+              label="Courier Partner"
+              value={order.courierPartner}
+            />
+          )}
+
+          {order.trackingNumber && (
+            <InfoRow
+              icon={Box}
+              label="Tracking Number"
+              value={order.trackingNumber}
+            />
+          )}
         </div>
       </div>
     );

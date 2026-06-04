@@ -94,6 +94,8 @@ export interface Order {
   createdAt: string;
   estimatedDelivery: string;
   history: { status: OrderStatus; at: string }[];
+  trackingNumber?: string;
+  courierPartner?: string;
 }
 
 export interface CategoryMeta {

@@ -27,6 +27,8 @@ import {
   ChevronRight,
   ClipboardList,
   Building2,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -37,7 +39,7 @@ import { AddProductModal } from "@/modals/AddProductModal";
 import { ViewVendorModal } from "@/modals/ViewVendorModal";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { clearUserSession } from "@/lib/session";
-import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct } from "@/services/api";
+import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct, updateOrderStatus, createSupportRequest, getSupportRequests } from "@/services/api";
 import { inr } from "@/lib/format";
 import { sanitizeInput } from "@/lib/validation";
 import { toast } from "sonner";
@@ -160,6 +162,9 @@ function DashboardContent({
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [updateProduct, setUpdateProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const [manageOrder, setManageOrder] = useState<any | null>(null);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [viewSupportRequest, setViewSupportRequest] = useState<any | null>(null);
 
   const [activeTab, setActiveTab] = useState("products");
   const [orderSearch, setOrderSearch] = useState("");
@@ -223,8 +228,15 @@ function DashboardContent({
   const ordersData = (ordersRes?.orders || []) as any[];
   const totalPages = ordersRes?.total_pages || 1;
   const totalRows = ordersRes?.total_rows || 0;
-
   const filteredOrders = ordersData;
+
+  const { data: supportRes } = useQuery({
+    queryKey: ["vendor-support-requests", vendorId],
+    queryFn: () => getSupportRequests({ vendor_id: Number(vendorId) }),
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+  const supportRequests = supportRes?.requests || [];
 
   const approvedCount = allProducts.filter(
     (p) => Number(p.approved) === 1 || p.status === "approved"
@@ -268,7 +280,7 @@ function DashboardContent({
               <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-sm text-cyan-200">
                 <Percent className="h-4 w-4 shrink-0 text-cyan-400" />
                 <span>
-                  A <strong>2% commission</strong> will be applied to all products of vendor by Egnaro Mart.
+                  A <strong>10% commission</strong> will be applied to all products of vendor by Egnaro Mart.
                 </span>
               </div>
             </div>
@@ -445,18 +457,24 @@ function DashboardContent({
 
           {/* TABS CONTAINER */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-8 grid grid-cols-2 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10 max-w-md mx-auto">
+            <TabsList className="mb-8 grid grid-cols-3 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10 max-w-xl mx-auto">
               <TabsTrigger
                 value="products"
-                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer"
+                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer text-xs sm:text-sm"
               >
                 Products ({allProducts.length})
               </TabsTrigger>
               <TabsTrigger
                 value="orders"
-                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer"
+                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer text-xs sm:text-sm"
               >
                 Orders ({totalRows})
+              </TabsTrigger>
+              <TabsTrigger
+                value="support"
+                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer text-xs sm:text-sm"
+              >
+                Support ({supportRequests.length})
               </TabsTrigger>
             </TabsList>
 
@@ -751,6 +769,7 @@ function DashboardContent({
                       <VendorOrderRow
                         key={o.id}
                         order={o}
+                        onManageOrder={setManageOrder}
                       />
                     ))}
                   </div>
@@ -778,6 +797,105 @@ function DashboardContent({
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="support" className="animate-fadeIn focus:outline-none">
+              <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+                <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <h2 className="text-2xl font-black text-white">Support & Requests</h2>
+                    <p className="text-sm text-gray-400">
+                      Send date changes, order issues, or inventory inquiries to admins and track their status.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSupportModal(true)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:scale-105 cursor-pointer shadow-lg shadow-cyan-500/20"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Request
+                  </button>
+                </div>
+
+                {/* Support List */}
+                {supportRequests.length === 0 ? (
+                  <div className="py-16 text-center text-gray-500">
+                    <svg className="mx-auto mb-4 h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <p className="font-semibold text-gray-400">No support requests yet</p>
+                    <p className="text-xs text-gray-600 mt-1">Submit a new request if you need admin assistance.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-white/10 text-xs font-bold uppercase tracking-wider text-gray-400">
+                          <th className="py-4 pr-4">Type</th>
+                          <th className="py-4 px-4">Subject / Context</th>
+                          <th className="py-4 px-4">Created At</th>
+                          <th className="py-4 px-4">Status</th>
+                          <th className="py-4 pl-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 text-sm">
+                        {supportRequests.map((req: any) => (
+                          <tr key={req.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="py-4 pr-4 font-semibold text-white">
+                              <div className="flex items-center gap-2">
+                                <span className="text-cyan-400">
+                                  {req.request_type === "Delivery Date Change" && <Calendar className="h-4 w-4" />}
+                                  {req.request_type === "Order Issue" && <ClipboardList className="h-4 w-4" />}
+                                  {req.request_type === "Inventory Issue" && <Package className="h-4 w-4" />}
+                                  {req.request_type === "Courier Issue" && <ShoppingBag className="h-4 w-4" />}
+                                  {req.request_type === "General Message" && <Building2 className="h-4 w-4" />}
+                                </span>
+                                {req.request_type}
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-gray-300">
+                              {req.order_id ? (
+                                <span className="text-xs border border-white/10 bg-white/5 rounded-full px-2 py-0.5 mr-2">
+                                  Order: {req.order_id}
+                                </span>
+                              ) : null}
+                              <span className="truncate max-w-[200px] inline-block align-middle">
+                                {req.request_type === "Delivery Date Change" 
+                                  ? `${req.current_delivery_date} → ${req.requested_delivery_date}`
+                                  : req.subject || req.message}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-xs text-gray-500">
+                              {new Date(req.created_at).toLocaleString()}
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                                req.status === "Approved" 
+                                  ? "bg-green-500/10 text-green-400 border-green-500/20"
+                                  : req.status === "Rejected"
+                                  ? "bg-red-500/10 text-red-400 border-red-500/20"
+                                  : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                              }`}>
+                                {req.status}
+                              </span>
+                            </td>
+                            <td className="py-4 pl-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setViewSupportRequest(req)}
+                                className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition cursor-pointer"
+                              >
+                                View Details
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -833,6 +951,30 @@ function DashboardContent({
           onClose={() => setShowProfile(false)}
         />
       )}
+
+      {manageOrder && (
+        <VendorLogisticsModal
+          order={manageOrder}
+          vendorId={vendorId}
+          onClose={() => setManageOrder(null)}
+        />
+      )}
+
+      {showSupportModal && (
+        <VendorSupportModal
+          vendorId={vendorId}
+          orders={ordersData}
+          products={allProducts}
+          onClose={() => setShowSupportModal(false)}
+        />
+      )}
+
+      {viewSupportRequest && (
+        <ViewSupportRequestModal
+          request={viewSupportRequest}
+          onClose={() => setViewSupportRequest(null)}
+        />
+      )}
     </Shell>
   );
 }
@@ -867,7 +1009,7 @@ function StatCard({
   );
 }
 
-const VendorOrderRow = memo(({ order }: { order: any }) => {
+const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrder: (order: any) => void }) => {
   const parsedItems = Array.isArray(order.items)
     ? order.items
     : typeof order.items === "string"
@@ -953,6 +1095,23 @@ const VendorOrderRow = memo(({ order }: { order: any }) => {
             </div>
           </div>
 
+          {/* Logistics Tracking Display */}
+          {order.courier_partner && order.tracking_number && (
+            <div className="mt-6 rounded-2xl border border-orange-500/10 bg-orange-500/[0.02] p-4 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
+                  🚚
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400/80">Logistics Tracking</span>
+                  <div className="text-xs text-gray-300 font-semibold mt-0.5">
+                    {order.courier_partner} — <span className="text-white">{order.tracking_number}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Payment & Frame */}
           <div className="mt-6 pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 text-sm">
             <div className="flex items-center gap-6">
@@ -965,11 +1124,22 @@ const VendorOrderRow = memo(({ order }: { order: any }) => {
                 <span className="font-semibold text-cyan-400 mt-0.5 block">{order.estimated_days || "Pending confirmation"}</span>
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-xs text-gray-500 block">Grand Total</span>
-              <span className="text-xl font-black text-primary mt-0.5 block">
-                {inr(order.total)}
-              </span>
+            
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <span className="text-xs text-gray-500 block">Grand Total</span>
+                <span className="text-xl font-black text-primary mt-0.5 block">
+                  {inr(order.total)}
+                </span>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => onManageOrder(order)}
+                className="rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:scale-105 shadow-lg shadow-orange-500/20 cursor-pointer select-none"
+              >
+                Manage Order
+              </button>
             </div>
           </div>
         </div>
@@ -977,4 +1147,506 @@ const VendorOrderRow = memo(({ order }: { order: any }) => {
     </div>
   );
 });
+
+function VendorLogisticsModal({
+  order,
+  vendorId,
+  onClose,
+}: {
+  order: any;
+  vendorId: string;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [status, setStatus] = useState(order.status || "Processing");
+  const [courierPartner, setCourierPartner] = useState(order.courier_partner || "");
+  const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || "");
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await updateOrderStatus(
+        order.order_id,
+        status,
+        undefined, // estimated_days
+        Number(vendorId),
+        trackingNumber,
+        courierPartner
+      );
+      if (!res.success) {
+        throw new Error(res.message || "Failed to update order");
+      }
+      return res;
+    },
+    onSuccess: () => {
+      toast.success("Order logistics updated successfully!");
+      // Invalidate all query keys as requested
+      queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["track-order"] });
+      queryClient.invalidateQueries({ queryKey: ["user-orders-list"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      onClose();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "An error occurred while updating order");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateMutation.mutate();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#0f172a]/95 p-6 shadow-2xl backdrop-blur-xl"
+      >
+        {/* Modal Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-6">
+          <h2 className="text-xl font-black text-white">Manage Order #{order.order_id}</h2>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-gray-400 hover:bg-white/10 hover:text-white transition cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Status Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Order Status</label>
+            <div className="relative flex items-center rounded-2xl border border-white/10 bg-black/40 px-4">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="h-12 w-full bg-transparent text-sm text-white outline-none border-none cursor-pointer focus:ring-0"
+              >
+                <option value="Processing" className="bg-[#0f172a]">Processing</option>
+                <option value="Packed" className="bg-[#0f172a]">Packed</option>
+                <option value="Shipped" className="bg-[#0f172a]">Shipped</option>
+                <option value="Out for Delivery" className="bg-[#0f172a]">Out for Delivery</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Courier Partner */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Courier Partner</label>
+            <input
+              type="text"
+              placeholder="e.g. BlueDart, Delhivery, DTDC"
+              value={courierPartner}
+              onChange={(e) => setCourierPartner(e.target.value)}
+              className="w-full h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-orange-500 placeholder:text-gray-600 transition"
+            />
+          </div>
+
+          {/* Tracking Number */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Tracking Number</label>
+            <input
+              type="text"
+              placeholder="e.g. 1234567890"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              className="w-full h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-orange-500 placeholder:text-gray-600 transition"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/5 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={updateMutation.isPending}
+              className="rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 text-xs font-bold uppercase tracking-wider text-white hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50 cursor-pointer"
+            >
+              {updateMutation.isPending ? "Updating..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function VendorSupportModal({
+  vendorId,
+  orders,
+  products,
+  onClose,
+}: {
+  vendorId: string;
+  orders: any[];
+  products: any[];
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [requestType, setRequestType] = useState("Delivery Date Change");
+  const [orderId, setOrderId] = useState("");
+  const [currentDeliveryDate, setCurrentDeliveryDate] = useState("");
+  const [requestedDeliveryDate, setRequestedDeliveryDate] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [issueType, setIssueType] = useState("Customer address incomplete");
+  const [selectedProduct, setSelectedProduct] = useState("");
+  const [courierPartner, setCourierPartner] = useState("");
+
+  useEffect(() => {
+    if (orderId) {
+      const ord = orders.find(o => o.order_id === orderId);
+      if (ord) {
+        setCurrentDeliveryDate(ord.estimated_days || "Not Set");
+      }
+    } else {
+      setCurrentDeliveryDate("");
+    }
+  }, [orderId, orders]);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      let finalSubject = subject;
+      let finalMessage = message;
+
+      if (requestType === "Delivery Date Change") {
+        finalSubject = `Delivery Date Change: Order #${orderId}`;
+        finalMessage = `Requested delivery date update from ${currentDeliveryDate} to ${requestedDeliveryDate}. Reason: ${message}`;
+      } else if (requestType === "Order Issue") {
+        finalSubject = `Order Issue [${issueType}]: Order #${orderId}`;
+      } else if (requestType === "Inventory Issue") {
+        finalSubject = `Inventory Issue: Product [${selectedProduct}]`;
+      } else if (requestType === "Courier Issue") {
+        finalSubject = `Courier Issue [${courierPartner}]: Order #${orderId}`;
+      }
+
+      const res = await createSupportRequest({
+        vendor_id: Number(vendorId),
+        request_type: requestType,
+        order_id: (requestType === "Delivery Date Change" || requestType === "Order Issue" || requestType === "Courier Issue") ? orderId : undefined,
+        current_delivery_date: requestType === "Delivery Date Change" ? currentDeliveryDate : undefined,
+        requested_delivery_date: requestType === "Delivery Date Change" ? requestedDeliveryDate : undefined,
+        subject: finalSubject,
+        message: finalMessage,
+      });
+
+      if (!res.success) {
+        throw new Error(res.message || "Failed to submit request");
+      }
+      return res;
+    },
+    onSuccess: () => {
+      toast.success("Support request submitted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["vendor-support-requests", vendorId] });
+      onClose();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Something went wrong.");
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (requestType === "Delivery Date Change" && (!orderId || !requestedDeliveryDate)) {
+      toast.error("Please fill in Order ID and Requested Date.");
+      return;
+    }
+    if (requestType === "Order Issue" && !orderId) {
+      toast.error("Please select an Order ID.");
+      return;
+    }
+    mutation.mutate();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#0f172a]/95 p-6 shadow-2xl backdrop-blur-xl"
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-6">
+          <h2 className="text-xl font-black text-white">Submit Support Request</h2>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-gray-400 hover:bg-white/10 hover:text-white transition cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Request Type</label>
+            <div className="relative flex items-center rounded-2xl border border-white/10 bg-black/40 px-4">
+              <select
+                value={requestType}
+                onChange={(e) => setRequestType(e.target.value)}
+                className="h-12 w-full bg-transparent text-sm text-white outline-none border-none cursor-pointer focus:ring-0"
+              >
+                <option value="Delivery Date Change" className="bg-[#0f172a]">Delivery Date Change</option>
+                <option value="Order Issue" className="bg-[#0f172a]">Order Issue</option>
+                <option value="Inventory Issue" className="bg-[#0f172a]">Inventory Issue</option>
+                <option value="Courier Issue" className="bg-[#0f172a]">Courier Issue</option>
+                <option value="General Message" className="bg-[#0f172a]">General Message</option>
+              </select>
+            </div>
+          </div>
+
+          {(requestType === "Delivery Date Change" || requestType === "Order Issue" || requestType === "Courier Issue") && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Select Order ID</label>
+              <div className="relative flex items-center rounded-2xl border border-white/10 bg-black/40 px-4">
+                <select
+                  value={orderId}
+                  onChange={(e) => setOrderId(e.target.value)}
+                  className="h-12 w-full bg-transparent text-sm text-white outline-none border-none cursor-pointer focus:ring-0"
+                  required
+                >
+                  <option value="" className="bg-[#0f172a]">-- Select Order --</option>
+                  {orders.map((o) => (
+                    <option key={o.id} value={o.order_id} className="bg-[#0f172a]">
+                      #{o.order_id} ({inr(o.total)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {requestType === "Delivery Date Change" && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Current Delivery Date</label>
+                  <input
+                    type="text"
+                    value={currentDeliveryDate}
+                    readOnly
+                    className="w-full h-12 rounded-2xl border border-white/5 bg-white/5 px-4 text-sm text-gray-400 outline-none cursor-not-allowed"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Requested Delivery Date</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 15 Jun 2026"
+                    value={requestedDeliveryDate}
+                    onChange={(e) => setRequestedDeliveryDate(e.target.value)}
+                    required
+                    className="w-full h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-cyan-500 placeholder:text-gray-600 transition"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {requestType === "Order Issue" && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Issue Category</label>
+              <div className="relative flex items-center rounded-2xl border border-white/10 bg-black/40 px-4">
+                <select
+                  value={issueType}
+                  onChange={(e) => setIssueType(e.target.value)}
+                  className="h-12 w-full bg-transparent text-sm text-white outline-none border-none cursor-pointer focus:ring-0"
+                >
+                  <option value="Customer address incomplete" className="bg-[#0f172a]">Customer address incomplete</option>
+                  <option value="Product damaged before dispatch" className="bg-[#0f172a]">Product damaged before dispatch</option>
+                  <option value="Packaging issue" className="bg-[#0f172a]">Packaging issue</option>
+                  <option value="Other" className="bg-[#0f172a]">Other</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {requestType === "Inventory Issue" && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Select Catalog Product</label>
+              <div className="relative flex items-center rounded-2xl border border-white/10 bg-black/40 px-4">
+                <select
+                  value={selectedProduct}
+                  onChange={(e) => setSelectedProduct(e.target.value)}
+                  className="h-12 w-full bg-transparent text-sm text-white outline-none border-none cursor-pointer focus:ring-0"
+                  required
+                >
+                  <option value="" className="bg-[#0f172a]">-- Select Product --</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.name} className="bg-[#0f172a]">
+                      {p.name} (Stock: {p.stock_quantity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {requestType === "Courier Issue" && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Courier Partner Name</label>
+              <input
+                type="text"
+                placeholder="e.g. BlueDart, DHL"
+                value={courierPartner}
+                onChange={(e) => setCourierPartner(e.target.value)}
+                required
+                className="w-full h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-cyan-500 placeholder:text-gray-600 transition"
+              />
+            </div>
+          )}
+
+          {requestType === "General Message" && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Subject</label>
+              <input
+                type="text"
+                placeholder="Brief subject of inquiry"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                required
+                className="w-full h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-cyan-500 placeholder:text-gray-600 transition"
+              />
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
+              {requestType === "Delivery Date Change" ? "Reason for Change" : "Description / Details"}
+            </label>
+            <textarea
+              placeholder="Explain the request details clearly so that admin can review..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+              rows={4}
+              className="w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white outline-none focus:border-cyan-500 placeholder:text-gray-600 transition resize-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/5 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={mutation.isPending}
+              className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 text-xs font-bold uppercase tracking-wider text-white hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50 cursor-pointer"
+            >
+              {mutation.isPending ? "Submitting..." : "Send Request"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function ViewSupportRequestModal({
+  request,
+  onClose,
+}: {
+  request: any;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#0f172a]/95 p-6 shadow-2xl backdrop-blur-xl animate-fadeIn"
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4">
+          <h2 className="text-xl font-black text-white">Request Details</h2>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-gray-400 hover:bg-white/10 hover:text-white transition cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Type</span>
+            <span className="text-sm font-semibold text-white">{request.request_type}</span>
+          </div>
+
+          {request.order_id && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Order ID</span>
+              <span className="text-sm font-semibold text-cyan-400">#{request.order_id}</span>
+            </div>
+          )}
+
+          {request.request_type === "Delivery Date Change" && (
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-xs text-gray-400 font-semibold">Current Date:</span>
+                <span className="text-xs text-gray-300 font-bold">{request.current_delivery_date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-gray-400 font-semibold">Requested Date:</span>
+                <span className="text-xs text-cyan-400 font-bold">{request.requested_delivery_date}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Description / Details</span>
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-gray-300 whitespace-pre-line leading-relaxed max-h-[150px] overflow-y-auto">
+              {request.message || request.subject || "No details provided"}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</span>
+            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+              request.status === "Approved" 
+                ? "bg-green-500/10 text-green-400 border-green-500/20"
+                : request.status === "Rejected"
+                ? "bg-red-500/10 text-red-400 border-red-500/20"
+                : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+            }`}>
+              {request.status}
+            </span>
+          </div>
+
+          {request.admin_note && (
+            <div className="space-y-1 pt-2 border-t border-white/5">
+              <span className="text-xs font-bold text-red-400 uppercase tracking-wider block">Admin Response / Note</span>
+              <div className="rounded-2xl border border-red-500/10 bg-red-500/5 p-4 text-sm text-red-200 whitespace-pre-line leading-relaxed">
+                {request.admin_note}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={onClose}
+              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10 transition cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 

@@ -364,10 +364,24 @@ export async function getUserOrders(
    ADMIN
 ========================= */
 
-export async function updateOrderStatus(order_id: string, status: string, estimated_days?: string) {
+export async function updateOrderStatus(
+  order_id: string,
+  status: string,
+  estimated_days?: string,
+  vendor_id?: number,
+  tracking_number?: string,
+  courier_partner?: string
+) {
   return await request("/update-order-status.php", {
     method: "POST",
-    body: JSON.stringify({ order_id, status, estimated_days }),
+    body: JSON.stringify({
+      order_id,
+      status,
+      estimated_days,
+      vendor_id,
+      tracking_number,
+      courier_partner
+    }),
   });
 }
 
@@ -658,5 +672,50 @@ export async function getUsers(params?: {
   const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
   return await request(`/get-users.php${queryString}`);
 }
+
+/* ================= VENDOR SUPPORT ================= */
+
+export async function createSupportRequest(data: {
+  vendor_id: number;
+  request_type: string;
+  order_id?: string;
+  current_delivery_date?: string;
+  requested_delivery_date?: string;
+  subject?: string;
+  message?: string;
+  metadata?: any;
+}) {
+  return await request("/create-support-request.php", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getSupportRequests(params?: {
+  vendor_id?: number;
+  status?: string;
+  request_type?: string;
+}) {
+  const queryParts = [];
+  if (params) {
+    if (params.vendor_id !== undefined) queryParts.push(`vendor_id=${params.vendor_id}`);
+    if (params.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+    if (params.request_type) queryParts.push(`request_type=${encodeURIComponent(params.request_type)}`);
+  }
+  const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  return await request(`/get-support-requests.php${queryString}`);
+}
+
+export async function handleSupportRequest(data: {
+  request_id: number;
+  action: "approve" | "reject";
+  admin_note?: string;
+}) {
+  return await request("/handle-support-request.php", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 
 

@@ -274,12 +274,18 @@ export default function MyAccount() {
     queryKey: ["user-profile", token],
     queryFn: () => getUser(token!),
     enabled: !!token,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const { data: ordersRes, isLoading: isOrdersLoading } = useQuery({
     queryKey: ["user-orders-list", token],
     queryFn: () => getUserOrders(token!),
     enabled: !!token,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Redirect to login if user session is invalid
