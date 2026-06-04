@@ -52,6 +52,8 @@ export function Header() {
   const count = useCart(cartCount);
   const isVendor = useAuth(selectIsVendor);
   const user = useAuth((s) => s.user);
+  const admin = useAuth((s) => s.admin);
+  const currentUser = user || admin;
   const logout = useAuth((s) => s.logout);
   const queryClient = useQueryClient();
 
@@ -131,10 +133,10 @@ export function Header() {
 
   // Safe name derivation — handles APIs that return fullName instead of name
   const displayName =
-    user?.name ||
-    (user as any)?.fullName ||
-    (user as any)?.full_name ||
-    (user as any)?.username ||
+    currentUser?.name ||
+    (currentUser as any)?.fullName ||
+    (currentUser as any)?.full_name ||
+    (currentUser as any)?.username ||
     "Account";
 
   return (
@@ -212,7 +214,7 @@ export function Header() {
             </Link>
 
             {/* Profile Dropdown */}
-            {user ? (
+            {currentUser ? (
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setUserMenuOpen((o) => !o)}
@@ -412,16 +414,16 @@ export function Header() {
                 {/* 3.2 Dynamic Account Greeting Strip */}
                 <div className="bg-white/[0.02] border-b border-white/[0.06] px-5 py-3.5 shrink-0 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    {user && (
+                    {currentUser && (
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 border border-primary/30 text-[11px] font-bold text-primary">
                         {displayName[0].toUpperCase()}
                       </span>
                     )}
                     <span className="font-display font-bold text-[0.9rem] text-slate-200">
-                      {user ? `Hi, ${user.name}` : "Hi"}
+                      {currentUser ? `Hi, ${currentUser.name}` : "Hi"}
                     </span>
                   </div>
-                  {!user && (
+                  {!currentUser && (
                     <Link
                       to="/login"
                       onClick={() => setOpen(false)}
@@ -546,7 +548,7 @@ export function Header() {
                 </div>
 
                 {/* Subtle Divider (for Session controls) */}
-                {user && (
+                {currentUser && (
                   <>
                     <div className="h-px bg-white/[0.05] mx-5 my-2" />
                     

@@ -2,7 +2,7 @@
  * products.tsx — Egnaro Mart Products Page
  */
 
-import { memo, useMemo, useRef, useState } from "react";
+import { memo, useMemo, useRef, useState, useEffect } from "react";
 import {
   Link,
   useNavigate,
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LocationSelect } from "@/components/LocationSelect";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   Search,
@@ -38,6 +38,7 @@ import {
   getProducts,
   getCategories,
   getLocations,
+  getCompanies,
 } from "@/services/api";
 import { sanitizeInput } from "@/lib/validation";
 
@@ -80,13 +81,10 @@ export default function ProductsPage() {
   const params = new URLSearchParams(location.search);
 
   const currentSort = params.get("sort") ?? "new";
-  const currentCat = params.get("category") ?? undefined;
   const currentQ = params.get("q")?.toLowerCase() ?? "";
-
-  // Normalize URL search parameters to clean Title Case
-  const currentState = params.get("state") ? toTitleCase(params.get("state")!) : undefined;
-  const currentCity = params.get("city") ? toTitleCase(params.get("city")!) : undefined;
-  const currentTown = params.get("town") ? toTitleCase(params.get("town")!) : undefined;
+  const currentCats = useMemo(() => params.get("categories")?.split(",").filter(Boolean) ?? [], [location.search]);
+  const currentLocs = useMemo(() => params.get("locations")?.split(",").filter(Boolean) ?? [], [location.search]);
+  const currentCos = useMemo(() => params.get("companies")?.split(",").filter(Boolean) ?? [], [location.search]);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -112,6 +110,13 @@ export default function ProductsPage() {
     staleTime: 1000 * 60 * 10,
   });
 
+  /* COMPANIES */
+  const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
+    queryKey: ["companies"],
+    queryFn: getCompanies,
+    staleTime: 1000 * 60 * 10,
+  });
+
   const locations = Array.isArray(apiLocations) ? apiLocations : [];
 
   /* REGIONAL NORMALIZATION */
@@ -127,49 +132,11 @@ export default function ProductsPage() {
     });
   }, [products]);
 
-  /* 3-TIER NORMALIZED FILTER INDEX LISTS */
-  const availableStates = useMemo(() => {
-    const states = locations.map((l) => toTitleCase(l.state));
-    return Array.from(new Set(states)).sort();
-  }, [locations]);
-
+  /* NORMALIZED CITIES LIST */
   const availableCities = useMemo(() => {
-    if (!currentState) return [];
-    const cities = locations
-      .filter((l) => l.state.toLowerCase() === currentState.toLowerCase())
-      .map((l) => toTitleCase(l.city));
-    return Array.from(new Set(cities)).sort();
-  }, [locations, currentState]);
-
-  const availableTowns = useMemo(() => {
-    if (!currentState || !currentCity) return [];
-    const towns = locations
-      .filter(
-        (l) =>
-          l.state.toLowerCase() === currentState.toLowerCase() &&
-          l.city.toLowerCase() === currentCity.toLowerCase()
-      )
-      .map((l) => toTitleCase(l.town));
-    return Array.from(new Set(towns)).sort();
-  }, [locations, currentState, currentCity]);
-
-  const filteredCategories = useMemo(() => {
-    return categories.filter((c: any) => {
-      // Global categories (no state defined) are always visible across all locations
-      if (!c.state || c.state.trim() === "") {
-        return true;
-      }
-      // If state is selected, filter out non-matching regional categories
-      if (currentState && toTitleCase(c.state).toLowerCase() !== currentState.toLowerCase()) {
-        return false;
-      }
-      // If city is selected, filter out non-matching regional categories
-      if (currentCity && c.city && toTitleCase(c.city).toLowerCase() !== currentCity.toLowerCase()) {
-        return false;
-      }
-      return true;
-    });
-  }, [categories, currentState, currentCity]);
+    const cities = locations.map((l: any) => toTitleCase(l.city));
+    return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
+  }, [locations]);
 
   /* PRODUCT FILTER ENGINE */
   const displayProducts = useMemo(() => {
@@ -186,40 +153,32 @@ export default function ProductsPage() {
           p.status === "approved")
     );
 
-    /* STATE FILTER */
-    if (currentState) {
-      arr = arr.filter(
-        (p: any) =>
-          p.vendor_state &&
-          p.vendor_state.toLowerCase() === currentState.toLowerCase()
-      );
+    /* CATEGORIES FILTER */
+    if (currentCats.length > 0) {
+      arr = arr.filter((p: any) => {
+        return currentCats.some((catName) => {
+          const catObj = categories.find((c: any) => c.name.toLowerCase() === catName.toLowerCase());
+          const catID = catObj?.id;
+          return p.category === catName || String(p.category) === String(catID);
+        });
+      });
     }
 
-    /* CITY FILTER */
-    if (currentCity) {
+    /* LOCATIONS FILTER */
+    if (currentLocs.length > 0) {
       arr = arr.filter(
         (p: any) =>
           p.vendor_city &&
-          p.vendor_city.toLowerCase() === currentCity.toLowerCase()
+          currentLocs.some((loc) => loc.toLowerCase() === p.vendor_city.toLowerCase())
       );
     }
 
-    /* TOWN FILTER */
-    if (currentTown) {
+    /* COMPANIES FILTER */
+    if (currentCos.length > 0) {
       arr = arr.filter(
         (p: any) =>
-          p.vendor_town &&
-          p.vendor_town.toLowerCase() === currentTown.toLowerCase()
-      );
-    }
-
-    /* CATEGORY FILTER */
-    if (currentCat) {
-      const catObj = categories.find((c: any) => c.name.toLowerCase() === currentCat.toLowerCase());
-      const catID = catObj?.id;
-      arr = arr.filter(
-        (p: any) =>
-          p.category === currentCat || String(p.category) === String(catID)
+          p.vendor_company &&
+          currentCos.some((co) => co.toLowerCase() === p.vendor_company.toLowerCase())
       );
     }
 
@@ -256,12 +215,11 @@ export default function ProductsPage() {
   }, [
     normalizedProducts,
     categories,
-    currentCat,
+    currentCats,
+    currentLocs,
+    currentCos,
     currentQ,
     currentSort,
-    currentState,
-    currentCity,
-    currentTown,
   ]);
 
   function handleSearchSubmit(e: React.FormEvent) {
@@ -282,46 +240,35 @@ export default function ProductsPage() {
     navigate(`/products?${params.toString()}`);
   }
 
-  function handleStateChange(state: string) {
-    if (state === "all") {
-      params.delete("state");
-      params.delete("city");
-      params.delete("town");
-      params.delete("category");
+  function handleToggleFilter(type: "categories" | "locations" | "companies", value: string) {
+    const list = params.get(type)?.split(",").filter(Boolean) ?? [];
+    const index = list.indexOf(value);
+    if (index > -1) {
+      list.splice(index, 1);
     } else {
-      params.set("state", state);
-      params.delete("city");
-      params.delete("town");
-      params.delete("category");
+      list.push(value);
+    }
+    
+    if (list.length > 0) {
+      params.set(type, list.join(","));
+    } else {
+      params.delete(type);
     }
     navigate(`/products?${params.toString()}`);
   }
 
-  function handleCityChange(city: string) {
-    if (city === "all") {
-      params.delete("city");
-      params.delete("town");
-      params.delete("category");
-    } else {
-      params.set("city", city);
-      params.delete("town");
-      params.delete("category");
-    }
+  function handleClearAllFilters() {
+    params.delete("categories");
+    params.delete("locations");
+    params.delete("companies");
     navigate(`/products?${params.toString()}`);
   }
 
-  function handleTownChange(town: string) {
-    if (town === "all") {
-      params.delete("town");
-      params.delete("category");
-    } else {
-      params.set("town", town);
-      params.delete("category");
-    }
-    navigate(`/products?${params.toString()}`);
-  }
-
-  const categoryName = categories.find((c: any) => c.name === currentCat)?.name;
+  const categoryHeader = currentCats.length === 1 
+    ? currentCats[0] 
+    : currentCats.length > 1 
+      ? "Filtered Categories" 
+      : "All Products";
 
   return (
     <Shell>
@@ -337,8 +284,7 @@ export default function ProductsPage() {
             </div>
 
             <h1 className="font-display text-4xl font-bold text-white">
-              {categoryName ??
-                "All Products"}
+              {categoryHeader}
             </h1>
 
             <p className="mt-1 text-muted-foreground">
@@ -381,25 +327,81 @@ export default function ProductsPage() {
           <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <Sidebar
               categories={categories}
-              filteredCategories={filteredCategories}
-              availableStates={availableStates}
               availableCities={availableCities}
-              availableTowns={availableTowns}
-              currentState={currentState}
-              currentCity={currentCity}
-              currentTown={currentTown}
-              currentCat={currentCat}
+              companies={companies}
+              currentCats={currentCats}
+              currentLocs={currentLocs}
+              currentCos={currentCos}
               currentSort={currentSort}
+              isLoadingCompanies={isLoadingCompanies}
               onSortChange={handleSortChange}
-              onStateChange={handleStateChange}
-              onCityChange={handleCityChange}
-              onTownChange={handleTownChange}
+              onToggleFilter={handleToggleFilter}
             />
           </div>
 
           {/* MAIN */}
 
           <div>
+            {/* ACTIVE FILTER CHIPS */}
+            {(currentCats.length > 0 || currentLocs.length > 0 || currentCos.length > 0) && (
+              <div className="mb-6 flex flex-wrap items-center gap-2 bg-[#090d1a]/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 mr-2">
+                  Active Filters:
+                </span>
+                {currentCats.map((cat) => (
+                  <span
+                    key={`cat-${cat}`}
+                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                  >
+                    {cat}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFilter("categories", cat)}
+                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                {currentLocs.map((loc) => (
+                  <span
+                    key={`loc-${loc}`}
+                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                  >
+                    {loc}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFilter("locations", loc)}
+                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                {currentCos.map((co) => (
+                  <span
+                    key={`co-${co}`}
+                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                  >
+                    {co}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFilter("companies", co)}
+                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleClearAllFilters}
+                  className="text-xs font-bold text-gray-400 hover:text-white hover:underline transition-all cursor-pointer ml-auto"
+                >
+                  Clear All
+                </button>
+              </div>
+            )}
             {isLoading ? (
               <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
                 {Array.from({
@@ -444,22 +446,18 @@ export default function ProductsPage() {
         {/* Floating Mobile Filter Bar */}
         <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 lg:hidden">
           <button
+            type="button"
             onClick={() => setMobileFiltersOpen(true)}
             className="flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-bold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary-hover active:scale-95 transition-[transform,border-color,background-color,color] cursor-pointer"
           >
             <SlidersHorizontal className="h-4 w-4" />
-            <span>Filters & Sort</span>
-            {(currentCat || currentState || currentCity || currentTown) && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-primary">
-                {[currentCat, currentState, currentCity, currentTown].filter(Boolean).length}
-              </span>
-            )}
+            <span>Filter {currentCats.length + currentLocs.length + currentCos.length > 0 ? `(${currentCats.length + currentLocs.length + currentCos.length})` : ""}</span>
           </button>
         </div>
 
         {/* Mobile Filter Drawer Overlay */}
         {mobileFiltersOpen && (
-          <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
+          <div className="fixed inset-0 z-50 flex justify-end lg:hidden animate-fadeIn">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
@@ -468,16 +466,17 @@ export default function ProductsPage() {
 
             {/* Drawer */}
             <div className="relative w-80 max-w-[85vw] h-full bg-[#0d0d0d] border-l border-white/10 p-6 flex flex-col justify-between backdrop-blur-2xl shadow-2xl animate-fadeUp">
-              <div className="space-y-6 overflow-y-auto max-h-[85vh] pr-1 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
                   <div className="flex items-center gap-2">
                     <SlidersHorizontal className="h-4 w-4 text-primary" />
-                    <span className="font-display text-base font-black text-white uppercase tracking-wider animate-pulse">
+                    <span className="font-display text-base font-black text-white uppercase tracking-wider">
                       Filter & Sort
                     </span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setMobileFiltersOpen(false)}
                     className="rounded-lg p-1.5 hover:bg-white/5 text-gray-400 hover:text-white transition-colors cursor-pointer"
                   >
@@ -485,142 +484,41 @@ export default function ProductsPage() {
                   </button>
                 </div>
 
-                {/* Location Filter on Mobile */}
-                <div className="space-y-4">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                    Location Filter
-                  </div>
-                  <div className="space-y-3">
-                    <LocationSelect
-                      label="State"
-                      value={currentState || "all"}
-                      onValueChange={(val) => handleStateChange(val === "all" ? "all" : val)}
-                      options={availableStates}
-                      placeholder="All States"
-                      showOther={false}
-                      allOptionLabel="All States"
-                    />
-
-                    <LocationSelect
-                      label="City"
-                      value={currentCity || "all"}
-                      onValueChange={(val) => handleCityChange(val === "all" ? "all" : val)}
-                      options={availableCities}
-                      placeholder="All Cities"
-                      disabled={!currentState}
-                      showOther={false}
-                      allOptionLabel="All Cities"
-                    />
-
-                    <LocationSelect
-                      label="Town / Area"
-                      value={currentTown || "all"}
-                      onValueChange={(val) => handleTownChange(val === "all" ? "all" : val)}
-                      options={availableTowns}
-                      placeholder="All Towns"
-                      disabled={!currentCity}
-                      showOther={false}
-                      allOptionLabel="All Towns"
-                    />
-                  </div>
-                </div>
-
-                {/* Categories filter */}
-                <div className="space-y-3">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                    Categories
-                  </div>
-                  <ul className="space-y-1">
-                    <li>
-                      <Link
-                        to={`/products${
-                          currentState || currentCity || currentTown
-                            ? "?" +
-                              [
-                                currentState ? `state=${encodeURIComponent(currentState)}` : "",
-                                currentCity ? `city=${encodeURIComponent(currentCity)}` : "",
-                                currentTown ? `town=${encodeURIComponent(currentTown)}` : "",
-                              ]
-                                .filter(Boolean)
-                                .join("&")
-                            : ""
-                        }`}
-                        onClick={() => setMobileFiltersOpen(false)}
-                        className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                          !currentCat
-                            ? "bg-primary/10 font-semibold text-primary"
-                            : "text-muted-foreground hover:bg-white/5"
-                        }`}
-                      >
-                        All Categories
-                      </Link>
-                    </li>
-                    {filteredCategories.map((c: any) => {
-                      const active = currentCat === c.name;
-                      const linkParams = new URLSearchParams();
-                      if (currentState) linkParams.set("state", currentState);
-                      if (currentCity) linkParams.set("city", currentCity);
-                      if (currentTown) linkParams.set("town", currentTown);
-                      linkParams.set("category", c.name);
-
-                      return (
-                        <li key={c.id}>
-                          <Link
-                            to={`/products?${linkParams.toString()}`}
-                            onClick={() => setMobileFiltersOpen(false)}
-                            className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                              active
-                                ? "bg-primary/10 font-semibold text-primary"
-                                : "text-muted-foreground hover:bg-white/5"
-                            }`}
-                          >
-                            {c.name}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-
-                {/* Sorting */}
-                <div className="space-y-3">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                    Sort by
-                  </div>
-                  <div className="space-y-1">
-                    {SORT_OPTIONS.map((o) => {
-                      const active = currentSort === o.value;
-                      return (
-                        <button
-                          key={o.value}
-                          onClick={() => {
-                            handleSortChange(o.value);
-                            setMobileFiltersOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-[transform,border-color,background-color,color] cursor-pointer ${
-                            active
-                              ? "bg-primary/10 font-semibold text-primary"
-                              : "text-muted-foreground hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          {o.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                {/* Sidebar filters rendered inside the mobile drawer */}
+                <Sidebar
+                  categories={categories}
+                  availableCities={availableCities}
+                  companies={companies}
+                  currentCats={currentCats}
+                  currentLocs={currentLocs}
+                  currentCos={currentCos}
+                  currentSort={currentSort}
+                  isLoadingCompanies={isLoadingCompanies}
+                  onSortChange={handleSortChange}
+                  onToggleFilter={handleToggleFilter}
+                />
               </div>
 
               {/* Drawer Footer */}
-              <button
-                onClick={() => {
-                  navigate("/products");
-                  setMobileFiltersOpen(false);
-                }}
-                className="w-full rounded-xl bg-white/5 border border-white/10 py-3 text-center text-xs font-bold text-white hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                Clear All Filters
-              </button>
+              <div className="mt-4 pt-4 border-t border-white/5 space-y-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="w-full rounded-xl bg-primary py-3 text-center text-xs font-bold text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer"
+                >
+                  Apply Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleClearAllFilters();
+                    setMobileFiltersOpen(false);
+                  }}
+                  className="w-full rounded-xl bg-white/5 border border-white/10 py-3 text-center text-xs font-bold text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  Clear All Filters
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -634,135 +532,58 @@ export default function ProductsPage() {
 const Sidebar = memo(
   function Sidebar({
     categories,
-    filteredCategories,
-    availableStates,
     availableCities,
-    availableTowns,
-    currentState,
-    currentCity,
-    currentTown,
-    currentCat,
+    companies,
+    currentCats,
+    currentLocs,
+    currentCos,
     currentSort,
+    isLoadingCompanies,
     onSortChange,
-    onStateChange,
-    onCityChange,
-    onTownChange,
+    onToggleFilter,
   }: {
     categories: any[];
-    filteredCategories: any[];
-    availableStates: string[];
     availableCities: string[];
-    availableTowns: string[];
-    currentState?: string;
-    currentCity?: string;
-    currentTown?: string;
-    currentCat?: string;
+    companies: string[];
+    currentCats: string[];
+    currentLocs: string[];
+    currentCos: string[];
     currentSort: string;
+    isLoadingCompanies?: boolean;
     onSortChange: (value: string) => void;
-    onStateChange: (state: string) => void;
-    onCityChange: (city: string) => void;
-    onTownChange: (town: string) => void;
+    onToggleFilter: (type: "categories" | "locations" | "companies", value: string) => void;
   }) {
-    const allProductsParams = new URLSearchParams();
-    if (currentState) allProductsParams.set("state", currentState);
-    if (currentCity) allProductsParams.set("city", currentCity);
-    if (currentTown) allProductsParams.set("town", currentTown);
+    const [locationQuery, setLocationQuery] = useState("");
+    const [debouncedLocationQuery, setDebouncedLocationQuery] = useState("");
+    useEffect(() => {
+      const timer = setTimeout(() => setDebouncedLocationQuery(locationQuery), 150);
+      return () => clearTimeout(timer);
+    }, [locationQuery]);
+
+    const [companyQuery, setCompanyQuery] = useState("");
+    const [debouncedCompanyQuery, setDebouncedCompanyQuery] = useState("");
+    useEffect(() => {
+      const timer = setTimeout(() => setDebouncedCompanyQuery(companyQuery), 150);
+      return () => clearTimeout(timer);
+    }, [companyQuery]);
+
+    const filteredCitiesList = useMemo(() => {
+      const q = debouncedLocationQuery.trim().toLowerCase();
+      if (!q) return availableCities;
+      return availableCities.filter((city) => city.toLowerCase().includes(q));
+    }, [availableCities, debouncedLocationQuery]);
+
+    const filteredCompaniesList = useMemo(() => {
+      const q = debouncedCompanyQuery.trim().toLowerCase();
+      if (!q) return companies;
+      return companies.filter((co) => co.toLowerCase().includes(q));
+    }, [companies, debouncedCompanyQuery]);
 
     return (
       <aside className="space-y-6 animate-fadeUp">
-
-        {/* REGIONAL FILTER */}
-
-        <div className="glass rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <SlidersHorizontal className="h-4 w-4 text-primary" />
-            Location Filter
-          </div>
-
-          {/* State Select */}
-          <LocationSelect
-            label="State"
-            value={currentState || "all"}
-            onValueChange={onStateChange}
-            options={availableStates}
-            placeholder="All States"
-            showOther={false}
-            allOptionLabel="All States"
-          />
-
-          {/* City Select */}
-          <LocationSelect
-            label="City"
-            value={currentCity || "all"}
-            onValueChange={onCityChange}
-            options={availableCities}
-            placeholder="All Cities"
-            disabled={!currentState}
-            showOther={false}
-            allOptionLabel="All Cities"
-          />
-
-          {/* Town Select */}
-          <LocationSelect
-            label="Town / Area"
-            value={currentTown || "all"}
-            onValueChange={onTownChange}
-            options={availableTowns}
-            placeholder="All Towns"
-            disabled={!currentCity}
-            showOther={false}
-            allOptionLabel="All Towns"
-          />
-        </div>
-
-        {/* CATEGORIES */}
-
-        <div className="glass rounded-2xl p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-            <SlidersHorizontal className="h-4 w-4 text-primary" />
-            Categories
-          </div>
-
-          <ul className="space-y-1 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
-
-            <li>
-              <Link
-                to={`/products${allProductsParams.toString() ? `?${allProductsParams.toString()}` : ""}`}
-                className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                  !currentCat
-                    ? "bg-primary/10 font-semibold text-primary"
-                    : "text-muted-foreground hover:bg-white/5"
-                }`}
-              >
-                All Categories
-              </Link>
-            </li>
-
-            {filteredCategories.map(
-              (c: any) => (
-                <CategoryLink
-                  key={c.id}
-                  category={c}
-                  currentState={currentState}
-                  currentCity={currentCity}
-                  currentTown={currentTown}
-                  active={
-                    currentCat ===
-                    c.name
-                  }
-                />
-              )
-            )}
-          </ul>
-        </div>
-
         {/* SORT */}
-
         <div className="glass rounded-2xl p-5">
-          <div className="mb-3 text-sm font-semibold">
-            Sort by
-          </div>
-
+          <div className="mb-3 text-sm font-semibold text-white">Sort by</div>
           <Select value={currentSort} onValueChange={onSortChange}>
             <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary">
               <SelectValue placeholder="Sort" />
@@ -776,47 +597,147 @@ const Sidebar = memo(
             </SelectContent>
           </Select>
         </div>
+
+        {/* CATEGORIES CARD */}
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
+            Categories
+          </div>
+          <div className="max-h-48 overflow-y-auto pr-1 scrollbar-thin space-y-2">
+            {[...categories]
+              .sort((a: any, b: any) => a.name.localeCompare(b.name))
+              .map((c: any) => {
+                const name = c.name;
+                const isChecked = currentCats.includes(name);
+                const id = `cat-chk-${c.id}`;
+                return (
+                  <div key={c.id} className="flex items-center space-x-2 py-0.5">
+                    <Checkbox
+                      id={id}
+                      checked={isChecked}
+                      onCheckedChange={() => onToggleFilter("categories", name)}
+                    />
+                    <label
+                      htmlFor={id}
+                      className="text-sm text-gray-300 hover:text-white cursor-pointer select-none truncate flex-1"
+                    >
+                      {name}
+                    </label>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+
+        {/* LOCATIONS CARD */}
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
+            Locations
+          </div>
+          {/* Search Input */}
+          <div className="flex items-center gap-2 border border-white/10 bg-white/5 rounded-lg px-2.5 py-1">
+            <Search className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search locations..."
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              className="w-full bg-transparent border-0 text-xs text-white outline-none placeholder:text-gray-600"
+            />
+            {locationQuery && (
+              <button
+                type="button"
+                onClick={() => setLocationQuery("")}
+                className="text-gray-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <div className="max-h-48 overflow-y-auto pr-1 scrollbar-thin space-y-2">
+            {filteredCitiesList.length === 0 ? (
+              <div className="text-xs text-gray-500 py-2">No locations found</div>
+            ) : (
+              filteredCitiesList.map((city) => {
+                const isChecked = currentLocs.includes(city);
+                const id = `loc-chk-${city.replace(/\s+/g, "-")}`;
+                return (
+                  <div key={city} className="flex items-center space-x-2 py-0.5">
+                    <Checkbox
+                      id={id}
+                      checked={isChecked}
+                      onCheckedChange={() => onToggleFilter("locations", city)}
+                    />
+                    <label
+                      htmlFor={id}
+                      className="text-sm text-gray-300 hover:text-white cursor-pointer select-none truncate flex-1"
+                    >
+                      {city}
+                    </label>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* COMPANIES CARD */}
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
+            Brand / Company
+          </div>
+          {/* Search Input */}
+          <div className="flex items-center gap-2 border border-white/10 bg-white/5 rounded-lg px-2.5 py-1">
+            <Search className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search companies..."
+              value={companyQuery}
+              onChange={(e) => setCompanyQuery(e.target.value)}
+              className="w-full bg-transparent border-0 text-xs text-white outline-none placeholder:text-gray-600"
+            />
+            {companyQuery && (
+              <button
+                type="button"
+                onClick={() => setCompanyQuery("")}
+                className="text-gray-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <div className="max-h-48 overflow-y-auto pr-1 scrollbar-thin space-y-2">
+            {isLoadingCompanies ? (
+              <div className="text-xs text-gray-500 py-2">Loading companies...</div>
+            ) : filteredCompaniesList.length === 0 ? (
+              <div className="text-xs text-gray-500 py-2">No companies found</div>
+            ) : (
+              filteredCompaniesList.map((co) => {
+                const isChecked = currentCos.includes(co);
+                const id = `co-chk-${co.replace(/\s+/g, "-")}`;
+                return (
+                  <div key={co} className="flex items-center space-x-2 py-0.5">
+                    <Checkbox
+                      id={id}
+                      checked={isChecked}
+                      onCheckedChange={() => onToggleFilter("companies", co)}
+                    />
+                    <label
+                      htmlFor={id}
+                      className="text-sm text-gray-300 hover:text-white cursor-pointer select-none truncate flex-1"
+                    >
+                      {co}
+                    </label>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </aside>
-    );
-  }
-);
-
-const CategoryLink = memo(
-  function CategoryLink({
-    category,
-    active,
-    currentState,
-    currentCity,
-    currentTown,
-  }: {
-    category: {
-      id: string;
-      name: string;
-    };
-    active: boolean;
-    currentState?: string;
-    currentCity?: string;
-    currentTown?: string;
-  }) {
-    const linkParams = new URLSearchParams();
-    if (currentState) linkParams.set("state", currentState);
-    if (currentCity) linkParams.set("city", currentCity);
-    if (currentTown) linkParams.set("town", currentTown);
-    linkParams.set("category", category.name);
-
-    return (
-      <li>
-        <Link
-          to={`/products?${linkParams.toString()}`}
-          className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-            active
-              ? "bg-primary/10 font-semibold text-primary"
-              : "text-muted-foreground hover:bg-white/5"
-          }`}
-        >
-          {category.name}
-        </Link>
-      </li>
     );
   }
 );

@@ -636,6 +636,19 @@ export async function getLocations() {
   return await request("/get-locations.php");
 }
 
+/* ================= COMPANIES ================= */
+
+export async function getCompanies(): Promise<string[]> {
+  try {
+    const res = await request("/get-companies.php");
+    if (Array.isArray(res)) return res;
+    return ["ABC Electronics", "Tech World", "Smart Gadgets Pvt Ltd"];
+  } catch (err) {
+    console.warn("Using mock company data because backend endpoint is not deployed yet:", err);
+    return ["ABC Electronics", "Tech World", "Smart Gadgets Pvt Ltd"];
+  }
+}
+
 export async function addLocation(state: string, city: string, town: string) {
   return await request("/add-location.php", {
     method: "POST",

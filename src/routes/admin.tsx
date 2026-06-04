@@ -737,7 +737,7 @@ function AdminPanel({
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="mb-10 hidden md:grid md:grid-cols-5 h-auto w-full gap-3 rounded-[28px] bg-white/[0.02] p-2 border border-white/5">
+          <TabsList className="mb-10 hidden md:grid md:grid-cols-3 lg:grid-cols-5 h-auto w-full gap-3 rounded-[28px] bg-white/[0.02] p-2 border border-white/5">
             <TabsTrigger
               value="orders"
               className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
@@ -749,28 +749,28 @@ function AdminPanel({
               value="products"
               className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
-              Product Management ({filteredProducts.length})
+              Products ({filteredProducts.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="vendors"
               className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
-              Vendor Management ({filteredVendors.length})
+              Vendors ({filteredVendors.length})
             </TabsTrigger>
 
             <TabsTrigger
               value="users"
               className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
-              User Management ({usersData?.total_rows || 0})
+              Users ({usersData?.total_rows || 0})
             </TabsTrigger>
 
             <TabsTrigger
               value="support"
               className="w-full rounded-[20px] py-4 font-bold transition-all duration-300 text-gray-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 hover:text-white cursor-pointer"
             >
-              Support Center ({supportRequests.length})
+              Support ({supportRequests.length})
             </TabsTrigger>
           </TabsList>
 
@@ -934,7 +934,7 @@ function AdminPanel({
                   <Table>
                     <TableHeader className="bg-white/[0.02] border-b border-white/5">
                       <TableRow className="border-white/5 hover:bg-transparent">
-                        <TableHead className="text-gray-400 py-4.5 pl-6 font-bold tracking-wider">
+                        <TableHead className="sticky left-0 bg-[#0b0e17] z-20 text-gray-400 py-4.5 pl-6 font-bold tracking-wider shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                           Product
                         </TableHead>
 
@@ -980,7 +980,7 @@ function AdminPanel({
                             key={p.id}
                             className="border-white/5 hover:bg-white/[0.01] transition-colors"
                           >
-                            <TableCell className="font-medium text-white py-4.5 pl-6">
+                            <TableCell className="sticky left-0 bg-[#0b0e17] z-10 font-medium text-white py-4.5 pl-6 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                               <div className="flex items-center gap-3.5">
                                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/5 border border-white/10 shadow-inner">
                                   <img
@@ -1151,7 +1151,7 @@ function AdminPanel({
                   <Table>
                     <TableHeader className="bg-white/[0.02] border-b border-white/5">
                       <TableRow className="border-white/5 hover:bg-transparent">
-                        <TableHead className="text-gray-400 py-4.5 pl-6 font-bold tracking-wider">
+                        <TableHead className="sticky left-0 bg-[#0b0e17] z-20 text-gray-400 py-4.5 pl-6 font-bold tracking-wider shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                           Vendor
                         </TableHead>
 
@@ -1191,7 +1191,7 @@ function AdminPanel({
                               key={vendor.id}
                               className="border-white/5 hover:bg-white/[0.01] transition-colors"
                             >
-                              <TableCell className="font-extrabold text-white py-4.5 pl-6">
+                              <TableCell className="sticky left-0 bg-[#0b0e17] z-10 font-extrabold text-white py-4.5 pl-6 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                                 {vendor.vendor_name}
                               </TableCell>
 
@@ -1314,7 +1314,7 @@ function AdminPanel({
                   <Table>
                     <TableHeader className="bg-white/[0.02] border-b border-white/5">
                       <TableRow className="border-white/5 hover:bg-transparent">
-                        <TableHead className="text-gray-400 py-4.5 pl-6 font-bold tracking-wider">
+                        <TableHead className="sticky left-0 bg-[#0b0e17] z-20 text-gray-400 py-4.5 pl-6 font-bold tracking-wider shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                           Avatar
                         </TableHead>
                         <TableHead
@@ -1404,7 +1404,7 @@ function AdminPanel({
                       ) : (
                         allUsers.map((user) => (
                           <TableRow key={user.id} className="border-white/5 hover:bg-white/[0.01] transition-colors">
-                            <TableCell className="py-4 pl-6">
+                            <TableCell className="sticky left-0 bg-[#0b0e17] z-10 py-4 pl-6 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-xs font-black text-white shadow-[0_4px_12px_rgba(99,102,241,0.25)]">
                                 {user.fullName.charAt(0).toUpperCase()}
                               </div>
@@ -1527,7 +1527,7 @@ function AdminPanel({
                     <Table>
                       <TableHeader className="bg-white/[0.02]">
                         <TableRow className="border-b border-white/5 hover:bg-transparent">
-                          <TableHead className="py-4 pl-6 text-xs font-bold text-gray-400">Vendor</TableHead>
+                          <TableHead className="sticky left-0 bg-[#0b0e17] z-20 py-4 pl-6 text-xs font-bold text-gray-400 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Vendor</TableHead>
                           <TableHead className="py-4 text-xs font-bold text-gray-400">Type</TableHead>
                           <TableHead className="py-4 text-xs font-bold text-gray-400">Context / Details</TableHead>
                           <TableHead className="py-4 text-xs font-bold text-gray-400">Submitted At</TableHead>
@@ -1538,7 +1538,7 @@ function AdminPanel({
                       <TableBody>
                         {filteredSupportRequests.map((req: any) => (
                           <TableRow key={req.id} className="border-b border-white/5 hover:bg-white/[0.01] transition-colors">
-                            <TableCell className="py-4 pl-6 font-extrabold text-white">
+                            <TableCell className="sticky left-0 bg-[#0b0e17] z-10 py-4 pl-6 font-extrabold text-white shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                               {req.vendor_company_name || `ID: ${req.vendor_id}`}
                             </TableCell>
                             <TableCell className="font-semibold text-white">

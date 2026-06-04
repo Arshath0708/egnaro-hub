@@ -15,6 +15,8 @@ export function BackToTop() {
   const normalised = radius - strokeWidth / 2;
   const circumference = 2 * Math.PI * normalised;
 
+  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+
   const handleScroll = useCallback(() => {
     if (!ticking.current) {
       window.requestAnimationFrame(() => {
@@ -34,6 +36,28 @@ export function BackToTop() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
+  useEffect(() => {
+    const checkOverlay = () => {
+      const isHidden =
+        window.getComputedStyle(document.body).overflow === "hidden" ||
+        document.body.classList.contains("overflow-hidden") ||
+        !!document.querySelector('[data-state="open"]');
+      setIsOverlayOpen(isHidden);
+    };
+
+    checkOverlay();
+
+    const observer = new MutationObserver(checkOverlay);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["style", "class"],
+      childList: true,
+      subtree: true,
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -50,7 +74,7 @@ export function BackToTop() {
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {isVisible && !isOverlayOpen && (
         <motion.div
           initial={{ opacity: 0, scale: 0.5, y: 40 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

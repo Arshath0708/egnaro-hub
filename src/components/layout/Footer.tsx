@@ -133,24 +133,24 @@ export function Footer() {
                 });
                 setEmail("");
               }}
-              className="flex items-center gap-2 glass rounded-xl p-1.5"
+              className="flex items-center gap-2 glass rounded-xl p-1.5 w-full"
             >
-              <fieldset disabled={false} className="flex gap-2 w-full border-none p-0 m-0 min-w-0">
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                required
-                placeholder="you@email.com"
-                className="flex-1 bg-transparent px-3 py-2 font-sans text-[0.875rem] text-slate-200 outline-none placeholder:text-slate-500"
-              />
-              <button
-                type="submit"
-                className="gradient-primary text-primary-foreground p-2 rounded-lg hover:shadow-glow transition-shadow cursor-pointer"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-              </fieldset>
+              <div className="flex gap-2 w-full border-none p-0 m-0 min-w-0">
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  required
+                  placeholder="you@email.com"
+                  className="flex-1 bg-transparent px-3 py-2 font-sans text-[0.875rem] text-slate-200 outline-none placeholder:text-slate-500 min-w-0"
+                />
+                <button
+                  type="submit"
+                  className="gradient-primary text-primary-foreground p-2 rounded-lg hover:shadow-glow transition-shadow cursor-pointer shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
             </form>
           </div>
         </div>

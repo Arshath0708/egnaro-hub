@@ -400,7 +400,7 @@ function CategoryCardLarge({
           className={`absolute inset-0 bg-gradient-to-br ${category.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
         />
 
-        <div className="absolute inset-0 p-8 flex flex-col justify-end">
+        <div className="absolute bottom-0 left-0 p-8 w-full">
           <div className="font-display text-2xl font-black tracking-tight text-white">
             {category.name}
           </div>
@@ -706,11 +706,11 @@ function Hero() {
               {/* Right text block */}
               <div className="p-8 lg:p-10">
                 <div className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.12em] text-primary">
-                  {slide.right_title}
+                  Egnaro Assurance
                 </div>
 
                 <div className="mt-3 font-display text-2xl font-black leading-[1.1] tracking-[-0.02em] text-white">
-                  {slide.left_title}
+                  {slide.right_title}
                 </div>
 
                 <p className="mt-3 font-sans text-sm leading-[1.65] text-slate-400">
@@ -741,7 +741,7 @@ function DealsBanner() {
         className="relative overflow-hidden rounded-3xl gradient-accent p-10 text-white"
       >
         <div className="relative flex flex-col items-center justify-between gap-8 md:flex-row">
-          <div>
+          <div className="text-center md:text-left flex flex-col items-center md:items-start">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">
               Limited Time Offer
             </div>
@@ -781,12 +781,7 @@ function WhyChooseUs() {
       medallion: (
         <div className="relative">
           <div className="absolute inset-0 rounded-xl bg-cyan-500/10 blur-sm opacity-50 pointer-events-none" />
-          <svg className="relative h-6 w-6 text-cyan-400 drop-shadow-[0_4px_10px_rgba(34,211,238,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="1" y="3" width="15" height="13" rx="2" ry="2" fill="rgba(34,211,238,0.05)"/>
-            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-            <circle cx="5.5" cy="18.5" r="2.5" />
-            <circle cx="18.5" cy="18.5" r="2.5" />
-          </svg>
+          <Truck className="relative h-6 w-6 text-cyan-400 drop-shadow-[0_4px_10px_rgba(34,211,238,0.25)]" />
         </div>
       ),
       title: "Fast Delivery",
@@ -797,10 +792,7 @@ function WhyChooseUs() {
       medallion: (
         <div className="relative">
           <div className="absolute inset-0 rounded-xl bg-green-500/10 blur-sm opacity-50 pointer-events-none" />
-          <svg className="relative h-6 w-6 text-green-400 drop-shadow-[0_4px_10px_rgba(74,222,128,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(74,222,128,0.05)"/>
-            <path d="m9 11 2 2 4-4"/>
-          </svg>
+          <ShieldCheck className="relative h-6 w-6 text-green-400 drop-shadow-[0_4px_10px_rgba(74,222,128,0.25)]" />
         </div>
       ),
       title: "Authentic Products",
@@ -811,10 +803,7 @@ function WhyChooseUs() {
       medallion: (
         <div className="relative">
           <div className="absolute inset-0 rounded-xl bg-primary/10 blur-sm opacity-50 pointer-events-none" />
-          <svg className="relative h-6 w-6 text-primary drop-shadow-[0_4px_10px_rgba(249,115,22,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="8" r="7" fill="currentColor" fillOpacity="0.05"/>
-            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-          </svg>
+          <Award className="relative h-6 w-6 text-primary drop-shadow-[0_4px_10px_rgba(249,115,22,0.25)]" />
         </div>
       ),
       title: "25+ Years Trust",
@@ -825,10 +814,7 @@ function WhyChooseUs() {
       medallion: (
         <div className="relative">
           <div className="absolute inset-0 rounded-xl bg-purple-500/10 blur-sm opacity-50 pointer-events-none" />
-          <svg className="relative h-6 w-6 text-purple-400 drop-shadow-[0_4px_10px_rgba(192,132,252,0.25)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 18v-6a9 9 0 0 1 18 0v6" fill="rgba(192,132,252,0.05)"/>
-            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-          </svg>
+          <Headphones className="relative h-6 w-6 text-purple-400 drop-shadow-[0_4px_10px_rgba(192,132,252,0.25)]" />
         </div>
       ),
       title: "Premium Support",
