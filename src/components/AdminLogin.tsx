@@ -7,6 +7,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth-store";
 import { Shell } from "@/components/layout/Shell";
+import { validateEmail, validatePassword, sanitizeInput } from "@/lib/validation";
 
 const API = "https://egnaromart.com/api";
 
@@ -345,6 +346,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4">
+        <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="System Identifier (Email)">
           <div className="relative group">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
@@ -391,6 +393,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
         </div>
 
         <PrimaryButton loading={loading} label="Access Operations Control" loadingLabel="Establishing Tunnel..." />
+        </fieldset>
       </form>
     </Card>
   );
@@ -441,6 +444,7 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleSend} className="space-y-4">
+        <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="Admin Email Account">
           <div className="relative group">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
@@ -456,6 +460,7 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
         </Field>
         
         <PrimaryButton loading={loading} label="Send Verification Code" loadingLabel="Transmitting..." />
+        </fieldset>
       </form>
     </Card>
   );
@@ -520,6 +525,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleVerify} className="space-y-4">
+        <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="6-Digit Verification Token">
           <input
             type="text" 
@@ -534,6 +540,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
         </Field>
         
         <PrimaryButton loading={loading} label="Verify Code" loadingLabel="Verifying..." />
+        </fieldset>
       </form>
 
       <p className="text-center text-xs text-slate-500 font-semibold">
@@ -563,8 +570,9 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault();
+    const pwError = validatePassword(pw);
+    if (pwError) { setError(pwError); return; }
     if (pw !== confirm) { setError("Passwords do not match."); return; }
-    if (pw.length < 6) { setError("Password must be at least 6 characters."); return; }
 
     setLoading(true);
     setError(null);
@@ -628,6 +636,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleReset} className="space-y-4">
+        <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="New Administrative Passkey">
           <div className="relative group">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
@@ -675,6 +684,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
         </Field>
         
         <PrimaryButton loading={loading} label="Reset Password" loadingLabel="Resetting..." />
+        </fieldset>
       </form>
     </Card>
   );

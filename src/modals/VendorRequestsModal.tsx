@@ -67,15 +67,13 @@ export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
   async function loadVendors() {
     try {
       setFetchingVendors(true);
-      const res = await fetch(`${API}/get-vendors.php`);
+      const res = await fetch(`${API}/get-vendors.php?status=pending&limit=1000`);
       const text = await res.text();
-      let data = [];
+      let data: any = {};
       try { data = JSON.parse(text); } catch { /* */ }
-      if (Array.isArray(data)) {
-        setVendors(data.filter((v: Vendor) => Number(v.approved) === 0 || v.status === "pending"));
-      } else {
-        setVendors([]);
-      }
+      
+      const vendorArray = Array.isArray(data) ? data : (data.vendors || []);
+      setVendors(vendorArray.filter((v: Vendor) => Number(v.approved) === 0 || v.status === "pending"));
     } catch {
       toast.error("Failed to load vendors");
       setVendors([]);

@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2, AlertCircle, Shield, User, Mail, Phone, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { registerCustomer } from "@/services/api";
+import { validateName, validateEmail, validatePhone, validatePassword, sanitizeInput } from "@/lib/validation";
 
 export default function Register() {   
   const [form, setForm] = useState({
@@ -90,10 +91,33 @@ export default function Register() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setErrorMsg(null);
+                
+                const cleanName = sanitizeInput(form.fullName);
+                const cleanEmail = sanitizeInput(form.email);
+                
+                if (!validateName(cleanName)) {
+                  setErrorMsg("Please enter a valid full name (letters and spaces only).");
+                  return;
+                }
+                if (!validateEmail(cleanEmail)) {
+                  setErrorMsg("Please enter a valid email address.");
+                  return;
+                }
+                if (!validatePhone(form.phone)) {
+                  setErrorMsg("Please enter a valid 10-digit phone number.");
+                  return;
+                }
+                const pwError = validatePassword(form.password);
+                if (pwError) {
+                  setErrorMsg(pwError);
+                  return;
+                }
+
                 mutation.mutate();
               }}
               className="space-y-4"
             >
+              <fieldset disabled={mutation.isPending || success} className="space-y-4 border-none p-0 m-0 min-w-0">
               {success && (
                 <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-3.5 text-xs font-medium text-emerald-400">
                   <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
@@ -135,7 +159,7 @@ export default function Register() {
                   required
                   autoComplete="email"
                   value={form.email}
-                  onChange={set("email")}
+                  onChange={(e) => { set("email")(e); setForm(p => ({...p, email: e.target.value.trim()}))}}
                   className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary/30 hover:border-white/15 font-medium"
                 />
               </div>
@@ -149,11 +173,17 @@ export default function Register() {
                   </label>
                   <input
                     type="tel"
-                    placeholder="+91 98765 43210"
+                    inputMode="numeric"
+                    placeholder="9876543210"
+                    maxLength={10}
                     required
                     autoComplete="tel"
                     value={form.phone}
-                    onChange={set("phone")}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setForm((p) => ({ ...p, phone: val }));
+                      setErrorMsg(null);
+                    }}
                     className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary/30 hover:border-white/15 font-medium"
                   />
                 </div>
@@ -221,6 +251,7 @@ export default function Register() {
                   <span>Create Account</span>
                 )}
               </button>
+              </fieldset>
             </form>
 
             <p className="text-center text-xs text-slate-400 font-semibold mt-4">

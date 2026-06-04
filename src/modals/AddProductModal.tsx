@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { sanitizeInput } from "@/lib/validation";
 
 
 export function AddProductModal({
@@ -167,6 +168,7 @@ export function AddProductModal({
 
             {/* FORM */}
             <form className="grid gap-8 lg:grid-cols-2">
+              <fieldset disabled={mutation.isPending || uploading} className="contents border-none p-0 m-0">
               {/* LEFT */}
               <div className="space-y-5">
                 <InputField
@@ -239,7 +241,7 @@ export function AddProductModal({
                     className={`${inputClass} resize-none`}
                     placeholder="Write product description..."
                     value={form.description}
-                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    onChange={(e) => setForm((p) => ({ ...p, description: sanitizeInput(e.target.value) }))}
                   />
                 </div>
 
@@ -319,6 +321,7 @@ export function AddProductModal({
                   </button>
                 </div>
               </div>
+              </fieldset>
             </form>
           </div>
         </div>
@@ -340,7 +343,7 @@ function InputField({ label, value, onChange, placeholder, className, type = "te
   return (
     <div>
       <label className="mb-2 block text-sm font-medium text-gray-300">{label}</label>
-      <input type={type} value={value} placeholder={placeholder} className={className} onChange={(e) => onChange(e.target.value)} />
+      <input type={type} value={value} placeholder={placeholder} className={className} onChange={(e) => onChange(sanitizeInput(e.target.value))} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { X, Building2, User, Mail, Phone, MapPin, CheckCircle, Clock, XCircle, CreditCard, Landmark, Hash, Package, IndianRupee, ShoppingCart, ShieldAlert, Loader2 } from "lucide-react";
 import { getVendorById, updateBankDetails } from "@/services/api";
 import { toast } from "sonner";
+import { sanitizeInput } from "@/lib/validation";
 
 /* ================= LAYERED ICON CONTAINER ================= */
 function LayeredIconContainer({
@@ -198,12 +199,13 @@ export function ViewVendorModal({
                   
                   {isEditingBank ? (
                     <form onSubmit={handleBankSubmit} className="space-y-4 animate-fadeIn">
+                      <fieldset disabled={submittingBank} className="contents border-none p-0 m-0">
                       <div>
                         <label className="text-[9px] font-bold uppercase tracking-widest text-gray-500 block mb-1">Corporate Bank Name</label>
                         <input
                           type="text"
                           value={bankForm.bank_name}
-                          onChange={(e) => setBankForm(p => ({ ...p, bank_name: e.target.value }))}
+                          onChange={(e) => setBankForm(p => ({ ...p, bank_name: sanitizeInput(e.target.value) }))}
                           className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-primary outline-none"
                           placeholder="e.g. HDFC Bank Ltd"
                           required
@@ -214,7 +216,7 @@ export function ViewVendorModal({
                         <input
                           type="text"
                           value={bankForm.account_number}
-                          onChange={(e) => setBankForm(p => ({ ...p, account_number: e.target.value }))}
+                          onChange={(e) => setBankForm(p => ({ ...p, account_number: sanitizeInput(e.target.value) }))}
                           className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-primary outline-none"
                           placeholder="e.g. 501002345678"
                           required
@@ -225,7 +227,7 @@ export function ViewVendorModal({
                         <input
                           type="text"
                           value={bankForm.ifsc_code}
-                          onChange={(e) => setBankForm(p => ({ ...p, ifsc_code: e.target.value }))}
+                          onChange={(e) => setBankForm(p => ({ ...p, ifsc_code: sanitizeInput(e.target.value) }))}
                           className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs text-white focus:border-primary outline-none"
                           placeholder="e.g. HDFC0000123"
                           required
@@ -247,6 +249,7 @@ export function ViewVendorModal({
                           Cancel
                         </button>
                       </div>
+                      </fieldset>
                     </form>
                   ) : (
                     <div className="space-y-4">

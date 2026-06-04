@@ -16,6 +16,7 @@ import {
   deleteLocation,
 } from "@/services/api";
 import { LocationSelect } from "@/components/LocationSelect";
+import { sanitizeInput } from "@/lib/validation";
 
 type LocationItem = {
   id: number;
@@ -242,7 +243,7 @@ export function LocationsModal({ onClose }: Props) {
                 {isNewState ? (
                   <input
                     value={customState}
-                    onChange={(e) => setCustomState(e.target.value)}
+                    onChange={(e) => setCustomState(sanitizeInput(e.target.value))}
                     placeholder="Type new state..."
                     className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary"
                   />
@@ -282,7 +283,7 @@ export function LocationsModal({ onClose }: Props) {
                 {isNewCity || availableCities.length === 0 ? (
                   <input
                     value={customCity}
-                    onChange={(e) => setCustomCity(e.target.value)}
+                    onChange={(e) => setCustomCity(sanitizeInput(e.target.value))}
                     disabled={!activeState}
                     placeholder={activeState ? "Type new city..." : "Select state first"}
                     className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary disabled:opacity-40 disabled:pointer-events-none"
@@ -305,7 +306,7 @@ export function LocationsModal({ onClose }: Props) {
                 <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Town / Area</label>
                 <input
                   value={townInput}
-                  onChange={(e) => setTownInput(e.target.value)}
+                  onChange={(e) => setTownInput(sanitizeInput(e.target.value))}
                   disabled={!activeState || !activeCity}
                   placeholder={activeState && activeCity ? "Type Town/Area..." : "Complete scope first"}
                   className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary disabled:opacity-40 disabled:pointer-events-none"

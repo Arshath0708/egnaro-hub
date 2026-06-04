@@ -4,6 +4,7 @@ import { X, LayoutTemplate, ImagePlus, Loader2, Save, Monitor, Smartphone } from
 import { toast } from "sonner";
 import { getHomeContent, updateHomeContent, uploadImage } from "@/services/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { sanitizeInput } from "@/lib/validation";
 
 const SLIDES = [
   { number: 1, label: "Slide 1 — Products" },
@@ -156,6 +157,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
 
                 {/* EDITOR GRID */}
                 <div className="grid gap-8 lg:grid-cols-2">
+                  <fieldset disabled={saving || uploading} className="contents border-none p-0 m-0">
                   {/* LEFT PANEL — Controls API's right_* text */}
                   <div className="space-y-5">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-500">
@@ -169,7 +171,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                       <input
                         type="text"
                         value={current.right_title}
-                        onChange={(e) => update("right_title", e.target.value)}
+                        onChange={(e) => update("right_title", sanitizeInput(e.target.value))}
                         placeholder="e.g. Trusted by businesses across India"
                         className={inputClass}
                       />
@@ -181,7 +183,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                       <textarea
                         rows={5}
                         value={current.right_subtext}
-                        onChange={(e) => update("right_subtext", e.target.value)}
+                        onChange={(e) => update("right_subtext", sanitizeInput(e.target.value))}
                         placeholder="Descriptive text shown on the left panel..."
                         className={`${inputClass} resize-none`}
                       />
@@ -239,7 +241,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                       <input
                         type="text"
                         value={current.left_title}
-                        onChange={(e) => update("left_title", e.target.value)}
+                        onChange={(e) => update("left_title", sanitizeInput(e.target.value))}
                         placeholder="e.g. Premium products"
                         className={inputClass}
                       />
@@ -251,12 +253,13 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
                       <textarea
                         rows={3}
                         value={current.left_subtext}
-                        onChange={(e) => update("left_subtext", e.target.value)}
+                        onChange={(e) => update("left_subtext", sanitizeInput(e.target.value))}
                         placeholder="Supporting text for the right panel..."
                         className={`${inputClass} resize-none`}
                       />
                     </div>
                   </div>
+                  </fieldset>
                 </div>
 
                 {/* SAVE BUTTON */}

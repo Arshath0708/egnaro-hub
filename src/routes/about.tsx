@@ -328,7 +328,7 @@ export default function AboutPage() {
               Explore Products <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/help"
+              to="/contact "
               className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/5 text-slate-200 px-8 py-3.5 rounded-2xl font-bold tracking-wider text-xs uppercase transition-colors"
             >
               Contact Us

@@ -6,6 +6,7 @@ import { addVendor, getLocations, addLocation } from "@/services/api";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { toast } from "sonner";
 import { LocationSelect } from "@/components/LocationSelect";
+import { validateName, validateEmail, validatePhone, validatePassword, sanitizeInput } from "@/lib/validation";
 
 const API = "https://egnaromart.com/api";
 
@@ -207,8 +208,9 @@ export default function VendorRegister() {
 
   async function handleVendorReset(e: React.FormEvent) {
     e.preventDefault();
+    const pwError = validatePassword(newPw);
+    if (pwError) { toast.error(pwError); return; }
     if (newPw !== confirmPw) { toast.error("Passwords do not match"); return; }
-    if (newPw.length < 6)    { toast.error("Minimum 6 characters"); return; }
     setResetLoading(true);
     try {
       const res = await fetch(`${API}/vendor-reset-password.php`, {
@@ -250,7 +252,17 @@ export default function VendorRegister() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    const pwError = validatePassword(form.password);
+    if (pwError) { toast.error(pwError); return; }
+    
+    const cleanVendorName = sanitizeInput(form.vendor_name);
+    const cleanCompanyName = sanitizeInput(form.company_name);
+    const cleanEmail = sanitizeInput(form.email);
+    const cleanAddress = sanitizeInput(form.address);
+    
+    if (!validateName(cleanVendorName)) { toast.error("Valid vendor name required (letters/spaces only)"); return; }
+    if (!validateEmail(cleanEmail)) { toast.error("Valid email required"); return; }
+    if (!validatePhone(form.phone)) { toast.error("Valid 10-digit phone number required"); return; }
 
     // Resolve final state, city, and town names, prioritizing typed custom values if "other" is selected
     const finalState = form.state === "other" ? customState.trim() : form.state;
@@ -286,6 +298,10 @@ export default function VendorRegister() {
       // 2. Submit vendor registration payload with the resolved normalized parameters
       const res = await addVendor({
         ...form,
+        vendor_name: cleanVendorName,
+        company_name: cleanCompanyName,
+        email: cleanEmail,
+        address: cleanAddress,
         state: finalState,
         city: finalCity,
         town: finalTown,
@@ -395,6 +411,7 @@ export default function VendorRegister() {
           {/* ── REGISTER ── */}
           {mode === "register" && !forgotMode && (
             <form onSubmit={handleRegister} autoComplete="on" className="space-y-4">
+              <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-400">Vendor Name (as per in bank a/c)</label>
@@ -408,8 +425,8 @@ export default function VendorRegister() {
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-400">Phone</label>
-                  <input required type="tel" autoComplete="tel" placeholder="+91 98765 43210" className={inp}
-                    value={form.phone} onChange={(e) => setRegField("phone", e.target.value)} />
+                  <input required type="tel" inputMode="numeric" maxLength={10} autoComplete="tel" placeholder="9876543210" className={inp}
+                    value={form.phone} onChange={(e) => setRegField("phone", e.target.value.replace(/\D/g, "").slice(0, 10))} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-400">Email</label>
@@ -438,7 +455,7 @@ export default function VendorRegister() {
                 <label className="mb-1 block text-xs font-medium text-gray-400">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3.5 h-4 w-4 text-gray-500" />
-                  <input required type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Min 6 characters"
+                  <input required type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Min 8 characters (1 num, 1 upper)"
                     className={`${inp} pl-10 pr-10`} value={form.password}
                     onChange={(e) => setRegField("password", e.target.value)} />
                   <button
@@ -533,12 +550,14 @@ export default function VendorRegister() {
                 className="w-full rounded-lg gradient-primary py-3 font-semibold text-white disabled:opacity-60">
                 {loading ? "Submitting..." : "Submit Application"}
               </button>
+              </fieldset>
             </form>
           )}
 
           {/* ── LOGIN ── */}
           {mode === "login" && !forgotMode && (
             <form onSubmit={handleLogin} autoComplete="on" className="space-y-4">
+              <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-400">Email</label>
                 <input required type="email" autoComplete="email" placeholder="you@company.com" className={inp}
@@ -573,6 +592,7 @@ export default function VendorRegister() {
               <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-300 flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 flex-shrink-0" /> Approved vendors only.
               </div>
+              </fieldset>
             </form>
           )}
 
@@ -587,6 +607,7 @@ export default function VendorRegister() {
               {/* Step: idle — email input */}
               {resetStep === "idle" && (
                 <form onSubmit={handleRequestReset} className="space-y-4">
+                  <fieldset disabled={resetLoading} className="space-y-4 border-none p-0 m-0 min-w-0">
                   <div className="text-center">
                     <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                       <Mail className="h-6 w-6 text-primary" />
@@ -605,6 +626,7 @@ export default function VendorRegister() {
                     {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                     {resetLoading ? "Sending..." : "Request Password Reset"}
                   </button>
+                  </fieldset>
                 </form>
               )}
 
@@ -628,6 +650,7 @@ export default function VendorRegister() {
               {/* Step: show_reset_form */}
               {resetStep === "show_reset_form" && (
                 <form onSubmit={handleVendorReset} className="space-y-4">
+                  <fieldset disabled={resetLoading} className="space-y-4 border-none p-0 m-0 min-w-0">
                   <div className="text-center">
                     <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-500/10">
                       <KeyRound className="h-6 w-6 text-green-400" />
@@ -673,6 +696,7 @@ export default function VendorRegister() {
                     {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                     {resetLoading ? "Saving..." : "Set New Password"}
                   </button>
+                  </fieldset>
                 </form>
               )}
 

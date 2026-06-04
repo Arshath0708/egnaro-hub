@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/auth-store";
 const API_BASE = "https://egnaromart.com/api";
 
 async function request(endpoint: string, options?: RequestInit) {
@@ -17,10 +18,6 @@ async function request(endpoint: string, options?: RequestInit) {
   const text = await res.text();
 
   console.log(`API RESPONSE (${endpoint}) =>`, text);
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
 
   try {
     return text ? JSON.parse(text) : [];
@@ -86,13 +83,15 @@ export async function getProducts(params?: {
         : (p.vendor_company || "Vendor"),
   }));
 
+  const validProducts = mapped.filter((p: any) => p.status !== "rejected" && p.status !== "deleted");
+
   if (actualParams) {
     return {
       ...data,
-      products: mapped
+      products: validProducts
     };
   }
-  return mapped;
+  return validProducts;
 }
 
 
@@ -129,13 +128,16 @@ export async function getVendorProducts(
     throw new Error(data.message || "Failed to fetch vendor products");
   }
 
+  const vendorProducts = data.products || [];
+  const validProducts = vendorProducts.filter((p: any) => p.status !== "rejected" && p.status !== "deleted");
+
   if (actualParams) {
     return {
       ...data,
-      products: data.products || []
+      products: validProducts
     };
   }
-  return data.products || [];
+  return validProducts;
 }
 
 export async function getVendorStats(vendorId: string) {
@@ -161,7 +163,9 @@ export async function getVendorOrders(vendorId: string, page: number = 1, status
 }
 
 export async function getPendingProducts() {
-  return await request("/get-pending.php");
+  const data = await getProducts({ limit: 10000 });
+  const products = Array.isArray(data) ? data : (data.products || []);
+  return products.filter((p: any) => Number(p.approved) === 0 || p.status === "pending");
 }
 export type ProductForm = {
   vendorId: string;
@@ -316,18 +320,44 @@ export async function getUserOrders(
     actualParams = undefined;
   }
 
-  const queryParts = [`token=${encodeURIComponent(token)}`];
-  if (actualParams) {
-    if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
-    if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
-  } else {
-    queryParts.push("limit=10000");
-  }
-
-  const queryString = `?${queryParts.join("&")}`;
-  return await request(`/get-order.php${queryString}`, {
+  // Backend bug: It ignores user_id and returns all global orders.
+  // We MUST fetch limit=10000 and filter on the frontend.
+  const queryString = `?token=${encodeURIComponent(token)}&limit=10000`;
+  const data = await request(`/get-order.php${queryString}`, {
     headers: { "Authorization": `Bearer ${token}` }
   });
+
+  if (!data || !data.success) return data;
+
+  const user = useAuth.getState().user;
+  if (!user) return { success: true, orders: [], total_rows: 0, total_pages: 0 };
+
+  const allOrders = Array.isArray(data.orders) ? data.orders : [];
+  const userOrders = allOrders.filter((o: any) => String(o.user_id) === String(user.id));
+
+  if (actualParams && actualParams.page && actualParams.limit) {
+    const page = Number(actualParams.page);
+    const limit = Number(actualParams.limit);
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const paginatedOrders = userOrders.slice(start, end);
+    
+    return {
+      success: true,
+      orders: paginatedOrders,
+      total_rows: userOrders.length,
+      total_pages: Math.ceil(userOrders.length / limit) || 1,
+      page,
+      limit
+    };
+  }
+
+  return {
+    ...data,
+    orders: userOrders,
+    total_rows: userOrders.length,
+    total_pages: 1
+  };
 }
 
 /* =========================
@@ -415,6 +445,12 @@ export async function getVendors(params?: {
     };
   }
   return vendorsList;
+}
+
+export async function getPendingVendors() {
+  const data = await getVendors({ limit: 10000 });
+  const vendors = Array.isArray(data) ? data : (data.vendors || []);
+  return vendors.filter((v: any) => Number(v.approved) === 0 || v.status === "pending");
 }
 
 export async function getVendorById(vendorId: number) {

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";   // ✅ switched to react-router-dom
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { sanitizeInput, validateEmail } from "@/lib/validation";
 
 export function Footer() {
   const [email, setEmail] = useState("");
@@ -122,6 +123,11 @@ export function Footer() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!email) return;
+                const cleanEmail = sanitizeInput(email);
+                if (!validateEmail(cleanEmail)) {
+                  toast.error("Please enter a valid email address");
+                  return;
+                }
                 toast.success("Subscribed", {
                   description: "Welcome to Egnaro Mart insiders.",
                 });
@@ -129,6 +135,7 @@ export function Footer() {
               }}
               className="flex items-center gap-2 glass rounded-xl p-1.5"
             >
+              <fieldset disabled={false} className="flex gap-2 w-full border-none p-0 m-0 min-w-0">
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -139,10 +146,11 @@ export function Footer() {
               />
               <button
                 type="submit"
-                className="gradient-primary text-primary-foreground p-2 rounded-lg hover:shadow-glow transition-shadow"
+                className="gradient-primary text-primary-foreground p-2 rounded-lg hover:shadow-glow transition-shadow cursor-pointer"
               >
                 <Send className="h-4 w-4" />
               </button>
+              </fieldset>
             </form>
           </div>
         </div>

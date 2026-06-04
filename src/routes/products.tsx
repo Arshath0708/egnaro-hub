@@ -39,6 +39,7 @@ import {
   getCategories,
   getLocations,
 } from "@/services/api";
+import { sanitizeInput } from "@/lib/validation";
 
 const SORT_OPTIONS = [
   {
@@ -178,6 +179,8 @@ export default function ProductsPage() {
     arr = arr.filter(
       (p: any) =>
         p &&
+        p.status !== "rejected" &&
+        p.status !== "deleted" &&
         (p.approved === true ||
           Number(p.approved) === 1 ||
           p.status === "approved")
@@ -224,12 +227,12 @@ export default function ProductsPage() {
     if (currentQ) {
       const cleanQ = currentQ.replace(/\s+/g, "");
       arr = arr.filter((p: any) => {
-        const nameMatch = p.name?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
-        const descMatch = p.description?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
-        const catMatch = p.category?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
-        const cityMatch = p.vendor_city?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
-        const stateMatch = p.vendor_state?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
-        const townMatch = p.vendor_town?.toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const nameMatch = (p.name || "").toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const descMatch = (p.description || "").toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const catMatch = (p.category || "").toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const cityMatch = (p.vendor_city || "").toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const stateMatch = (p.vendor_state || "").toLowerCase().replace(/\s+/g, "").includes(cleanQ);
+        const townMatch = (p.vendor_town || "").toLowerCase().replace(/\s+/g, "").includes(cleanQ);
         return nameMatch || descMatch || catMatch || cityMatch || stateMatch || townMatch;
       });
     }
@@ -263,7 +266,9 @@ export default function ProductsPage() {
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const q = searchRef.current?.value.trim() || "";
+    let q = searchRef.current?.value.trim() || "";
+    q = sanitizeInput(q);
+    
     if (q) {
       params.set("q", q);
     } else {

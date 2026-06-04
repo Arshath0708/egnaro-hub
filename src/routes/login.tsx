@@ -6,6 +6,7 @@ import { AlertCircle, Mail, KeyRound, Lock, ArrowLeft, CheckCircle2, Loader2, Ey
 import { loginCustomer } from "@/services/api";
 import { toast } from "sonner";
 import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
+import { validateEmail, validatePassword, sanitizeInput } from "@/lib/validation";
 
 const API = "https://egnaromart.com/api";
 
@@ -231,9 +232,19 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
 
       <form
         autoComplete="on"
-        onSubmit={(e) => { e.preventDefault(); setErrorMsg(null); mutation.mutate(); }}
+        onSubmit={(e) => { 
+          e.preventDefault(); 
+          setErrorMsg(null); 
+          const cleanEmail = sanitizeInput(email);
+          if (!validateEmail(cleanEmail)) {
+            setErrorMsg("Please enter a valid email address.");
+            return;
+          }
+          mutation.mutate(); 
+        }}
         className="space-y-4"
       >
+        <fieldset disabled={mutation.isPending} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="Email Address">
           <input 
             type="email" 
@@ -241,7 +252,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
             placeholder="you@example.com"
             value={email} 
             required 
-            onChange={(e) => { setEmail(e.target.value); setErrorMsg(null); }}
+            onChange={(e) => { setEmail(e.target.value.trim()); setErrorMsg(null); }}
             className={premiumInputClass} 
           />
         </Field>
@@ -278,6 +289,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
         </div>
 
         <PrimaryButton loading={mutation.isPending} label="Sign In to Portal" loadingLabel="Authenticating..." />
+        </fieldset>
       </form>
 
       <p className="text-center text-xs text-slate-400 font-semibold mt-4">
@@ -335,18 +347,20 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleSend} className="space-y-4">
+        <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="Email Address">
           <input 
             type="email" 
             placeholder="you@example.com" 
             value={email} 
             required
-            onChange={(e) => setEmail(e.target.value)} 
+            onChange={(e) => setEmail(e.target.value.trim())} 
             className={premiumInputClass} 
           />
         </Field>
 
         <PrimaryButton loading={loading} label="Send OTP Key" loadingLabel="Sending..." />
+        </fieldset>
       </form>
     </Card>
   );
@@ -411,6 +425,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleVerify} className="space-y-4">
+        <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="6-Digit Verification Token">
           <input
             type="text" 
@@ -425,6 +440,7 @@ function OtpStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
         </Field>
 
         <PrimaryButton loading={loading} label="Verify Token Code" loadingLabel="Verifying..." />
+        </fieldset>
       </form>
 
       <p className="text-center text-xs text-slate-500 font-semibold mt-2">
@@ -454,8 +470,9 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault();
+    const pwError = validatePassword(pw);
+    if (pwError) { setError(pwError); return; }
     if (pw !== confirm) { setError("Passwords do not match."); return; }
-    if (pw.length < 6) { setError("Password must be at least 6 characters."); return; }
 
     setLoading(true);
     setError(null);
@@ -519,6 +536,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
       {error && <ErrorBanner msg={error} />}
 
       <form onSubmit={handleReset} className="space-y-4">
+        <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
         <Field label="New Secure Passcode">
           <div className="relative">
             <input 
@@ -526,7 +544,6 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
               placeholder="••••••••" 
               value={pw} 
               required 
-              minLength={6}
               onChange={(e) => { setPw(e.target.value); setError(null); }} 
               className={`${premiumInputClass} pr-12`} 
             />
@@ -564,6 +581,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
         </Field>
 
         <PrimaryButton loading={loading} label="Reset Password" loadingLabel="Resetting..." />
+        </fieldset>
       </form>
     </Card>
   );

@@ -36,8 +36,10 @@ import { DeleteProductModal } from "@/modals/DeleteProductModal";
 import { AddProductModal } from "@/modals/AddProductModal";
 import { ViewVendorModal } from "@/modals/ViewVendorModal";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
-import { addProduct, getVendorProducts, getVendorStats, getVendorOrders } from "@/services/api";
+import { clearUserSession } from "@/lib/session";
+import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct } from "@/services/api";
 import { inr } from "@/lib/format";
+import { sanitizeInput } from "@/lib/validation";
 import { toast } from "sonner";
 import {
   Tabs,
@@ -86,7 +88,7 @@ type ProductForm = {
 export default function VendorDashboard() {
   const vendorId = useAuth((s) => s.vendorId);
   const isVendor = useAuth(selectIsVendor);
-  const logout = useAuth((s) => s.logoutVendor);
+  const queryClient = useQueryClient();
 
   if (!isVendor || !vendorId) {
     return (
@@ -120,7 +122,9 @@ export default function VendorDashboard() {
   return (
     <DashboardContent
       vendorId={vendorId}
-      onLogout={logout}
+      onLogout={() => {
+        clearUserSession(queryClient);
+      }}
     />
   );
 }
@@ -488,7 +492,7 @@ function DashboardContent({
                       placeholder="Search products..."
                       value={productSearch}
                       onChange={(e) => {
-                        setProductSearch(e.target.value);
+                        setProductSearch(sanitizeInput(e.target.value));
                         setProductPage(1);
                       }}
                       className="h-12 w-full bg-transparent text-sm text-white outline-none placeholder:text-gray-500 pl-3"

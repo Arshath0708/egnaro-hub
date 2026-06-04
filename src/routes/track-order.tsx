@@ -20,12 +20,14 @@ import {
   LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
+import { clearUserSession } from "@/lib/session";
 
 import { Shell } from "@/components/layout/Shell";
 import { trackOrder, getUserOrders, getUser, updateProfile, manageAddress } from "@/services/api";
 import { inr, dateTime, dateShort } from "@/lib/format";
 import type { Order, OrderStatus } from "@/types";
 import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
+import { sanitizeInput } from "@/lib/validation";
 
 const STEPS: {
   id: OrderStatus;
@@ -161,12 +163,14 @@ export default function TrackOrder() {
     ? userOrdersData.orders.map(buildOrder)
     : [];
 
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     if (userOrdersData?.message === "Invalid or expired token") {
-      useAuth.getState().logout();
+      clearUserSession(queryClient);
       toast.error("Your session has expired. Please log in again.");
     }
-  }, [userOrdersData]);
+  }, [userOrdersData, queryClient]);
 
   const mutation = useMutation({
     mutationFn: (idOverride?: string) =>
@@ -249,10 +253,14 @@ export default function TrackOrder() {
                 return;
               }
 
-              mutation.mutate(undefined);
+              const query = sanitizeInput(inputRef.current.value);
+              inputRef.current.value = query;
+
+              mutation.mutate(query);
             }}
             className="flex flex-col gap-3 sm:flex-row"
           >
+            <fieldset disabled={mutation.isPending} className="flex flex-col gap-3 sm:flex-row w-full border-none p-0 m-0 min-w-0">
             <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3">
               <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
 
@@ -273,6 +281,7 @@ export default function TrackOrder() {
                 ? "Tracking…"
                 : "Track Order"}
             </button>
+            </fieldset>
           </form>
         </div>
 

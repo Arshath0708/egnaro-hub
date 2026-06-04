@@ -20,6 +20,7 @@ import { getProducts, getReviews, addReview } from "@/services/api";
 import { inr } from "@/lib/format";
 import { useCart } from "@/context/cart-store";
 import { toast } from "sonner";
+import { sanitizeInput, validateName } from "@/lib/validation";
 
 type Product = {
   total_reviews: number;
@@ -74,7 +75,11 @@ export default function ProductDetail() {
       const products = await getProducts();
 
       const found = products.find(
-        (p: Product) => String(p.id) === String(id)
+        (p: Product) =>
+          String(p.id) === String(id) &&
+          p.status !== "rejected" &&
+          p.status !== "deleted" &&
+          (p.approved === true || Number(p.approved) === 1 || p.status === "approved")
       );
 
       return found || null;
@@ -117,17 +122,25 @@ export default function ProductDetail() {
   /* ADD REVIEW */
 
   async function handleSubmitReview() {
-    if (!customerName || !reviewText) {
+    const cleanName = sanitizeInput(customerName);
+    const cleanReview = sanitizeInput(reviewText);
+
+    if (!cleanName || !cleanReview) {
       toast.error("Please fill all fields");
+      return;
+    }
+
+    if (!validateName(cleanName)) {
+      toast.error("Please enter a valid name");
       return;
     }
 
     try {
       const res = await addReview({
         product_id: Number(id),
-        customer_name: customerName,
+        customer_name: cleanName,
         rating,
-        review: reviewText,
+        review: cleanReview,
       });
 
       if (res.success) {
@@ -272,20 +285,20 @@ export default function ProductDetail() {
 
               {Number(product.original_price) >
                 Number(product.price) && (
-                <>
-                  <div className="pb-1 text-lg text-muted-foreground line-through">
-                    {inr(Number(product.original_price))}
-                  </div>
+                  <>
+                    <div className="pb-1 text-lg text-muted-foreground line-through">
+                      {inr(Number(product.original_price))}
+                    </div>
 
-                  <div className="pb-1 text-sm font-semibold text-green-400">
-                    Save{" "}
-                    {inr(
-                      Number(product.original_price) -
+                    <div className="pb-1 text-sm font-semibold text-green-400">
+                      Save{" "}
+                      {inr(
+                        Number(product.original_price) -
                         Number(product.price)
-                    )}
-                  </div>
-                </>
-              )}
+                      )}
+                    </div>
+                  </>
+                )}
             </div>
 
             {/* DESCRIPTION */}
@@ -355,8 +368,8 @@ export default function ProductDetail() {
                 <div className="flex items-center gap-3.5">
                   <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 pointer-events-none">
                     <svg className="h-5 w-5 text-cyan-400 drop-shadow-[0_2px_6px_rgba(34,211,238,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="1" y="3" width="15" height="13" rx="2" ry="2" fill="rgba(34,211,238,0.05)"/>
-                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                      <rect x="1" y="3" width="15" height="13" rx="2" ry="2" fill="rgba(34,211,238,0.05)" />
+                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                       <circle cx="5.5" cy="18.5" r="2.5" />
                       <circle cx="18.5" cy="18.5" r="2.5" />
                     </svg>
@@ -378,8 +391,8 @@ export default function ProductDetail() {
                 <div className="flex items-center gap-3.5">
                   <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 pointer-events-none">
                     <svg className="h-5 w-5 text-emerald-400 drop-shadow-[0_2px_6px_rgba(52,211,153,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(52,211,153,0.1)"/>
-                      <path d="m9 11 2 2 4-4"/>
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(52,211,153,0.1)" />
+                      <path d="m9 11 2 2 4-4" />
                     </svg>
                   </div>
 
@@ -428,9 +441,8 @@ export default function ProductDetail() {
               >
                 {showReviews ? "Hide Reviews" : "See Reviews"}
                 <ChevronRight
-                  className={`h-4 w-4 transition-transform duration-300 ${
-                    showReviews ? "rotate-90" : "group-hover:translate-x-1"
-                  }`}
+                  className={`h-4 w-4 transition-transform duration-300 ${showReviews ? "rotate-90" : "group-hover:translate-x-1"
+                    }`}
                 />
               </button>
             </div>
@@ -452,7 +464,7 @@ export default function ProductDetail() {
                   {/* LEFT: SUMMARY */}
                   <div className="lg:col-span-4">
                     <h3 className="mb-6 text-3xl font-black">Customer Reviews</h3>
-                    
+
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-white/10 to-transparent p-6 text-center">
                         <span className="text-5xl font-black text-primary">
@@ -462,11 +474,10 @@ export default function ProductDetail() {
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`h-4 w-4 ${
-                                i < Math.round(calculatedAverage)
+                              className={`h-4 w-4 ${i < Math.round(calculatedAverage)
                                   ? "fill-yellow-400 text-yellow-400"
                                   : "text-white/20"
-                              }`}
+                                }`}
                             />
                           ))}
                         </div>
@@ -506,79 +517,58 @@ export default function ProductDetail() {
                       <form
                         onSubmit={async (e) => {
                           e.preventDefault();
-                          if (!customerName || !reviewText) {
-                            toast.error("Please fill all fields");
-                            return;
-                          }
-                          try {
-                            const res = await addReview({
-                              product_id: Number(product.id),
-                              customer_name: customerName,
-                              rating,
-                              review: reviewText,
-                            });
-                            if (res.success) {
-                              toast.success("Review submitted!");
-                              setCustomerName("");
-                              setReviewText("");
-                              setRating(5);
-                              refetchReviews();
-                            } else {
-                              toast.error(res.error || "Failed to submit review");
-                            }
-                          } catch (err) {
-                            toast.error("Something went wrong");
-                          }
+                          await handleSubmitReview();
                         }}
                         className="space-y-4"
                       >
-                        <div className="relative">
-                          <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <input
-                            type="text"
-                            placeholder="Full Name"
-                            value={customerName}
-                            onChange={(e) => setCustomerName(e.target.value)}
-                            className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm outline-none focus:border-primary/50"
+                        <fieldset disabled={false} className="space-y-4 border-none p-0 m-0 min-w-0">
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="text"
+                              placeholder="Full Name"
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              className="w-full rounded-2xl border border-white/10 bg-black/40 py-3 pl-12 pr-4 text-sm outline-none focus:border-primary/50"
+                              required
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2 px-2">
+                            <span className="text-xs font-semibold text-muted-foreground">Rating:</span>
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => setRating(s)}
+                                  className="transition-transform hover:scale-125"
+                                >
+                                  <Star
+                                    className={`h-5 w-5 ${s <= rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"
+                                      }`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <textarea
+                            placeholder="What did you like or dislike?"
+                            value={reviewText}
+                            onChange={(e) => setReviewText(e.target.value)}
+                            rows={4}
+                            className="w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-sm outline-none focus:border-primary/50"
                             required
                           />
-                        </div>
 
-                        <div className="flex items-center gap-2 px-2">
-                          <span className="text-xs font-semibold text-muted-foreground">Rating:</span>
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <button
-                                key={s}
-                                type="button"
-                                onClick={() => setRating(s)}
-                                className="transition-transform hover:scale-125"
-                              >
-                                <Star
-                                  className={`h-5 w-5 ${
-                                    s <= rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"
-                                  }`}
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <textarea
-                          placeholder="What did you like or dislike?"
-                          value={reviewText}
-                          onChange={(e) => setReviewText(e.target.value)}
-                          rows={4}
-                          className="w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-sm outline-none focus:border-primary/50"
-                          required
-                        />
-
-                        <button
-                          type="submit"
-                          className="w-full rounded-2xl gradient-primary py-4 text-sm font-black text-primary-foreground transition hover:scale-[1.02] hover:shadow-glow shimmer"
-                        >
-                          Submit Review
-                        </button>
+                          <button
+                            type="submit"
+                            className="w-full rounded-2xl gradient-primary py-4 text-sm font-black text-primary-foreground transition hover:scale-[1.02] hover:shadow-glow shimmer"
+                          >
+                            Submit Review
+                          </button>
+                        </fieldset>
                       </form>
                     </div>
                   </div>
@@ -625,9 +615,8 @@ export default function ProductDetail() {
                                     {[...Array(5)].map((_, i) => (
                                       <Star
                                         key={i}
-                                        className={`h-3 w-3 ${
-                                          i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"
-                                        }`}
+                                        className={`h-3 w-3 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-white/20"
+                                          }`}
                                       />
                                     ))}
                                   </div>
@@ -644,7 +633,7 @@ export default function ProductDetail() {
                             </div>
 
                             <p className="leading-relaxed text-muted-foreground/90">{review.review}</p>
-                            
+
                             <div className="mt-4 flex items-center gap-4 text-xs font-medium text-muted-foreground">
                               <button className="transition hover:text-primary">Helpful</button>
                               <button className="transition hover:text-primary">Report</button>

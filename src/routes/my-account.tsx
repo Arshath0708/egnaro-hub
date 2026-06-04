@@ -23,6 +23,7 @@ import {
 
 import { Shell } from "@/components/layout/Shell";
 import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
+import { clearUserSession } from "@/lib/session";
 import {
   getUser,
   updateProfile,
@@ -31,6 +32,7 @@ import {
 } from "@/services/api";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
+import { validateName, validatePhone, validatePincode, sanitizeInput } from "@/lib/validation";
 
 type Address = {
   label: string;
@@ -247,13 +249,7 @@ export default function MyAccount() {
   const isLoggedIn = useAuth(selectIsLoggedIn);
   const user = useAuth((s) => s.user);
 
-  // Redirect to login if user session is invalid
-  useEffect(() => {
-    if (!isLoggedIn || !token) {
-      toast.error("Please login to access your account dashboard.");
-      navigate("/login");
-    }
-  }, [isLoggedIn, token, navigate]);
+
 
   // Expanded Workspace controller
   const [activeSubTab, setActiveSubTab] = useState<"orders" | "addresses" | "security" | "help" | null>(null);
@@ -285,6 +281,21 @@ export default function MyAccount() {
     queryFn: () => getUserOrders(token!),
     enabled: !!token,
   });
+
+  // Redirect to login if user session is invalid
+  useEffect(() => {
+    if (!isLoggedIn || !token) {
+      toast.error("Please login to access your account dashboard.");
+      navigate("/login");
+      return;
+    }
+
+    if (userProfileData?.message === "Invalid or expired token" || ordersRes?.message === "Invalid or expired token") {
+      clearUserSession(queryClient);
+      toast.error("Your session has expired. Please log in again.");
+      navigate("/login");
+    }
+  }, [isLoggedIn, token, navigate, userProfileData, ordersRes, queryClient]);
 
   // Keep internal form inputs synced with loaded profile details
   useEffect(() => {
@@ -331,7 +342,7 @@ export default function MyAccount() {
     },
   });
 
-  if (!isLoggedIn || !token || isProfileLoading) {
+  if (!isLoggedIn || !token || isProfileLoading || isOrdersLoading) {
     return (
       <Shell>
         <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#020617] text-white">
@@ -363,19 +374,44 @@ export default function MyAccount() {
 
   function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
-    if (!profileName.trim()) {
-      toast.error("Name field is required");
+    const cleanName = sanitizeInput(profileName);
+    
+    if (!validateName(cleanName)) {
+      toast.error("Valid full name required (letters and spaces only)");
       return;
     }
-    updateProfileMutation.mutate({ fullName: profileName, phone: profilePhone });
+    if (profilePhone && !validatePhone(profilePhone)) {
+      toast.error("Valid 10-digit phone number required");
+      return;
+    }
+    updateProfileMutation.mutate({ fullName: cleanName, phone: profilePhone });
   }
 
   async function handleSaveAddress(e: React.FormEvent) {
     e.preventDefault();
-    if (!addressForm.street.trim() || !addressForm.city.trim() || !addressForm.state.trim() || !addressForm.pincode.trim()) {
+    
+    const cleanStreet = sanitizeInput(addressForm.street);
+    const cleanCity = sanitizeInput(addressForm.city);
+    const cleanState = sanitizeInput(addressForm.state);
+    const cleanLabel = sanitizeInput(addressForm.label);
+    
+    if (!cleanStreet || !cleanCity || !cleanState || !addressForm.pincode.trim()) {
       toast.error("All address fields are required");
       return;
     }
+    
+    if (!validatePincode(addressForm.pincode)) {
+      toast.error("Valid 6-digit pincode required");
+      return;
+    }
+    
+    const finalPayload = {
+      ...addressForm,
+      street: cleanStreet,
+      city: cleanCity,
+      state: cleanState,
+      label: cleanLabel || "Address",
+    };
 
     if (editingAddressIndex !== null) {
       // Edit mode: delete the address index first, then add the new updated coordinates
@@ -387,14 +423,14 @@ export default function MyAccount() {
       setTimeout(() => {
         addressMutation.mutate({
           action: "add",
-          payload: addressForm,
+          payload: finalPayload,
         });
       }, 350);
     } else {
       // Add mode: direct save
       addressMutation.mutate({
         action: "add",
-        payload: addressForm,
+        payload: finalPayload,
       });
     }
   }
@@ -445,7 +481,7 @@ export default function MyAccount() {
                 
                 <button
                   onClick={() => {
-                    useAuth.getState().logout();
+                    clearUserSession(queryClient);
                     navigate("/login");
                     toast.success("Successfully logged out.");
                   }}
@@ -774,6 +810,7 @@ export default function MyAccount() {
                     
                     {/* Details form */}
                     <form onSubmit={handleSaveProfile} className="space-y-5 rounded-2xl border border-white/5 bg-slate-950/44 p-6">
+                      <fieldset disabled={updateProfileMutation.isPending} className="space-y-4 border-none p-0 m-0 min-w-0">
                       <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 border-b border-white/5 pb-3">Personal Profile Details</h4>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -797,8 +834,10 @@ export default function MyAccount() {
                             <Phone className="absolute left-4.5 top-3.5 h-4.5 w-4.5 text-slate-500" />
                             <input
                               type="tel"
+                              inputMode="numeric"
+                              maxLength={10}
                               value={profilePhone}
-                              onChange={(e) => setProfilePhone(e.target.value)}
+                              onChange={(e) => setProfilePhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                               className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-white/10 bg-slate-950/60 text-xs text-white outline-none transition-colors focus:border-primary"
                             />
                           </div>
@@ -826,6 +865,7 @@ export default function MyAccount() {
                       >
                         {updateProfileMutation.isPending ? "Updating Credentials..." : "Save Profile Details"}
                       </button>
+                      </fieldset>
                     </form>
 
                     {/* Change/Reset password triggers */}
@@ -875,6 +915,7 @@ export default function MyAccount() {
                       }}
                       className="space-y-4"
                     >
+                      <fieldset disabled={false} className="space-y-4 border-none p-0 m-0 min-w-0">
                       <h4 className="text-xs font-bold uppercase tracking-widest text-primary border-b border-white/5 pb-2">Submit Support Request</h4>
                       
                       <div>
@@ -903,6 +944,7 @@ export default function MyAccount() {
                       >
                         Create Support Ticket
                       </button>
+                      </fieldset>
                     </form>
                   </div>
                 )}
@@ -946,6 +988,7 @@ export default function MyAccount() {
               </h3>
 
               <form onSubmit={handleSaveAddress} className="space-y-4">
+                <fieldset disabled={addressMutation.isPending} className="space-y-4 border-none p-0 m-0 min-w-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Address Label</label>
@@ -1016,6 +1059,7 @@ export default function MyAccount() {
                 >
                   {addressMutation.isPending ? "Saving Location..." : "Save Delivery Address"}
                 </button>
+                </fieldset>
               </form>
             </motion.div>
           </div>

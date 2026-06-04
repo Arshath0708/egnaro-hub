@@ -35,6 +35,9 @@ import {
   cartCount,
 } from "@/context/cart-store";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
+import { sanitizeInput } from "@/lib/validation";
+import { clearUserSession } from "@/lib/session";
+import { useQueryClient } from "@tanstack/react-query";
 
 import logo from "@/assets/logo.jpeg";
 
@@ -50,6 +53,7 @@ export function Header() {
   const isVendor = useAuth(selectIsVendor);
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
+  const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -109,14 +113,15 @@ export function Header() {
   }, [userMenuOpen]);
 
   function handleLogout() {
-    logout();
+    clearUserSession(queryClient);
     setUserMenuOpen(false);
     navigate("/login");
   }
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const q = searchVal.trim();
+    let q = searchVal.trim();
+    q = sanitizeInput(q);
     if (q) {
       navigate(`/products?q=${encodeURIComponent(q)}`);
     } else {

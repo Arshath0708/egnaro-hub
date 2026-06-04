@@ -14,8 +14,10 @@ import { Shell } from "@/components/layout/Shell";
 import { useCart } from "@/context/cart-store";
 import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 import { getProducts, getUser, manageAddress } from "@/services/api";
+import { validateName, validateEmail, validatePhone, validatePincode, sanitizeInput } from "@/lib/validation";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
+import { clearUserSession } from "@/lib/session";
 
 const inputCls =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
@@ -95,6 +97,14 @@ export default function CheckoutPage() {
 
   const userProfile = userData?.user;
   const addresses = userProfile?.addresses || [];
+
+  // Expiration check
+  useEffect(() => {
+    if (userData?.message === "Invalid or expired token") {
+      clearUserSession(queryClient);
+      toast.error("Your session has expired. Please log in again.");
+    }
+  }, [userData, queryClient]);
 
   const [addressPrefilled, setAddressPrefilled] = useState(false);
 
@@ -220,6 +230,18 @@ Please find my payment screenshot attached.
       return;
     }
 
+    const cleanName = sanitizeInput(form.fullName);
+    const cleanEmail = sanitizeInput(form.email);
+    const cleanAddress = sanitizeInput(form.address);
+    const cleanCity = sanitizeInput(form.city);
+    const cleanState = sanitizeInput(form.state);
+    const cleanNotes = sanitizeInput(form.notes);
+
+    if (!validateName(cleanName)) { toast.error("Valid full name required"); return; }
+    if (!validateEmail(cleanEmail)) { toast.error("Valid email required"); return; }
+    if (!validatePhone(form.phone)) { toast.error("Valid 10-digit phone number required"); return; }
+    if (!validatePincode(form.pincode)) { toast.error("Valid 6-digit pincode required"); return; }
+
     if (submitting) return;
 
     setSubmitting(true);
@@ -245,20 +267,15 @@ Please find my payment screenshot attached.
           },
 
           body: JSON.stringify({
-            customer_name: form.fullName,
+            customer_name: cleanName,
             phone: form.phone,
-            email: form.email,
-
-            address: `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`,
-
+            email: cleanEmail,
+            address: `${cleanAddress}, ${cleanCity}, ${cleanState} - ${form.pincode}`,
             total,
-
             payment_method: payment,
-
             order_items: orderItems,
-            items: orderItems, // Send both to be safe
-            notes: form.notes,
-
+            items: orderItems,
+            notes: cleanNotes,
             gst: form.gst,
             user_id: user?.id,
             vendor_id: Number(vendorId)
@@ -275,9 +292,9 @@ Please find my payment screenshot attached.
           try {
             await manageAddress(token, "add", {
               label: "Saved from Checkout",
-              street: form.address,
-              city: form.city,
-              state: form.state,
+              street: cleanAddress,
+              city: cleanCity,
+              state: cleanState,
               pincode: form.pincode
             });
           } catch (e) {
@@ -285,11 +302,11 @@ Please find my payment screenshot attached.
           }
         }
 
-        // Invalidate queries so that the statistics and order list refresh in background
-        queryClient.invalidateQueries({ queryKey: ["user-orders-list"] });
-        queryClient.invalidateQueries({ queryKey: ["userOrders"] });
-        queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        // Remove queries so that the statistics and order list fetch fresh and show loading state
+        queryClient.removeQueries({ queryKey: ["user-orders-list"] });
+        queryClient.removeQueries({ queryKey: ["userOrders"] });
+        queryClient.removeQueries({ queryKey: ["user-profile"] });
+        queryClient.removeQueries({ queryKey: ["userProfile"] });
 
         localStorage.removeItem("egnaro_coupon");
         clear();
@@ -323,8 +340,9 @@ Please find my payment screenshot attached.
 
         <form
           onSubmit={handleSubmit}
-          className="grid gap-8 lg:grid-cols-[1fr_400px]"
+          className="grid gap-12 lg:grid-cols-[1fr_400px]"
         >
+          <fieldset disabled={submitting} className="space-y-12 border-none p-0 m-0 min-w-0">
           {/* LEFT */}
 
           <div className="space-y-8">
@@ -386,10 +404,11 @@ Please find my payment screenshot attached.
                 <Field label="Phone Number *">
                   <input
                     required
-                    pattern="[0-9]{10}"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={form.phone}
                     onChange={(e) =>
-                      setField("phone", e.target.value)
+                      setField("phone", e.target.value.replace(/\D/g, "").slice(0, 10))
                     }
                     className={inputCls}
                     placeholder="10 digit mobile number"
@@ -448,10 +467,11 @@ Please find my payment screenshot attached.
                 <Field label="Pincode *">
                   <input
                     required
-                    pattern="[0-9]{6}"
+                    inputMode="numeric"
+                    maxLength={6}
                     value={form.pincode}
                     onChange={(e) =>
-                      setField("pincode", e.target.value)
+                      setField("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))
                     }
                     className={inputCls}
                     placeholder="6 digit pincode"
@@ -658,9 +678,10 @@ Please find my payment screenshot attached.
                 </div>
               )}
             </section>
-          </div>
+            </div>
+          </fieldset>
 
-          {/* RIGHT */}
+          {/* RIGHT COL: SUMMARY */}
 
           <aside className="sticky top-24 h-fit rounded-3xl border border-border bg-card p-6 shadow-sm">
             <h2 className="mb-5 text-2xl font-bold">

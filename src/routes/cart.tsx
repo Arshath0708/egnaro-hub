@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/Section";
 import { useCart } from "@/context/cart-store";
 import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
+import { sanitizeInput } from "@/lib/validation";
 
 export default function CartPage() {
   const items = useCart((s) => s.items);
@@ -77,7 +78,8 @@ export default function CartPage() {
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
-    if (couponCode.trim().toUpperCase() === "EGNARO10") {
+    const cleanCoupon = sanitizeInput(couponCode).toUpperCase();
+    if (cleanCoupon === "EGNARO10") {
       setAppliedCoupon("EGNARO10");
       localStorage.setItem("egnaro_coupon", "EGNARO10");
       setCouponError("");
@@ -95,9 +97,14 @@ export default function CartPage() {
     toast.success("Coupon code removed.");
   };
 
-  // Cross-selling recommendations (exclude items already in the cart)
+  // Cross-selling recommendations (exclude items already in the cart and unapproved products)
   const crossSellProducts = products
-    .filter((p: any) => !items.some((i) => i.productId === p.id))
+    .filter((p: any) => 
+      !items.some((i) => i.productId === p.id) &&
+      p.status !== "rejected" &&
+      p.status !== "deleted" &&
+      (p.approved === true || Number(p.approved) === 1 || p.status === "approved")
+    )
     .slice(0, 4);
 
   return (
@@ -318,12 +325,13 @@ export default function CartPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                    <fieldset disabled={false} className="flex gap-2 w-full border-none p-0 m-0 min-w-0">
                     <input
                       type="text"
                       placeholder="e.g. EGNARO10"
                       value={couponCode}
                       onChange={(e) => {
-                        setCouponCode(e.target.value);
+                        setCouponCode(e.target.value.replace(/[^a-zA-Z0-9]/g, ""));
                         setCouponError("");
                       }}
                     className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white uppercase outline-none focus:border-primary"
@@ -334,6 +342,7 @@ export default function CartPage() {
                   >
                     Apply
                   </button>
+                  </fieldset>
                 </form>
               )}
               {couponError && <p className="text-[10px] text-red-400 mt-2 font-bold">{couponError}</p>}

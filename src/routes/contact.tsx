@@ -2,6 +2,7 @@ import { Phone, Mail, MapPin, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Shell } from "@/components/layout/Shell";
+import { validateName, validateEmail, sanitizeInput } from "@/lib/validation";
 
 export default function Contact() {   
   const [form, setForm] = useState({ name: "", email: "", message: "" });
@@ -77,6 +78,23 @@ export default function Contact() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              const cleanName = sanitizeInput(form.name);
+              const cleanEmail = sanitizeInput(form.email);
+              const cleanMsg = sanitizeInput(form.message);
+
+              if (!validateName(cleanName)) {
+                toast.error("Please enter a valid name");
+                return;
+              }
+              if (!validateEmail(cleanEmail)) {
+                toast.error("Please enter a valid email address");
+                return;
+              }
+              if (!cleanMsg.trim()) {
+                toast.error("Message cannot be empty");
+                return;
+              }
+
               toast.success("Message sent", {
                 description: "We'll get back to you shortly.",
               });
@@ -84,6 +102,7 @@ export default function Contact() {
             }}
             className="glass-strong rounded-2xl p-6 shadow-elegant"
           >
+            <fieldset disabled={false} className="space-y-0 border-none p-0 m-0 min-w-0">
             <h3 className="font-display text-2xl font-bold mb-5">
               Send a message
             </h3>
@@ -133,6 +152,7 @@ export default function Contact() {
             <button className="mt-5 inline-flex items-center gap-2 gradient-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold shadow-glow shimmer">
               <Send className="h-4 w-4" /> Send Message
             </button>
+            </fieldset>
           </form>
         </div>
       </div>

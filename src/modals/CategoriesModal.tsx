@@ -19,6 +19,7 @@ import {
   getLocations,
 } from "@/services/api";
 import { LocationSelect } from "@/components/LocationSelect";
+import { sanitizeInput } from "@/lib/validation";
 
 type Category = {
   id: number;
@@ -310,7 +311,7 @@ export function CategoriesModal({ onClose }: Props) {
                 <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Category Name</label>
                 <input
                   value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
+                  onChange={(e) => setNewCategory(sanitizeInput(e.target.value))}
                   placeholder="e.g. Rice & Pulses"
                   className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder:text-gray-600 outline-none focus:border-primary transition-colors"
                 />
@@ -397,7 +398,7 @@ export function CategoriesModal({ onClose }: Props) {
                         <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Name</label>
                         <input
                           value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
+                          onChange={(e) => setEditingName(sanitizeInput(e.target.value))}
                           placeholder="Category Name"
                           className="w-full h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-1.5 text-xs text-white outline-none focus:border-primary"
                         />

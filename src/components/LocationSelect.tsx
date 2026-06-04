@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Plus, AlertCircle } from "lucide-react";
+import { sanitizeInput } from "@/lib/validation";
 
 interface LocationSelectProps {
   label: string;
@@ -124,7 +125,7 @@ export function LocationSelect({
                 type="text"
                 placeholder={customPlaceholder}
                 value={customValue}
-                onChange={(e) => onCustomValueChange(e.target.value)}
+                onChange={(e) => onCustomValueChange(sanitizeInput(e.target.value))}
                 className="w-full h-11 rounded-xl border border-primary/30 bg-[#0c1224]/80 px-4 py-3 text-sm text-white placeholder:text-gray-600 shadow-inner outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
               />
               <div className="flex items-center gap-1 text-[10px] text-gray-500 mt-1 pl-1">

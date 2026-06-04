@@ -106,18 +106,24 @@ export default function Home() {
   }, [apiCategories]);
 
 
-  const featured = products.slice(0, 4);
-  const hasMoreFeatured = products.length > 4;
+  const approvedProducts = useMemo(() => {
+    return products.filter(
+      (p: any) => p && p.status !== "rejected" && p.status !== "deleted" && (p.approved === true || Number(p.approved) === 1 || p.status === "approved")
+    );
+  }, [products]);
+
+  const featured = approvedProducts.slice(0, 4);
+  const hasMoreFeatured = approvedProducts.length > 4;
 
   const trendingAll = useMemo(() => 
-    [...products].sort((a: any, b: any) => (b.total_reviews || 0) - (a.total_reviews || 0)),
-  [products]);
+    [...approvedProducts].sort((a: any, b: any) => (b.total_reviews || 0) - (a.total_reviews || 0)),
+  [approvedProducts]);
   const trending = trendingAll.slice(0, 4);
   const hasMoreTrending = trendingAll.length > 4;
 
   const dealsAll = useMemo(() => 
-    [...products].sort((a: any, b: any) => (b.discount || 0) - (a.discount || 0)),
-  [products]);
+    [...approvedProducts].sort((a: any, b: any) => (b.discount || 0) - (a.discount || 0)),
+  [approvedProducts]);
   const deals = dealsAll.slice(0, 4);
   const hasMoreDeals = dealsAll.length > 4;
 

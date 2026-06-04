@@ -39,8 +39,9 @@ import { ViewUserModal } from "@/modals/ViewUserModal";
 
 import { useAuth, selectIsAdmin } from "@/context/auth-store";
 import { toast } from "sonner";
+import { clearUserSession } from "@/lib/session";
 
-import { 
+import {
   adminDeleteProduct,
   getProducts,
   getOrders,
@@ -50,8 +51,12 @@ import {
   addLocation,
   deleteLocation,
   getCategories,
-  getUsers
+  getUsers,
+  updateOrderStatus,
+  getPendingProducts,
+  getPendingVendors
 } from "@/services/api";
+import { sanitizeInput } from "@/lib/validation";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -95,13 +100,13 @@ const inputClass =
 
 export default function AdminPage() {
   const isAdmin = useAuth(selectIsAdmin);
-  const logoutAdmin = useAuth((s) => s.logoutAdmin);
+  const queryClient = useQueryClient();
 
   if (!isAdmin) {
     return <AdminLogin />;
   }
 
-  return <AdminPanel onLogout={logoutAdmin} />;
+  return <AdminPanel onLogout={() => clearUserSession(queryClient)} />;
 }
 
 /* ================= LAYERED ICON CONTAINER ================= */
@@ -128,7 +133,7 @@ function LayeredIconContainer({
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
       {/* GPU acceleration layers */}
       <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-      
+
       {/* The Icon */}
       <div className="relative text-white z-10 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
         {icon}
@@ -261,10 +266,23 @@ function AdminPanel({
   const orders = (ordersData?.orders || []) as any[];
   const allVendors = (vendorsData?.vendors || []) as any[];
   const allUsers = (usersData?.users || []) as any[];
-  
+
   const dashboardStats = statsRes || null;
-  const pendingVendors = dashboardStats?.vendors?.pending || 0;
-  const pendingProducts = dashboardStats?.products?.pending_approval || 0;
+
+  const { data: pendingVendorsData } = useQuery({
+    queryKey: ["pending-vendors"],
+    queryFn: getPendingVendors,
+    staleTime: 60 * 1000,
+  });
+
+  const { data: pendingProductsData } = useQuery({
+    queryKey: ["pending-products"],
+    queryFn: getPendingProducts,
+    staleTime: 60 * 1000,
+  });
+
+  const pendingVendors = pendingVendorsData?.length || 0;
+  const pendingProducts = pendingProductsData?.length || 0;
 
   const productsTotalPages = productsData?.total_pages || 1;
   const ordersTotalPages = ordersData?.total_pages || 1;
@@ -318,7 +336,7 @@ function AdminPanel({
 
   // Helper wrappers to reset pages on filter/search change
   const handleProductSearchChange = (val: string) => {
-    setProductSearch(val);
+    setProductSearch(sanitizeInput(val));
     setProductPage(1);
   };
   const handleProductCategoryChange = (val: string) => {
@@ -326,7 +344,7 @@ function AdminPanel({
     setProductPage(1);
   };
   const handleOrderSearchChange = (val: string) => {
-    setOrderSearch(val);
+    setOrderSearch(sanitizeInput(val));
     setOrderPage(1);
   };
   const handleOrderStatusChange = (val: string) => {
@@ -342,7 +360,7 @@ function AdminPanel({
     setOrderPage(1);
   };
   const handleVendorSearchChange = (val: string) => {
-    setVendorSearch(val);
+    setVendorSearch(sanitizeInput(val));
     setVendorPage(1);
   };
 
@@ -353,6 +371,8 @@ function AdminPanel({
     queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
     queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
     queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    queryClient.invalidateQueries({ queryKey: ["pending-products"] });
+    queryClient.invalidateQueries({ queryKey: ["pending-vendors"] });
   }, [queryClient]);
 
   return (
@@ -460,11 +480,10 @@ function AdminPanel({
                           setActiveTab(tab.id);
                           setMenuOpen(false);
                         }}
-                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                          active
-                            ? "bg-primary text-white shadow-lg shadow-primary/10"
-                            : "text-gray-400 hover:bg-white/5 hover:text-white"
-                        }`}
+                        className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${active
+                          ? "bg-primary text-white shadow-lg shadow-primary/10"
+                          : "text-gray-400 hover:bg-white/5 hover:text-white"
+                          }`}
                       >
                         <span>{tab.label}</span>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-white/20 text-white" : "bg-white/5 text-gray-500"}`}>
@@ -744,7 +763,7 @@ function AdminPanel({
                       className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-13 pr-4 text-sm text-white outline-none focus:border-primary transition-colors"
                     />
                   </div>
-                  
+
                   {/* Filter Fields */}
                   <div className="flex flex-wrap items-center gap-4">
                     {/* Status Select */}
@@ -1270,7 +1289,7 @@ function AdminPanel({
                         <TableHead className="text-gray-400 py-4.5 pl-6 font-bold tracking-wider">
                           Avatar
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="text-gray-400 py-4.5 font-bold tracking-wider cursor-pointer hover:text-white transition-colors"
                           onClick={() => {
                             setUserSortBy("id");
@@ -1279,7 +1298,7 @@ function AdminPanel({
                         >
                           User ID {userSortBy === "id" && (userSortOrder === "ASC" ? "▲" : "▼")}
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="text-gray-400 py-4.5 font-bold tracking-wider cursor-pointer hover:text-white transition-colors"
                           onClick={() => {
                             setUserSortBy("fullName");
@@ -1288,7 +1307,7 @@ function AdminPanel({
                         >
                           Full Name {userSortBy === "fullName" && (userSortOrder === "ASC" ? "▲" : "▼")}
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="text-gray-400 py-4.5 font-bold tracking-wider cursor-pointer hover:text-white transition-colors"
                           onClick={() => {
                             setUserSortBy("email");
@@ -1300,7 +1319,7 @@ function AdminPanel({
                         <TableHead className="text-gray-400 py-4.5 font-bold tracking-wider">
                           Phone
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="text-gray-400 py-4.5 font-bold tracking-wider cursor-pointer hover:text-white transition-colors"
                           onClick={() => {
                             setUserSortBy("total_orders");
@@ -1309,7 +1328,7 @@ function AdminPanel({
                         >
                           Orders {userSortBy === "total_orders" && (userSortOrder === "ASC" ? "▲" : "▼")}
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="text-gray-400 py-4.5 font-bold tracking-wider cursor-pointer hover:text-white transition-colors text-right"
                           onClick={() => {
                             setUserSortBy("total_spent");
@@ -1321,7 +1340,7 @@ function AdminPanel({
                         <TableHead className="text-gray-400 py-4.5 font-bold tracking-wider text-center">
                           Addresses
                         </TableHead>
-                        <TableHead 
+                        <TableHead
                           className="text-gray-400 py-4.5 font-bold tracking-wider cursor-pointer hover:text-white transition-colors"
                           onClick={() => {
                             setUserSortBy("joined_date");
@@ -1613,7 +1632,7 @@ function ActionButton({
       <div className="absolute -bottom-10 -right-10 h-24 w-24 rounded-full blur-2xl opacity-10 transition-all duration-500 group-hover:opacity-25 pointer-events-none"
         style={{ background: glowColor }}
       />
-      
+
       {/* Layered icon container */}
       <div className="mb-4">
         <LayeredIconContainer
@@ -1681,12 +1700,12 @@ function StatCard({
     >
       {/* Visual background pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.015)_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-      
+
       {/* Dynamic corner light flare */}
       <div className="absolute -top-12 -right-12 h-24 w-24 rounded-full blur-2xl opacity-10 transition-all duration-500 group-hover:opacity-25 pointer-events-none"
         style={{ background: glowColor }}
       />
-      
+
       <div className="mb-6 flex items-center justify-between">
         <LayeredIconContainer
           icon={icon}
@@ -1813,8 +1832,8 @@ const OrderRow = memo(
     const parsedItems = Array.isArray(order.items)
       ? order.items
       : typeof order.items === "string"
-      ? JSON.parse(order.items)
-      : [];
+        ? JSON.parse(order.items)
+        : [];
 
     return (
       <motion.div
@@ -1831,8 +1850,8 @@ const OrderRow = memo(
                   #{order.order_id}
                 </h3>
                 <p className="text-xs text-gray-400 mt-1">
-                  Placed: {(order as any).created_at ? new Date((order as any).created_at).toLocaleDateString('en-IN') : 'N/A'} 
-                  <span className="mx-2 text-gray-600">•</span> 
+                  Placed: {(order as any).created_at ? new Date((order as any).created_at).toLocaleDateString('en-IN') : 'N/A'}
+                  <span className="mx-2 text-gray-600">•</span>
                   Estimated Delivery: <strong className="text-gray-300">{estimatedDays || 'Pending'}</strong>
                 </p>
               </div>
@@ -1882,10 +1901,10 @@ const OrderRow = memo(
                 <div className="space-y-2">
                   {parsedItems.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-2 hover:bg-white/5 transition-colors">
-                      <img 
-                        src={item.image} 
-                        alt={item.name} 
-                        className="h-10 w-10 rounded-lg bg-black/20 object-cover border border-white/5" 
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="h-10 w-10 rounded-lg bg-black/20 object-cover border border-white/5"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-xs font-extrabold text-white">{item.name}</p>
@@ -1963,7 +1982,7 @@ const OrderRow = memo(
 
 function RevenueBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: () => void }) {
   const details = stats?.details;
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
       <motion.div
@@ -1980,16 +1999,16 @@ function RevenueBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: 
           ✕
         </button>
         <h2 className="mb-6 text-2xl font-black text-white tracking-tight">Marketplace Revenue Split</h2>
-        
+
         {details ? (
           <div className="space-y-4 animate-fadeIn">
             <div className="flex justify-between rounded-2xl bg-white/5 p-4 border border-white/5">
               <span className="text-gray-400 font-semibold">Marketplace GMV</span>
               <span className="font-black text-white text-lg">₹{details.marketplace_gmv?.toLocaleString('en-IN') || 0}</span>
             </div>
-            
+
             <div className="h-px bg-white/10 my-4" />
-            
+
             <div className="flex justify-between rounded-2xl bg-cyan-500/10 p-4 border border-cyan-500/10">
               <span className="text-cyan-400 font-semibold">Platform Net Revenue (Admin)</span>
               <span className="font-black text-cyan-400 text-lg">₹{details.platform_revenue?.toLocaleString('en-IN') || 0}</span>
