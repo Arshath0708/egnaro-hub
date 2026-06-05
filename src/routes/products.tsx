@@ -83,8 +83,9 @@ export default function ProductsPage() {
   const currentSort = params.get("sort") ?? "new";
   const currentQ = params.get("q")?.toLowerCase() ?? "";
   const currentCats = useMemo(() => params.get("categories")?.split(",").filter(Boolean) ?? [], [location.search]);
-  const currentLocs = useMemo(() => params.get("locations")?.split(",").filter(Boolean) ?? [], [location.search]);
-  const currentCos = useMemo(() => params.get("companies")?.split(",").filter(Boolean) ?? [], [location.search]);
+  const currentState = params.get("state") ?? "";
+  const currentCity = params.get("city") ?? "";
+  const currentCo = params.get("company") ?? "";
 
   const searchRef = useRef<HTMLInputElement>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -110,13 +111,6 @@ export default function ProductsPage() {
     staleTime: 1000 * 60 * 10,
   });
 
-  /* COMPANIES */
-  const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
-    queryKey: ["companies"],
-    queryFn: getCompanies,
-    staleTime: 1000 * 60 * 10,
-  });
-
   const locations = Array.isArray(apiLocations) ? apiLocations : [];
 
   /* REGIONAL NORMALIZATION */
@@ -132,11 +126,39 @@ export default function ProductsPage() {
     });
   }, [products]);
 
-  /* NORMALIZED CITIES LIST */
+  /* NORMALIZED STATES LIST */
+  const availableStates = useMemo(() => {
+    const fromLocs = locations.map((l: any) => toTitleCase(l.state));
+    const fromProducts = normalizedProducts.map((p: any) => toTitleCase(p.vendor_state));
+    return Array.from(new Set([...fromLocs, ...fromProducts])).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  }, [locations, normalizedProducts]);
+
+  /* NORMALIZED CITIES LIST BASED ON STATE */
   const availableCities = useMemo(() => {
-    const cities = locations.map((l: any) => toTitleCase(l.city));
-    return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
-  }, [locations]);
+    if (!currentState) return [];
+    const fromLocs = locations
+      .filter((l: any) => l.state?.toLowerCase() === currentState.toLowerCase())
+      .map((l: any) => toTitleCase(l.city));
+    const fromProducts = normalizedProducts
+      .filter((p: any) => p.vendor_state?.toLowerCase() === currentState.toLowerCase())
+      .map((p: any) => toTitleCase(p.vendor_city));
+    return Array.from(new Set([...fromLocs, ...fromProducts])).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  }, [locations, normalizedProducts, currentState]);
+
+  /* NORMALIZED COMPANIES LIST BASED ON STATE/CITY */
+  const availableCompanies = useMemo((): string[] => {
+    if (!currentState) return [];
+    let filtered = normalizedProducts.filter(
+      (p: any) => p.vendor_state?.toLowerCase() === currentState.toLowerCase()
+    );
+    if (currentCity) {
+      filtered = filtered.filter(
+        (p: any) => p.vendor_city?.toLowerCase() === currentCity.toLowerCase()
+      );
+    }
+    const cos = filtered.map((p: any) => p.vendor_company as string).filter(Boolean);
+    return (Array.from(new Set(cos)) as string[]).sort((a, b) => a.localeCompare(b));
+  }, [normalizedProducts, currentState, currentCity]);
 
   /* PRODUCT FILTER ENGINE */
   const displayProducts = useMemo(() => {
@@ -164,21 +186,30 @@ export default function ProductsPage() {
       });
     }
 
-    /* LOCATIONS FILTER */
-    if (currentLocs.length > 0) {
+    /* STATE FILTER */
+    if (currentState) {
+      arr = arr.filter(
+        (p: any) =>
+          p.vendor_state &&
+          p.vendor_state.toLowerCase() === currentState.toLowerCase()
+      );
+    }
+
+    /* CITY FILTER */
+    if (currentCity) {
       arr = arr.filter(
         (p: any) =>
           p.vendor_city &&
-          currentLocs.some((loc) => loc.toLowerCase() === p.vendor_city.toLowerCase())
+          p.vendor_city.toLowerCase() === currentCity.toLowerCase()
       );
     }
 
     /* COMPANIES FILTER */
-    if (currentCos.length > 0) {
+    if (currentCo) {
       arr = arr.filter(
         (p: any) =>
           p.vendor_company &&
-          currentCos.some((co) => co.toLowerCase() === p.vendor_company.toLowerCase())
+          p.vendor_company.toLowerCase() === currentCo.toLowerCase()
       );
     }
 
@@ -216,8 +247,9 @@ export default function ProductsPage() {
     normalizedProducts,
     categories,
     currentCats,
-    currentLocs,
-    currentCos,
+    currentState,
+    currentCity,
+    currentCo,
     currentQ,
     currentSort,
   ]);
@@ -257,10 +289,53 @@ export default function ProductsPage() {
     navigate(`/products?${params.toString()}`);
   }
 
+  function handleCategoryChange(value: string) {
+    if (value === "all" || !value) {
+      params.delete("categories");
+    } else {
+      params.set("categories", value);
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
+  function handleStateChange(value: string) {
+    if (value === "all" || !value) {
+      params.delete("state");
+      params.delete("city");
+      params.delete("company");
+    } else {
+      params.set("state", value);
+      params.delete("city");
+      params.delete("company");
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
+  function handleCityChange(value: string) {
+    if (value === "all" || !value) {
+      params.delete("city");
+      params.delete("company");
+    } else {
+      params.set("city", value);
+      params.delete("company");
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
+  function handleCompanyChange(value: string) {
+    if (value === "all" || !value) {
+      params.delete("company");
+    } else {
+      params.set("company", value);
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
   function handleClearAllFilters() {
     params.delete("categories");
-    params.delete("locations");
-    params.delete("companies");
+    params.delete("state");
+    params.delete("city");
+    params.delete("company");
     navigate(`/products?${params.toString()}`);
   }
 
@@ -276,9 +351,9 @@ export default function ProductsPage() {
 
         {/* HEADER */}
 
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
 
-          <div>
+          <div className="shrink-0">
             <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
               Shop
             </div>
@@ -294,30 +369,51 @@ export default function ProductsPage() {
             </p>
           </div>
 
-          {/* SEARCH */}
+          {/* SEARCH & CATEGORY SELECTOR */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:max-w-2xl xl:max-w-3xl">
+            {/* CATEGORIES SELECT */}
+            <div className="w-full sm:w-48 shrink-0">
+              <Select value={currentCats[0] || "all"} onValueChange={handleCategoryChange}>
+                <SelectTrigger className="w-full h-[46px] rounded-xl border border-glass-border bg-[#0b1220]/50 px-3.5 text-sm outline-none text-white focus:ring-1 focus:ring-primary backdrop-blur-md">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {[...categories]
+                    .sort((a: any, b: any) => a.name.localeCompare(b.name))
+                    .map((c: any) => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <form
-            onSubmit={handleSearchSubmit}
-            className="glass flex items-center gap-2 rounded-xl p-1.5 md:w-96"
-          >
-            <Search className="ml-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-
-            <input
-              ref={searchRef}
-              defaultValue={
-                params.get("q") ?? ""
-              }
-              placeholder="Search products..."
-              className="flex-1 bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground"
-            />
-
-            <button
-              type="submit"
-              className="gradient-primary rounded-lg px-4 py-2 text-xs font-semibold text-primary-foreground"
+            {/* SEARCH INPUT */}
+            <form
+              onSubmit={handleSearchSubmit}
+              className="glass flex-1 flex items-center gap-2 rounded-xl p-1.5 min-w-0"
             >
-              Search
-            </button>
-          </form>
+              <Search className="ml-2.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+
+              <input
+                ref={searchRef}
+                defaultValue={
+                  params.get("q") ?? ""
+                }
+                placeholder="Search products..."
+                className="flex-1 bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground min-w-0"
+              />
+
+              <button
+                type="submit"
+                className="gradient-primary rounded-lg px-5 py-2.5 text-xs font-semibold text-primary-foreground shrink-0 cursor-pointer"
+              >
+                Search
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* LAYOUT */}
@@ -326,16 +422,17 @@ export default function ProductsPage() {
 
           <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <Sidebar
-              categories={categories}
+              availableStates={availableStates}
               availableCities={availableCities}
-              companies={companies}
-              currentCats={currentCats}
-              currentLocs={currentLocs}
-              currentCos={currentCos}
+              availableCompanies={availableCompanies}
+              currentState={currentState}
+              currentCity={currentCity}
+              currentCo={currentCo}
               currentSort={currentSort}
-              isLoadingCompanies={isLoadingCompanies}
               onSortChange={handleSortChange}
-              onToggleFilter={handleToggleFilter}
+              onStateChange={handleStateChange}
+              onCityChange={handleCityChange}
+              onCompanyChange={handleCompanyChange}
             />
           </div>
 
@@ -343,7 +440,7 @@ export default function ProductsPage() {
 
           <div>
             {/* ACTIVE FILTER CHIPS */}
-            {(currentCats.length > 0 || currentLocs.length > 0 || currentCos.length > 0) && (
+            {(currentCats.length > 0 || currentState || currentCity || currentCo) && (
               <div className="mb-6 flex flex-wrap items-center gap-2 bg-[#090d1a]/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
                 <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 mr-2">
                   Active Filters:
@@ -363,36 +460,51 @@ export default function ProductsPage() {
                     </button>
                   </span>
                 ))}
-                {currentLocs.map((loc) => (
+                {currentState && (
                   <span
-                    key={`loc-${loc}`}
+                    key={`state-${currentState}`}
                     className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
                   >
-                    {loc}
+                    State: {currentState}
                     <button
                       type="button"
-                      onClick={() => handleToggleFilter("locations", loc)}
+                      onClick={() => handleStateChange("")}
                       className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
                     >
                       <X className="h-3 w-3" />
                     </button>
                   </span>
-                ))}
-                {currentCos.map((co) => (
+                )}
+                {currentCity && (
                   <span
-                    key={`co-${co}`}
+                    key={`city-${currentCity}`}
                     className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
                   >
-                    {co}
+                    City: {currentCity}
                     <button
                       type="button"
-                      onClick={() => handleToggleFilter("companies", co)}
+                      onClick={() => handleCityChange("")}
                       className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
                     >
                       <X className="h-3 w-3" />
                     </button>
                   </span>
-                ))}
+                )}
+                {currentCo && (
+                  <span
+                    key={`co-${currentCo}`}
+                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                  >
+                    Company: {currentCo}
+                    <button
+                      type="button"
+                      onClick={() => handleCompanyChange("")}
+                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={handleClearAllFilters}
@@ -451,7 +563,7 @@ export default function ProductsPage() {
             className="flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-bold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary-hover active:scale-95 transition-[transform,border-color,background-color,color] cursor-pointer"
           >
             <SlidersHorizontal className="h-4 w-4" />
-            <span>Filter {currentCats.length + currentLocs.length + currentCos.length > 0 ? `(${currentCats.length + currentLocs.length + currentCos.length})` : ""}</span>
+            <span>Filter {currentCats.length + (currentState ? 1 : 0) + (currentCity ? 1 : 0) + (currentCo ? 1 : 0) > 0 ? `(${currentCats.length + (currentState ? 1 : 0) + (currentCity ? 1 : 0) + (currentCo ? 1 : 0)})` : ""}</span>
           </button>
         </div>
 
@@ -486,16 +598,17 @@ export default function ProductsPage() {
 
                 {/* Sidebar filters rendered inside the mobile drawer */}
                 <Sidebar
-                  categories={categories}
+                  availableStates={availableStates}
                   availableCities={availableCities}
-                  companies={companies}
-                  currentCats={currentCats}
-                  currentLocs={currentLocs}
-                  currentCos={currentCos}
+                  availableCompanies={availableCompanies}
+                  currentState={currentState}
+                  currentCity={currentCity}
+                  currentCo={currentCo}
                   currentSort={currentSort}
-                  isLoadingCompanies={isLoadingCompanies}
                   onSortChange={handleSortChange}
-                  onToggleFilter={handleToggleFilter}
+                  onStateChange={handleStateChange}
+                  onCityChange={handleCityChange}
+                  onCompanyChange={handleCompanyChange}
                 />
               </div>
 
@@ -531,54 +644,30 @@ export default function ProductsPage() {
 
 const Sidebar = memo(
   function Sidebar({
-    categories,
+    availableStates,
     availableCities,
-    companies,
-    currentCats,
-    currentLocs,
-    currentCos,
+    availableCompanies,
+    currentState,
+    currentCity,
+    currentCo,
     currentSort,
-    isLoadingCompanies,
     onSortChange,
-    onToggleFilter,
+    onStateChange,
+    onCityChange,
+    onCompanyChange,
   }: {
-    categories: any[];
+    availableStates: string[];
     availableCities: string[];
-    companies: string[];
-    currentCats: string[];
-    currentLocs: string[];
-    currentCos: string[];
+    availableCompanies: string[];
+    currentState: string;
+    currentCity: string;
+    currentCo: string;
     currentSort: string;
-    isLoadingCompanies?: boolean;
     onSortChange: (value: string) => void;
-    onToggleFilter: (type: "categories" | "locations" | "companies", value: string) => void;
+    onStateChange: (value: string) => void;
+    onCityChange: (value: string) => void;
+    onCompanyChange: (value: string) => void;
   }) {
-    const [locationQuery, setLocationQuery] = useState("");
-    const [debouncedLocationQuery, setDebouncedLocationQuery] = useState("");
-    useEffect(() => {
-      const timer = setTimeout(() => setDebouncedLocationQuery(locationQuery), 150);
-      return () => clearTimeout(timer);
-    }, [locationQuery]);
-
-    const [companyQuery, setCompanyQuery] = useState("");
-    const [debouncedCompanyQuery, setDebouncedCompanyQuery] = useState("");
-    useEffect(() => {
-      const timer = setTimeout(() => setDebouncedCompanyQuery(companyQuery), 150);
-      return () => clearTimeout(timer);
-    }, [companyQuery]);
-
-    const filteredCitiesList = useMemo(() => {
-      const q = debouncedLocationQuery.trim().toLowerCase();
-      if (!q) return availableCities;
-      return availableCities.filter((city) => city.toLowerCase().includes(q));
-    }, [availableCities, debouncedLocationQuery]);
-
-    const filteredCompaniesList = useMemo(() => {
-      const q = debouncedCompanyQuery.trim().toLowerCase();
-      if (!q) return companies;
-      return companies.filter((co) => co.toLowerCase().includes(q));
-    }, [companies, debouncedCompanyQuery]);
-
     return (
       <aside className="space-y-6 animate-fadeUp">
         {/* SORT */}
@@ -598,143 +687,73 @@ const Sidebar = memo(
           </Select>
         </div>
 
-        {/* CATEGORIES CARD */}
+        {/* LOCATION & BRAND CARD */}
         <div className="glass rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-white">
             <SlidersHorizontal className="h-4 w-4 text-primary" />
-            Categories
+            Location & Brand
           </div>
-          <div className="max-h-48 overflow-y-auto pr-1 scrollbar-thin space-y-2">
-            {[...categories]
-              .sort((a: any, b: any) => a.name.localeCompare(b.name))
-              .map((c: any) => {
-                const name = c.name;
-                const isChecked = currentCats.includes(name);
-                const id = `cat-chk-${c.id}`;
-                return (
-                  <div key={c.id} className="flex items-center space-x-2 py-0.5">
-                    <Checkbox
-                      id={id}
-                      checked={isChecked}
-                      onCheckedChange={() => onToggleFilter("categories", name)}
-                    />
-                    <label
-                      htmlFor={id}
-                      className="text-sm text-gray-300 hover:text-white cursor-pointer select-none truncate flex-1"
-                    >
-                      {name}
-                    </label>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
 
-        {/* LOCATIONS CARD */}
-        <div className="glass rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <SlidersHorizontal className="h-4 w-4 text-primary" />
-            Locations
+          {/* STATE */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-gray-400 font-medium">State</label>
+            <Select value={currentState || "all"} onValueChange={onStateChange}>
+              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary">
+                <SelectValue placeholder="All States" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All States</SelectItem>
+                {availableStates.map((st) => (
+                  <SelectItem key={st} value={st}>
+                    {st}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          {/* Search Input */}
-          <div className="flex items-center gap-2 border border-white/10 bg-white/5 rounded-lg px-2.5 py-1">
-            <Search className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-            <input
-              type="text"
-              placeholder="Search locations..."
-              value={locationQuery}
-              onChange={(e) => setLocationQuery(e.target.value)}
-              className="w-full bg-transparent border-0 text-xs text-white outline-none placeholder:text-gray-600"
-            />
-            {locationQuery && (
-              <button
-                type="button"
-                onClick={() => setLocationQuery("")}
-                className="text-gray-500 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-          <div className="max-h-48 overflow-y-auto pr-1 scrollbar-thin space-y-2">
-            {filteredCitiesList.length === 0 ? (
-              <div className="text-xs text-gray-500 py-2">No locations found</div>
-            ) : (
-              filteredCitiesList.map((city) => {
-                const isChecked = currentLocs.includes(city);
-                const id = `loc-chk-${city.replace(/\s+/g, "-")}`;
-                return (
-                  <div key={city} className="flex items-center space-x-2 py-0.5">
-                    <Checkbox
-                      id={id}
-                      checked={isChecked}
-                      onCheckedChange={() => onToggleFilter("locations", city)}
-                    />
-                    <label
-                      htmlFor={id}
-                      className="text-sm text-gray-300 hover:text-white cursor-pointer select-none truncate flex-1"
-                    >
-                      {city}
-                    </label>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
 
-        {/* COMPANIES CARD */}
-        <div className="glass rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <SlidersHorizontal className="h-4 w-4 text-primary" />
-            Brand / Company
+          {/* CITY */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-gray-400 font-medium">City</label>
+            <Select 
+              value={currentCity || "all"} 
+              onValueChange={onCityChange}
+              disabled={!currentState}
+            >
+              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary disabled:opacity-50">
+                <SelectValue placeholder={currentState ? "All Cities" : "Select a State first"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Cities</SelectItem>
+                {availableCities.map((ct) => (
+                  <SelectItem key={ct} value={ct}>
+                    {ct}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          {/* Search Input */}
-          <div className="flex items-center gap-2 border border-white/10 bg-white/5 rounded-lg px-2.5 py-1">
-            <Search className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-            <input
-              type="text"
-              placeholder="Search companies..."
-              value={companyQuery}
-              onChange={(e) => setCompanyQuery(e.target.value)}
-              className="w-full bg-transparent border-0 text-xs text-white outline-none placeholder:text-gray-600"
-            />
-            {companyQuery && (
-              <button
-                type="button"
-                onClick={() => setCompanyQuery("")}
-                className="text-gray-500 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-          <div className="max-h-48 overflow-y-auto pr-1 scrollbar-thin space-y-2">
-            {isLoadingCompanies ? (
-              <div className="text-xs text-gray-500 py-2">Loading companies...</div>
-            ) : filteredCompaniesList.length === 0 ? (
-              <div className="text-xs text-gray-500 py-2">No companies found</div>
-            ) : (
-              filteredCompaniesList.map((co) => {
-                const isChecked = currentCos.includes(co);
-                const id = `co-chk-${co.replace(/\s+/g, "-")}`;
-                return (
-                  <div key={co} className="flex items-center space-x-2 py-0.5">
-                    <Checkbox
-                      id={id}
-                      checked={isChecked}
-                      onCheckedChange={() => onToggleFilter("companies", co)}
-                    />
-                    <label
-                      htmlFor={id}
-                      className="text-sm text-gray-300 hover:text-white cursor-pointer select-none truncate flex-1"
-                    >
-                      {co}
-                    </label>
-                  </div>
-                );
-              })
-            )}
+
+          {/* BRAND / COMPANY */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-gray-400 font-medium">Brand / Company</label>
+            <Select 
+              value={currentCo || "all"} 
+              onValueChange={onCompanyChange}
+              disabled={!currentState}
+            >
+              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary disabled:opacity-50">
+                <SelectValue placeholder={currentState ? "All Brands" : "Select a State first"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {availableCompanies.map((co) => (
+                  <SelectItem key={co} value={co}>
+                    {co}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </aside>

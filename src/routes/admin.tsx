@@ -393,6 +393,10 @@ function AdminPanel({
     queryClient.invalidateQueries({ queryKey: ["pending-products"] });
     queryClient.invalidateQueries({ queryKey: ["pending-vendors"] });
     queryClient.invalidateQueries({ queryKey: ["admin-support-requests"] });
+    queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
+    queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
+    queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["products"] });
   }, [queryClient]);
 
   return (
