@@ -62,6 +62,9 @@ export function ProductRequestsModal({ onClose, onProductActioned }: Props) {
   function removeProduct(id: number) {
     setProducts((prev) => prev.filter((p) => p.id !== id));
     queryClient.invalidateQueries({ queryKey: ["products"] });
+    queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
+    queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
+    queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
     onProductActioned();
   }
 

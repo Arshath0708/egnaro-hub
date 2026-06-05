@@ -307,6 +307,11 @@ Please find my payment screenshot attached.
         queryClient.removeQueries({ queryKey: ["userOrders"] });
         queryClient.removeQueries({ queryKey: ["user-profile"] });
         queryClient.removeQueries({ queryKey: ["userProfile"] });
+        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
 
         localStorage.removeItem("egnaro_coupon");
         clear();

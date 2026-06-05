@@ -24,20 +24,11 @@ export function DeleteProductModal({
     },
     onSuccess: async () => {
       toast.success("Product deleted successfully");
-      await queryClient.invalidateQueries({
-        queryKey: ["products"],
-      });
-      if (vendorId) {
-        await queryClient.invalidateQueries({
-          queryKey: ["vendor-products-all", vendorId],
-        });
-        await queryClient.invalidateQueries({
-          queryKey: ["vendor-products-paginated", vendorId],
-        });
-        await queryClient.invalidateQueries({
-          queryKey: ["vendor-stats", vendorId],
-        });
-      }
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       onClose();
     },
     onError: (err: any) => {

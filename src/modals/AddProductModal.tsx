@@ -73,17 +73,11 @@ export function AddProductModal({
           ? "Product added successfully "
           : "Product submitted for approval "
       );
-      await queryClient.invalidateQueries({
-        queryKey: ["products"],
-      });
-      if (vendorId) {
-        await queryClient.invalidateQueries({
-          queryKey: ["vendor-products-all", vendorId],
-        });
-        await queryClient.invalidateQueries({
-          queryKey: ["vendor-products-paginated", vendorId],
-        });
-      }
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
+      await queryClient.invalidateQueries({ queryKey: ["pending-products"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       onClose();
     },
     onError: (err: any) => {

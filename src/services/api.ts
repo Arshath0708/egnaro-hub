@@ -163,7 +163,7 @@ export async function getVendorOrders(vendorId: string, page: number = 1, status
 }
 
 export async function getPendingProducts() {
-  const data = await getProducts({ limit: 10000 });
+  const data = await getProducts({ limit: 10000, status: "pending" });
   const products = Array.isArray(data) ? data : (data.products || []);
   return products.filter((p: any) => Number(p.approved) === 0 || p.status === "pending");
 }
@@ -432,7 +432,8 @@ export async function getOrders(params?: {
 export async function getVendors(params?: {
   page?: number;
   limit?: number;
-  approved?: string;
+  approved?: string | number;
+  status?: string;
   search?: string;
 } | any) {
   let actualParams = params;
@@ -444,7 +445,8 @@ export async function getVendors(params?: {
   if (actualParams) {
     if (actualParams.page !== undefined) queryParts.push(`page=${actualParams.page}`);
     if (actualParams.limit !== undefined) queryParts.push(`limit=${actualParams.limit}`);
-    if (actualParams.approved) queryParts.push(`approved=${encodeURIComponent(actualParams.approved)}`);
+    if (actualParams.approved !== undefined && actualParams.approved !== null) queryParts.push(`approved=${encodeURIComponent(actualParams.approved)}`);
+    if (actualParams.status) queryParts.push(`status=${encodeURIComponent(actualParams.status)}`);
     if (actualParams.search) queryParts.push(`search=${encodeURIComponent(actualParams.search)}`);
   }
   const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
@@ -462,7 +464,7 @@ export async function getVendors(params?: {
 }
 
 export async function getPendingVendors() {
-  const data = await getVendors({ limit: 10000 });
+  const data = await getVendors({ limit: 10000, approved: "0", status: "pending" });
   const vendors = Array.isArray(data) ? data : (data.vendors || []);
   return vendors.filter((v: any) => Number(v.approved) === 0 || v.status === "pending");
 }

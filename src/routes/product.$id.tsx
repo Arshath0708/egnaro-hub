@@ -35,6 +35,8 @@ type Product = {
   description: string;
   stock?: number;
   specifications?: Record<string, string>;
+  status?: string;
+  approved?: boolean | number;
 };
 
 type Review = {
