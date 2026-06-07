@@ -25,6 +25,7 @@ import { Shell } from "@/components/layout/Shell";
 import { Section } from "@/components/Section";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { getProducts, getCategories, getHomeContent } from "@/services/api";
+import { queryKeys } from "@/lib/query-keys";
 
 const CATEGORY_META: Record<string, { image: string, accent: string }> = {
   "accessories": {
@@ -81,15 +82,16 @@ const trustBadges = [
 
 export default function Home() {
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: queryKeys.products(),
     queryFn: getProducts,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const { data: apiCategories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: queryKeys.categories(),
     queryFn: getCategories,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 60, // 60 minutes
   });
 
   const categories = useMemo(() => {
@@ -544,11 +546,12 @@ function Hero() {
   const ref = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
 
-  // Fetch dynamic content from admin CMS with 10 mins cache
+  // Fetch dynamic content from admin CMS with 30 mins cache
   const { data: homeContentRes } = useQuery({
-    queryKey: ["home-content"],
+    queryKey: queryKeys.homeContent(),
     queryFn: getHomeContent,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 60, // 60 minutes
   });
 
   const slides = useMemo(() => {

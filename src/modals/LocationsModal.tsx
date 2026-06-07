@@ -16,6 +16,7 @@ import {
   deleteLocation,
 } from "@/services/api";
 import { LocationSelect } from "@/components/LocationSelect";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 import { sanitizeInput } from "@/lib/validation";
 
 type LocationItem = {
@@ -68,7 +69,7 @@ export function LocationsModal({ onClose }: Props) {
 
   // Fetch Locations
   const { data: apiLocations = [], isLoading } = useQuery<LocationItem[]>({
-    queryKey: ["locations"],
+    queryKey: queryKeys.locations(),
     queryFn: getLocations,
   });
 
@@ -101,7 +102,7 @@ export function LocationsModal({ onClose }: Props) {
       if (res.success) {
         toast.success("Location link added successfully");
         setTownInput(""); // Clear town for easy batch additions
-        queryClient.invalidateQueries({ queryKey: ["locations"] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOCATIONS] });
       } else {
         toast.error(res.message || "Failed to add location link");
       }
@@ -117,7 +118,7 @@ export function LocationsModal({ onClose }: Props) {
       if (res.success) {
         toast.success("Location link removed");
         setDeletingLoc(null);
-        queryClient.invalidateQueries({ queryKey: ["locations"] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOCATIONS] });
       } else {
         toast.error(res.message || "Failed to delete");
       }

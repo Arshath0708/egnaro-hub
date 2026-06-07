@@ -30,6 +30,7 @@ import {
   manageAddress,
   getUserOrders,
 } from "@/services/api";
+import { queryKeys } from "@/lib/query-keys";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
 import { validateName, validatePhone, validatePincode, sanitizeInput } from "@/lib/validation";
@@ -271,19 +272,17 @@ export default function MyAccount() {
 
   // Queries
   const { data: userProfileData, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["user-profile", token],
+    queryKey: queryKeys.userProfile(token!),
     queryFn: () => getUser(token!),
     enabled: !!token,
-    refetchInterval: 30000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
 
   const { data: ordersRes, isLoading: isOrdersLoading } = useQuery({
-    queryKey: ["user-orders-list", token],
+    queryKey: queryKeys.userOrders(token!),
     queryFn: () => getUserOrders(token!),
     enabled: !!token,
-    refetchInterval: 30000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
@@ -318,7 +317,7 @@ export default function MyAccount() {
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Profile details updated successfully!");
-        queryClient.invalidateQueries({ queryKey: ["user-profile", token] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.userProfile(token!) });
       } else {
         toast.error(res.message || "Failed to update profile details.");
       }
@@ -332,7 +331,7 @@ export default function MyAccount() {
     onSuccess: (res) => {
       if (res?.success) {
         toast.success("Address book successfully updated!");
-        queryClient.invalidateQueries({ queryKey: ["user-profile", token] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.userProfile(token!) });
         setShowAddressModal(false);
         setEditingAddressIndex(null);
         setAddressForm({

@@ -20,6 +20,7 @@ import {
 } from "@/services/api";
 import { LocationSelect } from "@/components/LocationSelect";
 import { sanitizeInput } from "@/lib/validation";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 
 type Category = {
   id: number;
@@ -80,7 +81,7 @@ export function CategoriesModal({ onClose }: Props) {
 
   // Fetch Categories
   const { data: apiCategories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
-    queryKey: ["categories"],
+    queryKey: queryKeys.categories(),
     queryFn: getCategories,
   });
 
@@ -88,7 +89,7 @@ export function CategoriesModal({ onClose }: Props) {
 
   // Fetch Locations Index
   const { data: apiLocations = [], isLoading: locationsLoading } = useQuery<LocationItem[]>({
-    queryKey: ["locations"],
+    queryKey: queryKeys.locations(),
     queryFn: getLocations,
   });
 
@@ -166,7 +167,7 @@ export function CategoriesModal({ onClose }: Props) {
         setNewState("");
         setNewCity("");
         setNewTown("");
-        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
       } else {
         toast.error(res.message || "Failed to add category");
       }
@@ -183,7 +184,7 @@ export function CategoriesModal({ onClose }: Props) {
       if (res.success) {
         toast.success("Category updated successfully");
         setEditingId(null);
-        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
       } else {
         toast.error(res.message || "Failed to update category");
       }
@@ -199,7 +200,7 @@ export function CategoriesModal({ onClose }: Props) {
       if (res.success) {
         toast.success("Category deleted");
         setDeletingCategory(null);
-        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
       } else {
         toast.error(res.message || "Failed to delete category");
       }

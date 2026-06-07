@@ -18,6 +18,7 @@ import { validateName, validateEmail, validatePhone, validatePincode, sanitizeIn
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
 import { clearUserSession } from "@/lib/session";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 
 const inputCls =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
@@ -83,13 +84,13 @@ export default function CheckoutPage() {
   }, [isLoggedIn, nav, location.pathname, user]);
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: queryKeys.products(),
     queryFn: getProducts,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: userData } = useQuery({
-    queryKey: ["userProfile", token],
+    queryKey: queryKeys.userProfile(token!),
     queryFn: () => getUser(token!),
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
@@ -303,15 +304,13 @@ Please find my payment screenshot attached.
         }
 
         // Remove queries so that the statistics and order list fetch fresh and show loading state
-        queryClient.removeQueries({ queryKey: ["user-orders-list"] });
-        queryClient.removeQueries({ queryKey: ["userOrders"] });
-        queryClient.removeQueries({ queryKey: ["user-profile"] });
-        queryClient.removeQueries({ queryKey: ["userProfile"] });
-        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
-        queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.removeQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
+        queryClient.removeQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS] });
 
         localStorage.removeItem("egnaro_coupon");
         clear();

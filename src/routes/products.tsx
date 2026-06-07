@@ -41,6 +41,7 @@ import {
   getCompanies,
 } from "@/services/api";
 import { sanitizeInput } from "@/lib/validation";
+import { queryKeys } from "@/lib/query-keys";
 
 const SORT_OPTIONS = [
   {
@@ -92,23 +93,25 @@ export default function ProductsPage() {
 
   /* PRODUCTS */
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: queryKeys.products(),
     queryFn: getProducts,
     staleTime: 1000 * 60 * 5,
   });
 
   /* CATEGORIES */
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: queryKeys.categories(),
     queryFn: getCategories,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 60, // 60 minutes
   });
 
   /* CENTRAL LOCATIONS TREE INDEX */
   const { data: apiLocations = [] } = useQuery({
-    queryKey: ["locations"],
+    queryKey: queryKeys.locations(),
     queryFn: getLocations,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 60, // 60 minutes
   });
 
   const locations = Array.isArray(apiLocations) ? apiLocations : [];

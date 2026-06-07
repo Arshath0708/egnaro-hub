@@ -16,7 +16,8 @@ import {
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shell } from "@/components/layout/Shell";
-import { getProducts, getReviews, addReview } from "@/services/api";
+import { getProducts, getReviews, addReview, getProductById } from "@/services/api";
+import { queryKeys } from "@/lib/query-keys";
 import { inr } from "@/lib/format";
 import { useCart } from "@/context/cart-store";
 import { toast } from "sonner";
@@ -62,10 +63,10 @@ export default function ProductDetail() {
   /* PRODUCT */
 
   const { data: product, isLoading } = useQuery<Product | null>({
-    queryKey: ["product", id],
+    queryKey: queryKeys.product(id!),
     queryFn: async () => {
       // First try to look up in existing cached storefront products catalog
-      const cachedProducts = queryClient.getQueryData<any[]>(["products"]);
+      const cachedProducts = queryClient.getQueryData<any[]>(queryKeys.products());
       if (cachedProducts) {
         const found = cachedProducts.find(
           (p: any) => String(p.id) === String(id)
@@ -73,7 +74,23 @@ export default function ProductDetail() {
         if (found) return found;
       }
 
-      // Fallback: fetch products list if not in cache
+      // Fallback: try fetching single product details by id
+      try {
+        const data = await getProductById(Number(id));
+        if (
+          data &&
+          data.id &&
+          data.status !== "rejected" &&
+          data.status !== "deleted" &&
+          (data.approved === true || Number(data.approved) === 1 || data.status === "approved")
+        ) {
+          return data;
+        }
+      } catch (err) {
+        console.warn("Single product fetch failed, falling back to full catalog", err);
+      }
+
+      // Catalog Fallback: fetch products list if not in cache or single endpoint failed/missing
       const products = await getProducts();
 
       const found = products.find(
@@ -95,7 +112,7 @@ export default function ProductDetail() {
     isLoading: isLoadingReviews,
     refetch: refetchReviews,
   } = useQuery<Review[]>({
-    queryKey: ["reviews", id],
+    queryKey: queryKeys.reviews(id!),
     queryFn: () => getReviews(Number(id)),
   });
 
@@ -153,6 +170,8 @@ export default function ProductDetail() {
         setRating(5);
 
         refetchReviews();
+        queryClient.invalidateQueries({ queryKey: queryKeys.product(id!) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.products() });
       } else {
         toast.error(res.error || "Failed to add review");
       }

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteProduct } from "@/services/api";
+import { QUERY_KEYS } from "@/lib/query-keys";
 
 export function DeleteProductModal({
   product,
@@ -24,11 +25,11 @@ export function DeleteProductModal({
     },
     onSuccess: async () => {
       toast.success("Product deleted successfully");
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_ALL] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_PAGINATED] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_PRODUCTS] });
       onClose();
     },
     onError: (err: any) => {

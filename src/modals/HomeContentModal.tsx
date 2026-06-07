@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { getHomeContent, updateHomeContent, uploadImage } from "@/services/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sanitizeInput } from "@/lib/validation";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 
 const SLIDES = [
   { number: 1, label: "Slide 1 — Products" },
@@ -46,7 +47,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
 
   // Fetch current content using useQuery
   const { data: homeContentRes, isLoading: loading } = useQuery({
-    queryKey: ["home-content"],
+    queryKey: queryKeys.homeContent(),
     queryFn: getHomeContent,
   });
 
@@ -68,7 +69,7 @@ export function HomeContentModal({ onClose }: { onClose: () => void }) {
     onSuccess: (res) => {
       if (res.success) {
         toast.success(`Slide ${activeSlide} saved successfully`);
-        queryClient.invalidateQueries({ queryKey: ["home-content"] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.HOME_CONTENT] });
       } else {
         toast.error(res.message || "Save failed");
       }

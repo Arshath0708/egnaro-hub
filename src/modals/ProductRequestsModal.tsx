@@ -1,9 +1,10 @@
-import { memo, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { memo, useState } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Loader2, Package } from "lucide-react";
 import { getPendingProducts, approveProduct, rejectProduct } from "@/services/api";
 import { toast } from "sonner";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 
 type Product = {
   id: number;
@@ -42,29 +43,21 @@ function LayeredIconContainer({
 }
 
 export function ProductRequestsModal({ onClose, onProductActioned }: Props) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [fetching, setFetching] = useState(true);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    getPendingProducts()
-      .then((d) => {
-        console.log("PENDING PRODUCTS:", d);
-        setProducts(Array.isArray(d) ? d : []);
-      })
-      .catch((err) => {
-        console.error("Failed to load pending products:", err);
-        setProducts([]);
-      })
-      .finally(() => setFetching(false));
-  }, []);
+  const { data: products = [], isLoading: fetching } = useQuery<Product[]>({
+    queryKey: queryKeys.pendingProducts(),
+    queryFn: getPendingProducts,
+  });
 
   function removeProduct(id: number) {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    queryClient.invalidateQueries({ queryKey: ["products"] });
-    queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
-    queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
-    queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PENDING_PRODUCTS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_ALL] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_PAGINATED] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_PRODUCTS] });
     onProductActioned();
   }
 

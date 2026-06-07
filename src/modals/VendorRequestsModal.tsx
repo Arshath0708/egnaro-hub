@@ -1,8 +1,10 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Loader2, Users, KeyRound, CreditCard, ArrowRight, ShieldAlert, BadgeInfo } from "lucide-react";
-import { approveVendor } from "@/services/api";
+import { approveVendor, getPendingVendors } from "@/services/api";
 import { toast } from "sonner";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 
 const API = "https://egnaromart.com/api";
 
@@ -51,92 +53,48 @@ function LayeredIconContainer({
 
 export function VendorRequestsModal({ onClose, onVendorActioned }: Props) {
   const [tab, setTab] = useState<ModalTab>("registrations");
+  const queryClient = useQueryClient();
 
-  // ── Registration requests ──────────────────────────────
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [fetchingVendors, setFetchingVendors] = useState(true);
+  const { data: rawPendingVendors = [], isLoading: fetchingVendors } = useQuery<Vendor[]>({
+    queryKey: queryKeys.pendingVendors(),
+    queryFn: getPendingVendors,
+  });
 
-  // ── Reset requests ─────────────────────
-  const [resetRequests, setResetRequests] = useState<Vendor[]>([]);
-  const [fetchingReset, setFetchingReset] = useState(true);
-
-  // ── Bank update requests ────────────────
-  const [bankRequests, setBankRequests] = useState<any[]>([]);
-  const [fetchingBank, setFetchingBank] = useState(true);
-
-  async function loadVendors() {
-    try {
-      setFetchingVendors(true);
-      const res = await fetch(`${API}/get-vendors.php?status=pending&limit=1000`);
-      const text = await res.text();
-      let data: any = {};
-      try { data = JSON.parse(text); } catch { /* */ }
-      
-      const vendorArray = Array.isArray(data) ? data : (data.vendors || []);
-      setVendors(vendorArray.filter((v: Vendor) => Number(v.approved) === 0 || v.status === "pending"));
-    } catch {
-      toast.error("Failed to load vendors");
-      setVendors([]);
-    } finally {
-      setFetchingVendors(false);
-    }
-  }
-
-  async function loadResetRequests() {
-    try {
-      setFetchingReset(true);
+  const { data: resetRequests = [], isLoading: fetchingReset } = useQuery<Vendor[]>({
+    queryKey: queryKeys.vendorResetRequests(),
+    queryFn: async () => {
       const res = await fetch(`${API}/get-vendor-reset-requests.php`);
       const data = await res.json();
-      if (data.success) {
-        setResetRequests(data.reset_requests || []);
-        const resetIds = new Set([
-          ...(data.reset_requests || []).map((v: Vendor) => v.id),
-        ]);
-        setVendors((prev) => prev.filter((v) => !resetIds.has(v.id)));
-      }
-    } catch {
-      toast.error("Failed to load reset requests");
-    } finally {
-      setFetchingReset(false);
+      return data.success ? (data.reset_requests || []) : [];
     }
-  }
+  });
 
-  async function loadBankRequests() {
-    try {
-      setFetchingBank(true);
+  const { data: bankRequests = [], isLoading: fetchingBank } = useQuery<any[]>({
+    queryKey: queryKeys.pendingBankRequests(),
+    queryFn: async () => {
       const res = await fetch(`${API}/get-pending-bank-requests.php?status=pending`);
       const data = await res.json();
-      if (data.success) {
-        setBankRequests(data.requests || []);
-      } else {
-        setBankRequests([]);
-      }
-    } catch {
-      toast.error("Failed to load bank requests");
-      setBankRequests([]);
-    } finally {
-      setFetchingBank(false);
+      return data.success ? (data.requests || []) : [];
     }
-  }
+  });
 
-  useEffect(() => {
-    loadVendors();
-    loadResetRequests();
-    loadBankRequests();
-  }, []);
+  const resetIds = new Set(resetRequests.map((v) => v.id));
+  const vendors = rawPendingVendors.filter((v) => !resetIds.has(v.id));
 
   function removeVendor(id: number) {
-    setVendors((prev) => prev.filter((v) => v.id !== id));
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PENDING_VENDORS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_VENDORS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] });
     setTimeout(() => onVendorActioned(), 300);
   }
 
   function removeReset(id: number) {
-    setResetRequests((prev) => prev.filter((v) => v.id !== id));
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_RESET_REQUESTS] });
     setTimeout(() => onVendorActioned(), 300);
   }
 
   function removeBank(vendorId: number) {
-    setBankRequests((prev) => prev.filter((r) => r.vendor_id !== vendorId));
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PENDING_BANK_REQUESTS] });
     setTimeout(() => onVendorActioned(), 300);
   }
 

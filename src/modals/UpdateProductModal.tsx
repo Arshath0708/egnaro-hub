@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { sanitizeInput } from "@/lib/validation";
+import { QUERY_KEYS } from "@/lib/query-keys";
 
 
 export function UpdateProductModal({
@@ -63,11 +64,11 @@ export function UpdateProductModal({
     },
     onSuccess: async () => {
       toast.success("Product updated successfully ");
-      await queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_ALL] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_PAGINATED] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_PRODUCTS] });
       onClose();
     },
     onError: (err: any) => {

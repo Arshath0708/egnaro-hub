@@ -43,6 +43,7 @@ import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct, upda
 import { inr } from "@/lib/format";
 import { sanitizeInput } from "@/lib/validation";
 import { toast } from "sonner";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 import {
   Tabs,
   TabsContent,
@@ -184,7 +185,7 @@ function DashboardContent({
   const {
     data: allProducts = [],
   } = useQuery<Product[]>({
-    queryKey: ["vendor-products-all", vendorId],
+    queryKey: queryKeys.vendorProductsAll(vendorId),
     queryFn: () => getVendorProducts(vendorId),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -195,7 +196,7 @@ function DashboardContent({
     data: productsRes,
     isLoading,
   } = useQuery({
-    queryKey: ["vendor-products-paginated", vendorId, productPage, debouncedProductSearch, productStatus, productCategory],
+    queryKey: queryKeys.vendorProductsPaginated(vendorId, productPage, debouncedProductSearch, productStatus === "all" ? "" : productStatus, productCategory === "all" ? "" : productCategory),
     queryFn: () => getVendorProducts(vendorId, {
       page: productPage,
       limit: 9,
@@ -212,14 +213,14 @@ function DashboardContent({
   const productTotalRows = productsRes?.total_rows || 0;
 
   const { data: stats } = useQuery({
-    queryKey: ["vendor-stats", vendorId],
+    queryKey: queryKeys.vendorStats(vendorId),
     queryFn: () => getVendorStats(vendorId),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 
   const { data: ordersRes, isLoading: isOrdersLoading } = useQuery({
-    queryKey: ["vendor-orders", vendorId, orderPage, orderStatus, debouncedOrderSearch],
+    queryKey: queryKeys.vendorOrders(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, debouncedOrderSearch),
     queryFn: () => getVendorOrders(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, 10, debouncedOrderSearch),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -231,7 +232,7 @@ function DashboardContent({
   const filteredOrders = ordersData;
 
   const { data: supportRes } = useQuery({
-    queryKey: ["vendor-support-requests", vendorId],
+    queryKey: queryKeys.vendorSupportRequests(vendorId),
     queryFn: () => getSupportRequests({ vendor_id: Number(vendorId) }),
     staleTime: 1 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -911,10 +912,10 @@ function DashboardContent({
             setShowAdd(false);
 
             queryClient.invalidateQueries({
-              queryKey: ["vendor-products-all", vendorId],
+              queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_ALL, vendorId],
             });
             queryClient.invalidateQueries({
-              queryKey: ["vendor-products-paginated", vendorId],
+              queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_PAGINATED, vendorId],
             });
           }}
         />
@@ -1180,13 +1181,12 @@ function VendorLogisticsModal({
     onSuccess: () => {
       toast.success("Order logistics updated successfully!");
       // Invalidate all query keys as requested
-      queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["track-order"] });
-      queryClient.invalidateQueries({ queryKey: ["user-orders-list"] });
-      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRACK_ORDER] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] });
       onClose();
     },
     onError: (err: any) => {
@@ -1349,7 +1349,7 @@ function VendorSupportModal({
     },
     onSuccess: () => {
       toast.success("Support request submitted successfully!");
-      queryClient.invalidateQueries({ queryKey: ["vendor-support-requests", vendorId] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_SUPPORT_REQUESTS, vendorId] });
       onClose();
     },
     onError: (err: any) => {

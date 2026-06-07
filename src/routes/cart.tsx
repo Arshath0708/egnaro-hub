@@ -10,6 +10,7 @@ import { useCart } from "@/context/cart-store";
 import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
 import { sanitizeInput } from "@/lib/validation";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function CartPage() {
   const items = useCart((s) => s.items);
@@ -17,7 +18,7 @@ export default function CartPage() {
   const remove = useCart((s) => s.remove);
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+    queryKey: queryKeys.products(),
     queryFn: () => getProducts(),
     staleTime: 1000 * 60 * 5,
   });

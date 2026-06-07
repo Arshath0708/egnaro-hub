@@ -58,6 +58,7 @@ import {
   getSupportRequests,
   handleSupportRequest
 } from "@/services/api";
+import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 import { sanitizeInput } from "@/lib/validation";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -202,19 +203,19 @@ function AdminPanel({
 
   // Standard active queries to ensure order, product, vendor, and user list counts are synchronized immediately on load
   const { data: productsData } = useQuery({
-    queryKey: ["admin-products", productPage, productCategory, debouncedProductSearch],
+    queryKey: queryKeys.adminProducts(productPage, productCategory, debouncedProductSearch),
     queryFn: () => getProducts({
       page: productPage,
       limit: 10,
       category: productCategory === "all" ? "" : productCategory,
       search: debouncedProductSearch,
     }),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   });
 
   const { data: ordersData } = useQuery({
-    queryKey: ["admin-orders", orderPage, orderStatus, debouncedOrderSearch, orderDateFrom, orderDateTo],
+    queryKey: queryKeys.adminOrders(orderPage, orderStatus, debouncedOrderSearch, orderDateFrom, orderDateTo),
     queryFn: () => getOrders({
       page: orderPage,
       limit: 10,
@@ -223,23 +224,23 @@ function AdminPanel({
       date_from: orderDateFrom,
       date_to: orderDateTo,
     }),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   });
 
   const { data: vendorsData } = useQuery({
-    queryKey: ["admin-vendors", vendorPage, debouncedVendorSearch],
+    queryKey: queryKeys.adminVendors(vendorPage, debouncedVendorSearch),
     queryFn: () => getVendors({
       page: vendorPage,
       limit: 10,
       search: debouncedVendorSearch,
     }),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   });
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ["admin-users", userPage, debouncedUserSearch, userStatusFilter, userSortBy, userSortOrder],
+    queryKey: queryKeys.adminUsers(userPage, debouncedUserSearch, userStatusFilter, userSortBy, userSortOrder),
     queryFn: () => getUsers({
       page: userPage,
       limit: 10,
@@ -248,19 +249,19 @@ function AdminPanel({
       sortBy: userSortBy,
       sortOrder: userSortOrder,
     }),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   });
 
   const { data: statsRes } = useQuery({
-    queryKey: ["admin-stats"],
+    queryKey: queryKeys.adminStats(),
     queryFn: getAdminStats,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   });
 
   const { data: apiCategories = [] } = useQuery({
-    queryKey: ["admin-categories"],
+    queryKey: queryKeys.adminCategories(),
     queryFn: getCategories,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
@@ -274,24 +275,27 @@ function AdminPanel({
   const dashboardStats = statsRes || null;
 
   const { data: pendingVendorsData } = useQuery({
-    queryKey: ["pending-vendors"],
+    queryKey: queryKeys.pendingVendors(),
     queryFn: getPendingVendors,
-    staleTime: 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   const { data: pendingProductsData } = useQuery({
-    queryKey: ["pending-products"],
+    queryKey: queryKeys.pendingProducts(),
     queryFn: getPendingProducts,
-    staleTime: 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   const pendingVendors = pendingVendorsData?.length || 0;
   const pendingProducts = pendingProductsData?.length || 0;
 
   const { data: supportRequestsRes } = useQuery({
-    queryKey: ["admin-support-requests"],
+    queryKey: queryKeys.adminSupportRequests(),
     queryFn: () => getSupportRequests(),
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
   const supportRequests = supportRequestsRes?.requests || [];
 
@@ -384,19 +388,19 @@ function AdminPanel({
   };
 
   const loadStats = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-    queryClient.invalidateQueries({ queryKey: ["pending-products"] });
-    queryClient.invalidateQueries({ queryKey: ["pending-vendors"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-support-requests"] });
-    queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
-    queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
-    queryClient.invalidateQueries({ queryKey: ["vendor-stats"] });
-    queryClient.invalidateQueries({ queryKey: ["products"] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_PRODUCTS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_VENDORS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_CATEGORIES] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_USERS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PENDING_PRODUCTS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PENDING_VENDORS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_SUPPORT_REQUESTS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_ALL] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_PAGINATED] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS] });
   }, [queryClient]);
 
   return (
@@ -1953,33 +1957,13 @@ const OrderRow = memo(
           if (data.estimated_days) setEstimatedDays(data.estimated_days);
           
           await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["orders"] }),
-            queryClient.invalidateQueries({ queryKey: ["order"] }),
-            queryClient.invalidateQueries({ queryKey: ["order-details"] }),
-            queryClient.invalidateQueries({ queryKey: ["track-order"] }),
-            queryClient.invalidateQueries({ queryKey: ["user-orders-list"] }),
-            queryClient.invalidateQueries({ queryKey: ["user-profile"] }),
-            queryClient.invalidateQueries({ queryKey: ["userOrders"] }),
-            queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
-            queryClient.invalidateQueries({ queryKey: ["admin-orders"] }),
-            queryClient.invalidateQueries({ queryKey: ["admin-stats"] }),
-            queryClient.invalidateQueries({ queryKey: ["vendor-orders"] }),
-            queryClient.invalidateQueries({ queryKey: ["vendor-stats"] }),
-          ]);
-
-          await Promise.all([
-            queryClient.refetchQueries({ queryKey: ["orders"] }),
-            queryClient.refetchQueries({ queryKey: ["order"] }),
-            queryClient.refetchQueries({ queryKey: ["order-details"] }),
-            queryClient.refetchQueries({ queryKey: ["track-order"] }),
-            queryClient.refetchQueries({ queryKey: ["user-orders-list"] }),
-            queryClient.refetchQueries({ queryKey: ["user-profile"] }),
-            queryClient.refetchQueries({ queryKey: ["userOrders"] }),
-            queryClient.refetchQueries({ queryKey: ["userProfile"] }),
-            queryClient.refetchQueries({ queryKey: ["admin-orders"] }),
-            queryClient.refetchQueries({ queryKey: ["admin-stats"] }),
-            queryClient.refetchQueries({ queryKey: ["vendor-orders"] }),
-            queryClient.refetchQueries({ queryKey: ["vendor-stats"] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRACK_ORDER] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] }),
           ]);
 
           toast.success(
@@ -2340,14 +2324,13 @@ function AdminSupportReviewModal({
     },
     onSuccess: (data: any, action: "approve" | "reject") => {
       toast.success(`Request successfully ${action === "approve" ? "approved" : "rejected"}!`);
-      queryClient.invalidateQueries({ queryKey: ["admin-support-requests"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_SUPPORT_REQUESTS] });
       if (request.request_type === "Delivery Date Change") {
-        queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
-        queryClient.invalidateQueries({ queryKey: ["track-order"] });
-        queryClient.invalidateQueries({ queryKey: ["user-orders-list"] });
-        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRACK_ORDER] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
       }
       onClose();
     },

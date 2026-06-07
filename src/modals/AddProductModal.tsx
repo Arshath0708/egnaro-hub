@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { sanitizeInput } from "@/lib/validation";
+import { QUERY_KEYS } from "@/lib/query-keys";
 
 
 export function AddProductModal({
@@ -73,11 +74,11 @@ export function AddProductModal({
           ? "Product added successfully "
           : "Product submitted for approval "
       );
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor-products-all"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor-products-paginated"] });
-      await queryClient.invalidateQueries({ queryKey: ["pending-products"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_ALL] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_PAGINATED] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PENDING_PRODUCTS] });
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] });
       onClose();
     },
     onError: (err: any) => {

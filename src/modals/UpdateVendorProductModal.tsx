@@ -4,6 +4,7 @@ import { X, Sparkles, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { adminUpdateProduct } from "@/services/api";
 import { sanitizeInput } from "@/lib/validation";
+import { QUERY_KEYS } from "@/lib/query-keys";
 
 export function UpdateVendorProductModal({
   product,
@@ -28,19 +29,16 @@ export function UpdateVendorProductModal({
     onSuccess: async () => {
       toast.success("Vendor product updated successfully ");
       await queryClient.invalidateQueries({
-        queryKey: ["vendor-products"],
+        queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_ALL],
       });
       await queryClient.invalidateQueries({
-        queryKey: ["vendor-products-all"],
+        queryKey: [QUERY_KEYS.VENDOR_PRODUCTS_PAGINATED],
       });
       await queryClient.invalidateQueries({
-        queryKey: ["vendor-products-paginated"],
+        queryKey: [QUERY_KEYS.PRODUCTS],
       });
       await queryClient.invalidateQueries({
-        queryKey: ["products"],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin-products"],
+        queryKey: [QUERY_KEYS.ADMIN_PRODUCTS],
       });
       onClose();
     },

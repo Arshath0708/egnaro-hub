@@ -28,6 +28,7 @@ import { inr, dateTime, dateShort } from "@/lib/format";
 import type { Order, OrderStatus } from "@/types";
 import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 import { sanitizeInput } from "@/lib/validation";
+import { queryKeys } from "@/lib/query-keys";
 
 const STEPS: {
   id: OrderStatus;
@@ -158,16 +159,15 @@ export default function TrackOrder() {
   const [activeOrderId, setActiveOrderId] = useState<string | null>(searchId || null);
 
   const { data: userOrdersData, isLoading: isLoadingOrders } = useQuery({
-    queryKey: ["userOrders", token, orderPage],
+    queryKey: queryKeys.userOrders(token!, orderPage),
     queryFn: () => getUserOrders(token!, { page: orderPage, limit: 6 }),
     enabled: !!isLoggedIn && !!token,
-    refetchInterval: 30000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
 
   const { data: trackOrderData, isLoading: isLoadingTrack, error: trackError } = useQuery({
-    queryKey: ["track-order", activeOrderId, token],
+    queryKey: queryKeys.trackOrder(activeOrderId!, token ?? undefined),
     queryFn: () => trackOrder(activeOrderId!, token ?? undefined),
     enabled: !!activeOrderId && isLoggedIn,
     refetchInterval: 30000,
