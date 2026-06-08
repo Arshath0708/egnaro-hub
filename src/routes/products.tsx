@@ -23,6 +23,7 @@ import {
   Search,
   SlidersHorizontal,
   X,
+  Store,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -33,6 +34,8 @@ import {
 } from "@/components/ProductCard";
 
 import { EmptyState } from "@/components/Section";
+
+import { CompanySelect } from "@/components/CompanySelect";
 
 import {
   getProducts,
@@ -350,7 +353,7 @@ export default function ProductsPage() {
 
   return (
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-10 sm:px-6 lg:px-8">
 
         {/* HEADER */}
 
@@ -419,9 +422,28 @@ export default function ProductsPage() {
           </div>
         </div>
 
+        {/* SELECTED VENDOR DISPLAY */}
+        {currentCo && (
+          <div className="mb-6 flex items-center animate-fadeIn">
+            <div className="inline-flex items-center gap-2.5 text-emerald-400">
+              <span className="font-display text-lg sm:text-2xl font-semibold sm:font-bold tracking-tight text-emerald-400 truncate max-w-[280px] sm:max-w-2xl">
+                {currentCo}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCompanyChange("")}
+                className="rounded-full p-1 hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer shrink-0"
+                title="Remove Vendor Filter"
+              >
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* LAYOUT */}
 
-        <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+        <div className="grid gap-4 sm:gap-8 lg:grid-cols-[240px_1fr]">
 
           <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <Sidebar
@@ -436,6 +458,8 @@ export default function ProductsPage() {
               onStateChange={handleStateChange}
               onCityChange={handleCityChange}
               onCompanyChange={handleCompanyChange}
+              onClearAll={handleClearAllFilters}
+              hasActiveFilters={currentCats.length > 0 || !!currentState || !!currentCity || !!currentCo}
             />
           </div>
 
@@ -444,77 +468,74 @@ export default function ProductsPage() {
           <div>
             {/* ACTIVE FILTER CHIPS */}
             {(currentCats.length > 0 || currentState || currentCity || currentCo) && (
-              <div className="mb-6 flex flex-wrap items-center gap-2 bg-[#090d1a]/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 mr-2">
+              <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-1.5 sm:gap-2 bg-[#090d1a]/40 border border-white/5 rounded-2xl p-2.5 sm:p-4 backdrop-blur-md">
+                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 mr-1.5 sm:mr-2">
                   Active Filters:
                 </span>
                 {currentCats.map((cat) => (
                   <span
                     key={`cat-${cat}`}
-                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                    className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] sm:text-xs font-medium rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 animate-fadeIn shadow-sm"
                   >
                     {cat}
                     <button
                       type="button"
                       onClick={() => handleToggleFilter("categories", cat)}
-                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                      className="hover:bg-white/10 rounded-full p-0.5 transition-colors cursor-pointer text-slate-400 hover:text-white"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </button>
                   </span>
                 ))}
                 {currentState && (
                   <span
                     key={`state-${currentState}`}
-                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                    className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] sm:text-xs font-medium rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 animate-fadeIn shadow-sm"
                   >
                     State: {currentState}
                     <button
                       type="button"
                       onClick={() => handleStateChange("")}
-                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                      className="hover:bg-white/10 rounded-full p-0.5 transition-colors cursor-pointer text-slate-400 hover:text-white"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </button>
                   </span>
                 )}
                 {currentCity && (
                   <span
                     key={`city-${currentCity}`}
-                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                    className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] sm:text-xs font-medium rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 animate-fadeIn shadow-sm"
                   >
                     City: {currentCity}
                     <button
                       type="button"
                       onClick={() => handleCityChange("")}
-                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                      className="hover:bg-white/10 rounded-full p-0.5 transition-colors cursor-pointer text-slate-400 hover:text-white"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </button>
                   </span>
                 )}
                 {currentCo && (
                   <span
                     key={`co-${currentCo}`}
-                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold rounded-full px-3 py-1 animate-fadeIn"
+                    className="inline-flex items-center gap-1.5 bg-emerald-500/15 border-2 border-emerald-500/50 text-emerald-400 text-[11px] sm:text-sm font-bold rounded-full px-3 py-1 sm:px-4 sm:py-1.5 animate-fadeIn shadow-md shadow-emerald-500/10"
+                    title={currentCo}
                   >
-                    Company: {currentCo}
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    <span className="max-w-[150px] truncate sm:max-w-xs md:max-w-md inline-block align-bottom">
+                      Company: {currentCo}
+                    </span>
                     <button
                       type="button"
                       onClick={() => handleCompanyChange("")}
-                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors cursor-pointer text-primary"
+                      className="hover:bg-emerald-500/20 rounded-full p-0.5 transition-colors cursor-pointer text-emerald-400"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </button>
                   </span>
                 )}
-                <button
-                  type="button"
-                  onClick={handleClearAllFilters}
-                  className="text-xs font-bold text-gray-400 hover:text-white hover:underline transition-all cursor-pointer ml-auto"
-                >
-                  Clear All
-                </button>
               </div>
             )}
             {isLoading ? (
@@ -612,6 +633,8 @@ export default function ProductsPage() {
                   onStateChange={handleStateChange}
                   onCityChange={handleCityChange}
                   onCompanyChange={handleCompanyChange}
+                  onClearAll={handleClearAllFilters}
+                  hasActiveFilters={currentCats.length > 0 || !!currentState || !!currentCity || !!currentCo}
                 />
               </div>
 
@@ -658,6 +681,8 @@ const Sidebar = memo(
     onStateChange,
     onCityChange,
     onCompanyChange,
+    onClearAll,
+    hasActiveFilters,
   }: {
     availableStates: string[];
     availableCities: string[];
@@ -670,6 +695,8 @@ const Sidebar = memo(
     onStateChange: (value: string) => void;
     onCityChange: (value: string) => void;
     onCompanyChange: (value: string) => void;
+    onClearAll: () => void;
+    hasActiveFilters: boolean;
   }) {
     return (
       <aside className="space-y-6 animate-fadeUp">
@@ -692,7 +719,7 @@ const Sidebar = memo(
 
         {/* LOCATION & BRAND CARD */}
         <div className="glass rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white border-b border-white/5 pb-2">
             <SlidersHorizontal className="h-4 w-4 text-primary" />
             Location & Brand
           </div>
@@ -701,8 +728,17 @@ const Sidebar = memo(
           <div className="space-y-1.5">
             <label className="text-xs text-gray-400 font-medium">State</label>
             <Select value={currentState || "all"} onValueChange={onStateChange}>
-              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary">
-                <SelectValue placeholder="All States" />
+              <SelectTrigger className={`w-full h-9 rounded-lg border px-3 text-sm outline-none transition-colors ${
+                currentState && currentState !== "all"
+                  ? "border-white/20 bg-white/5 text-slate-200 focus:ring-1 focus:ring-primary"
+                  : "border-glass-border bg-[#0b1220]/50 text-white focus:ring-1 focus:ring-primary"
+              }`}>
+                <div className="flex items-center gap-1.5 truncate">
+                  {currentState && currentState !== "all" && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                  )}
+                  <SelectValue placeholder="All States" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All States</SelectItem>
@@ -723,8 +759,17 @@ const Sidebar = memo(
               onValueChange={onCityChange}
               disabled={!currentState}
             >
-              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary disabled:opacity-50">
-                <SelectValue placeholder={currentState ? "All Cities" : "Select a State first"} />
+              <SelectTrigger className={`w-full h-9 rounded-lg border px-3 text-sm outline-none transition-colors disabled:opacity-50 ${
+                currentCity && currentCity !== "all"
+                  ? "border-white/20 bg-white/5 text-slate-200 focus:ring-1 focus:ring-primary"
+                  : "border-glass-border bg-[#0b1220]/50 text-white focus:ring-1 focus:ring-primary"
+              }`}>
+                <div className="flex items-center gap-1.5 truncate">
+                  {currentCity && currentCity !== "all" && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                  )}
+                  <SelectValue placeholder={currentState ? "All Cities" : "Select a State first"} />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Cities</SelectItem>
@@ -739,26 +784,26 @@ const Sidebar = memo(
 
           {/* BRAND / COMPANY */}
           <div className="space-y-1.5">
-            <label className="text-xs text-gray-400 font-medium">Brand / Company</label>
-            <Select 
-              value={currentCo || "all"} 
-              onValueChange={onCompanyChange}
-              disabled={!currentState}
-            >
-              <SelectTrigger className="w-full h-9 rounded-lg border border-glass-border bg-[#0b1220]/50 px-3 text-sm outline-none text-white focus:ring-1 focus:ring-primary disabled:opacity-50">
-                <SelectValue placeholder={currentState ? "All Brands" : "Select a State first"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Brands</SelectItem>
-                {availableCompanies.map((co) => (
-                  <SelectItem key={co} value={co}>
-                    {co}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CompanySelect
+              value={currentCo || undefined}
+              onValueChange={(val) => onCompanyChange(val || "all")}
+              options={availableCompanies}
+              placeholder={currentState ? "All Brands" : "Select a State first"}
+              loading={false}
+            />
           </div>
         </div>
+
+        {/* CLEAR ALL BUTTON (DESKTOP ONLY) */}
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="hidden lg:block w-full rounded-xl bg-white/5 border border-white/10 py-2.5 text-center text-xs font-bold text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer select-none"
+          >
+            Clear All Filters
+          </button>
+        )}
       </aside>
     );
   }

@@ -46,13 +46,13 @@ const SECTIONS = [
 export default function Terms() {  
   return (
     <Shell>
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        <div className="text-center mb-6 sm:mb-12">
           <div className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-2">
             Legal
           </div>
-          <h1 className="font-display text-5xl font-bold">Terms & Conditions</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold">Terms & Conditions</h1>
+          <p className="text-muted-foreground mt-2 text-xs sm:text-sm">
             Last updated:{" "}
             {new Date().toLocaleDateString("en-IN", {
               month: "long",
@@ -60,7 +60,7 @@ export default function Terms() {
             })}
           </p>
         </div>
-        <div className="glass-strong rounded-2xl p-8 shadow-elegant space-y-6">
+        <div className="glass-strong rounded-2xl p-5 sm:p-8 shadow-elegant space-y-6">
           {SECTIONS.map((s) => (
             <section key={s.h}>
               <h2 className="font-display text-xl font-bold mb-2">{s.h}</h2>

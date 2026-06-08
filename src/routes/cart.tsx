@@ -110,8 +110,8 @@ export default function CartPage() {
 
   return (
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 pb-28 sm:pb-24 lg:pb-10">
-        <h1 className="font-display text-4xl font-bold mb-8">Your Cart</h1>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 sm:py-10 pb-28 sm:pb-24 lg:pb-10">
+        <h1 className="font-display text-xl sm:text-3xl md:text-4xl font-bold mb-5 sm:mb-8">Your Cart</h1>
         {detailed.length === 0 ? (
           <EmptyState
             title="Your cart is empty"
@@ -126,12 +126,12 @@ export default function CartPage() {
             }
           />
         ) : (
-          <div className="grid lg:grid-cols-[1fr_380px] gap-8">
-            <div className="space-y-4">
+          <div className="grid lg:grid-cols-[1fr_380px] gap-6 sm:gap-8">
+            <div className="space-y-3 sm:space-y-4">
               {/* Free Shipping Tracker */}
-              <div className="glass rounded-2xl p-5 border border-white/5 bg-slate-900/40">
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-xs font-bold text-slate-300">
+              <div className="glass rounded-2xl p-3.5 sm:p-5 border border-white/5 bg-slate-900/40">
+                <div className="flex items-center justify-between mb-2 sm:mb-2.5">
+                  <span className="text-[10px] sm:text-xs font-bold text-slate-300">
                     {subtotal >= 5000 ? (
                       <span className="text-green-400 font-extrabold flex items-center gap-1.5">
                         🎉 Your order qualifies for FREE shipping!
@@ -142,11 +142,11 @@ export default function CartPage() {
                       </span>
                     )}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                     Goal: {inr(5000)}
                   </span>
                 </div>
-                <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-white/5">
+                <div className="w-full bg-slate-950 rounded-full h-1.5 sm:h-2 overflow-hidden border border-white/5">
                   <motion.div
                     className="h-full bg-gradient-to-r from-primary to-yellow-500 rounded-full"
                     initial={{ width: 0 }}
@@ -157,7 +157,7 @@ export default function CartPage() {
               </div>
 
               {/* Cart Items List */}
-              <div className="space-y-3">
+              <div className="space-y-2.5 sm:space-y-3">
                 <AnimatePresence mode="popLayout">
                   {detailed.map((i) => (
                     <motion.div
@@ -167,9 +167,9 @@ export default function CartPage() {
                       exit={{ opacity: 0, scale: 0.9, y: -15 }}
                       transition={{ type: "spring", stiffness: 350, damping: 25 }}
                       key={i.productId}
-                      className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center border border-white/5 bg-slate-950/20"
+                      className="glass rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center border border-white/5 bg-slate-950/20"
                     >
-                      <div className="flex gap-4 w-full min-w-0">
+                      <div className="flex gap-3 sm:gap-4 w-full min-w-0">
                         <img
                           src={i.product.image}
                           alt={i.product.name}

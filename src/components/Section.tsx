@@ -25,19 +25,19 @@ export function Section({
   };
 
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-      <div className="flex items-end justify-between gap-6 mb-8">
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+      <div className="flex items-end justify-between gap-6 mb-5 sm:mb-8">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
           {eyebrow && (
-            <div className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.1em] text-primary mb-2">
+            <div className="font-mono text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-[0.1em] text-primary mb-1.5 sm:mb-2">
               {eyebrow}
             </div>
           )}
-          <h2 className="font-display font-extrabold text-2xl sm:text-3xl lg:text-[2.2rem] leading-[1.05] tracking-[-0.03em] text-slate-100">
+          <h2 className="font-display font-extrabold text-xl sm:text-3xl lg:text-[2.2rem] leading-[1.05] tracking-[-0.03em] text-slate-100">
             {renderTitle(title)}
           </h2>
           {subtitle && (
-            <p className="font-sans text-[0.95rem] leading-[1.65] text-slate-400 mt-2 max-w-2xl">
+            <p className="font-sans text-xs sm:text-[0.95rem] leading-[1.65] text-slate-400 mt-1.5 sm:mt-2 max-w-2xl">
               {subtitle}
             </p>
           )}

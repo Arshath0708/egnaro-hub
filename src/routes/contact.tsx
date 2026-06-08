@@ -11,13 +11,13 @@ export default function Contact() {
 
   return (
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        <div className="text-center mb-6 sm:mb-12">
           <div className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mb-2">
             Contact
           </div>
-          <h1 className="font-display text-5xl font-bold">Let's talk</h1>
-          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
+          <h1 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold">Let's talk</h1>
+          <p className="text-muted-foreground text-sm sm:text-base mt-2 sm:mt-3 max-w-xl mx-auto">
             For orders, bulk pricing, vendor onboarding or support — we respond
             within 24 hours.
           </p>
@@ -100,10 +100,10 @@ export default function Contact() {
               });
               setForm({ name: "", email: "", message: "" });
             }}
-            className="glass-strong rounded-2xl p-6 shadow-elegant"
+            className="glass-strong rounded-2xl p-4 sm:p-6 shadow-elegant"
           >
             <fieldset disabled={false} className="space-y-0 border-none p-0 m-0 min-w-0">
-            <h3 className="font-display text-2xl font-bold mb-5">
+            <h3 className="font-display text-lg sm:text-2xl font-bold mb-4 sm:mb-5">
               Send a message
             </h3>
             <div className="space-y-4">

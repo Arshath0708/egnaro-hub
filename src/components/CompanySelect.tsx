@@ -50,9 +50,13 @@ export function CompanySelect({
           <button
             type="button"
             disabled={loading}
-            className="flex items-center justify-between w-full h-11 rounded-xl border border-white/10 bg-[#090d1a]/60 backdrop-blur-md px-4 text-sm text-white placeholder:text-gray-500 shadow-lg shadow-black/20 focus:ring-1 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-left cursor-pointer"
+            className={`flex items-center justify-between w-full h-11 rounded-xl border px-4 text-sm placeholder:text-gray-500 shadow-lg shadow-black/20 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-left cursor-pointer ${
+              value 
+                ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-400 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500" 
+                : "border-white/10 bg-[#090d1a]/60 backdrop-blur-md text-white focus:ring-1 focus:ring-primary focus:border-primary hover:border-white/20"
+            }`}
           >
-            <span className={value ? "text-white font-medium truncate" : "text-gray-400 truncate"}>
+            <span className={value ? "text-emerald-400 font-medium truncate" : "text-gray-400 truncate"}>
               {value || placeholder}
             </span>
             <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -63,7 +67,7 @@ export function CompanySelect({
                     e.stopPropagation();
                     onValueChange(undefined);
                   }}
-                  className="rounded-full p-0.5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  className="rounded-full p-0.5 hover:bg-white/10 text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -110,12 +114,12 @@ export function CompanySelect({
                 }}
                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer ${
                   !value
-                    ? "bg-primary/10 font-semibold text-primary"
+                    ? "bg-emerald-500/10 font-semibold text-emerald-400"
                     : "text-muted-foreground hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <span>All Companies</span>
-                {!value && <Check className="h-4 w-4 text-primary" />}
+                {!value && <Check className="h-4 w-4 text-emerald-400" />}
               </button>
             )}
 
@@ -142,12 +146,12 @@ export function CompanySelect({
                     }}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer ${
                       active
-                        ? "bg-primary/10 font-semibold text-primary"
+                        ? "bg-emerald-500/10 font-semibold text-emerald-400"
                         : "text-muted-foreground hover:bg-white/5 hover:text-white"
                     }`}
                   >
                     <span className="truncate">{opt}</span>
-                    {active && <Check className="h-4 w-4 text-primary" />}
+                    {active && <Check className="h-4 w-4 text-emerald-400" />}
                   </button>
                 );
               })

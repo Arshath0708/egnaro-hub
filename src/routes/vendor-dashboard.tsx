@@ -102,7 +102,7 @@ export default function VendorDashboard() {
               <ShoppingBag className="h-10 w-10 text-white" />
             </div>
 
-            <h1 className="text-4xl font-black text-white">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
               Vendor Portal
             </h1>
 
@@ -270,7 +270,7 @@ function DashboardContent({
                 Vendor Workspace
               </div>
 
-              <h1 className="text-5xl font-black">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black">
                 Welcome Back
               </h1>
 
@@ -999,7 +999,7 @@ function StatCard({
         <Icon className="h-7 w-7 text-cyan-400" />
       </div>
 
-      <div className="text-4xl font-black text-white">
+      <div className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
         {currency ? inr(Number(value)) : value}
       </div>
 

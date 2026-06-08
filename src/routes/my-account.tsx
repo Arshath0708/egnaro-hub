@@ -442,7 +442,7 @@ export default function MyAccount() {
 
   return (
     <Shell>
-      <div className="min-h-screen bg-[#030712] text-white font-sans py-10 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="min-h-screen bg-[#030712] text-white font-sans py-5 sm:py-10 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Ambient Radial Lighting Effects */}
         <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-primary/5 blur-[130px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none" />
@@ -455,30 +455,30 @@ export default function MyAccount() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative mb-10 rounded-3xl border border-white/5 bg-gradient-to-br from-white/5 to-white/0 p-6 md:p-8 backdrop-blur-2xl overflow-hidden shadow-2xl"
+            className="relative mb-6 sm:mb-10 rounded-3xl border border-white/5 bg-gradient-to-br from-white/5 to-white/0 p-4 sm:p-6 md:p-8 backdrop-blur-2xl overflow-hidden shadow-2xl"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-white/5 pointer-events-none" />
             
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-6 sm:gap-8">
               {/* Profile Details Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 border-b border-white/5 pb-6">
-                <div className="flex items-center gap-4.5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 border-b border-white/5 pb-4 sm:pb-6">
+                <div className="flex items-center gap-3.5 sm:gap-4.5">
                   <div className="relative">
                     <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary to-yellow-500 blur-sm opacity-40 animate-pulse" />
-                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 border-2 border-white/10 text-white font-display text-xl font-black uppercase shadow-inner">
+                    <div className="relative flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-slate-900 border-2 border-white/10 text-white font-display text-lg sm:text-xl font-black uppercase shadow-inner">
                       {displayGreetingName ? displayGreetingName[0] : "C"}
                     </div>
                   </div>
 
                   <div>
-                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-primary mb-2">
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-primary mb-1.5 sm:mb-2">
                       <Sparkles className="h-3 w-3" />
                       Verified Customer
                     </div>
-                    <h1 className="text-xl md:text-2xl font-display font-black tracking-tight text-white uppercase">
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-display font-black tracking-tight text-white uppercase">
                       Hello, {displayGreetingName}
                     </h1>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1">
                       {profile?.email || user?.email} • Shopping workspace portal
                     </p>
                   </div>
@@ -490,66 +490,66 @@ export default function MyAccount() {
                     navigate("/login");
                     toast.success("Successfully logged out.");
                   }}
-                  className="rounded-xl border border-white/10 bg-white/5 hover:bg-red-500/10 hover:border-red-500/20 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-red-400 transition-all select-none cursor-pointer self-start sm:self-center"
+                  className="rounded-xl border border-white/10 bg-white/5 hover:bg-red-500/10 hover:border-red-500/20 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-bold text-slate-300 hover:text-red-400 transition-all select-none cursor-pointer self-start sm:self-center"
                 >
                   Sign Out
                 </button>
               </div>
 
               {/* 5-Column Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 {/* 1. Total Orders */}
                 <div 
                   onClick={() => navigate("/track-order")}
-                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                  className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group"
                 >
-                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Total Orders</span>
-                  <span className="block text-2xl font-black text-white mt-2">{orders.length}</span>
-                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View History →</span>
+                  <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Total Orders</span>
+                  <span className="block text-lg sm:text-2xl font-black text-white mt-1.5 sm:mt-2">{orders.length}</span>
+                  <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View History →</span>
                 </div>
 
                 {/* 2. Products Ordered */}
                 <div 
                   onClick={() => navigate("/track-order")}
-                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                  className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group"
                 >
-                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Products Ordered</span>
-                  <span className="block text-2xl font-black text-primary mt-2">{productsOrdered}</span>
-                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View Items →</span>
+                  <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Products Ordered</span>
+                  <span className="block text-lg sm:text-2xl font-black text-primary mt-1.5 sm:mt-2">{productsOrdered}</span>
+                  <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View Items →</span>
                 </div>
 
                 {/* 3. Saved Addresses */}
                 <div 
                   onClick={() => setActiveSubTab("addresses")}
-                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-green-500/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                  className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-green-500/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group"
                 >
-                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Saved Addresses</span>
-                  <span className="block text-2xl font-black text-white mt-2">{addresses.length}</span>
-                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-green-400 transition-colors">Manage →</span>
+                  <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Saved Addresses</span>
+                  <span className="block text-lg sm:text-2xl font-black text-white mt-1.5 sm:mt-2">{addresses.length}</span>
+                  <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-green-400 transition-colors">Manage →</span>
                 </div>
 
                 {/* 4. Account Details */}
                 <div 
                   onClick={() => setActiveSubTab("security")}
-                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-[#00ddff]/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                  className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-[#00ddff]/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group"
                 >
-                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Account Details</span>
-                  <span className="block text-sm font-black text-[#00ddff] mt-3.5 uppercase tracking-wider">
+                  <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Account Details</span>
+                  <span className="block text-xs sm:text-sm font-black text-[#00ddff] mt-2.5 sm:mt-3.5 uppercase tracking-wider">
                     {profile?.fullName && profile?.phone ? "Complete" : "Incomplete"}
                   </span>
-                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-[#00ddff] transition-colors">Edit Profile →</span>
+                  <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-[#00ddff] transition-colors">Edit Profile →</span>
                 </div>
 
                 {/* 5. Security Settings */}
                 <div 
                   onClick={() => setActiveSubTab("security")}
-                  className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center cursor-pointer hover:bg-white/10 hover:border-yellow-500/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[100px] group"
+                  className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-yellow-500/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group col-span-2 sm:col-span-1"
                 >
-                  <span className="block text-slate-500 text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Security Settings</span>
-                  <span className="block text-sm font-black text-emerald-400 mt-3.5 uppercase tracking-wider flex items-center justify-center gap-1">
-                    <ShieldCheck className="h-4.5 w-4.5 text-emerald-400" /> SECURED
+                  <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Security Settings</span>
+                  <span className="block text-xs sm:text-sm font-black text-emerald-400 mt-2.5 sm:mt-3.5 uppercase tracking-wider flex items-center justify-center gap-1">
+                    <ShieldCheck className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-emerald-400" /> SECURED
                   </span>
-                  <span className="block text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-yellow-400 transition-colors">Configure →</span>
+                  <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-yellow-400 transition-colors">Configure →</span>
                 </div>
               </div>
             </div>
@@ -565,14 +565,14 @@ export default function MyAccount() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8"
               >
                 {/* 2.1 Track Purchase */}
                 <motion.div
                   onClick={() => navigate("/track-order")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-glow"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-glow"
                 >
                   {/* Subtle inner hover glow gradient */}
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-primary/0 via-transparent to-white/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
@@ -601,7 +601,7 @@ export default function MyAccount() {
                   onClick={() => setActiveSubTab("addresses")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(34,197,94,0.06),0_0_30px_rgba(34,197,94,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(34,197,94,0.06),0_0_30px_rgba(34,197,94,0.03)]"
                 >
                   <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-green-400 group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
@@ -627,7 +627,7 @@ export default function MyAccount() {
                   onClick={() => setActiveSubTab("security")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(0,221,255,0.06),0_0_30px_rgba(0,221,255,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(0,221,255,0.06),0_0_30px_rgba(0,221,255,0.03)]"
                 >
                   <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-[#00ddff] group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
@@ -653,7 +653,7 @@ export default function MyAccount() {
                   onClick={() => setActiveSubTab("help")}
                   whileHover={{ scale: 1.02, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(234,179,8,0.06),0_0_30px_rgba(234,179,8,0.03)]"
+                  className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(234,179,8,0.06),0_0_30px_rgba(234,179,8,0.03)]"
                 >
                   <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-yellow-400 group-hover:translate-x-1">
                     <ArrowRight className="h-5 w-5" />
@@ -684,7 +684,7 @@ export default function MyAccount() {
                 initial={{ opacity: 0, x: 15 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -15 }}
-                className="rounded-3xl border border-white/10 bg-[#0e1626]/40 p-6 md:p-8 backdrop-blur-xl shadow-2xl"
+                className="rounded-3xl border border-white/10 bg-[#0e1626]/40 p-5 sm:p-6 md:p-8 backdrop-blur-xl shadow-2xl"
               >
                 {/* Back controls and header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-6 mb-8 gap-4">
@@ -979,7 +979,7 @@ export default function MyAccount() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-[#0c1220] p-6 shadow-2xl backdrop-blur-2xl z-10"
+              className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-[#0c1220] p-5 sm:p-6 shadow-2xl backdrop-blur-2xl z-10"
             >
               <button
                 onClick={() => setShowAddressModal(false)}

@@ -1125,7 +1125,7 @@ function AdminPanel({
                     <p className="text-xs font-bold text-yellow-500 uppercase tracking-widest">
                       Pending Requests
                     </p>
-                    <h2 className="mt-2 text-4xl font-black text-white">
+                    <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black text-white">
                       {dashboardStats?.vendors?.pending || 0}
                     </h2>
                   </div>
@@ -1134,7 +1134,7 @@ function AdminPanel({
                     <p className="text-xs font-bold text-green-500 uppercase tracking-widest">
                       Approved Vendors
                     </p>
-                    <h2 className="mt-2 text-4xl font-black text-white">
+                    <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black text-white">
                       {dashboardStats?.vendors?.active || ((dashboardStats?.vendors?.total || 0) - (dashboardStats?.vendors?.pending || 0))}
                     </h2>
                   </div>
@@ -1879,7 +1879,7 @@ function StatCard({
         <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">
           {label}
         </div>
-        <div className="font-display text-3xl md:text-4xl font-black tracking-tight text-white bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent drop-shadow-sm leading-none pt-1">
+        <div className="font-display text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent drop-shadow-sm leading-none pt-1">
           {count}
         </div>
       </div>

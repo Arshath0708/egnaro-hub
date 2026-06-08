@@ -19,7 +19,7 @@ export default function Login() {
   );
 
   return (
-    <div className="relative min-h-screen w-full bg-[#080c14] overflow-hidden flex items-center justify-center p-4">
+    <div className="relative min-h-screen w-full bg-[#080c14] overflow-hidden flex items-center justify-center p-3 sm:p-4">
       
       {/* Soft, extremely muted ambient light behind the card */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full blur-[160px] opacity-[0.03] bg-gradient-to-tr from-primary to-violet-500 pointer-events-none" />
@@ -28,7 +28,7 @@ export default function Login() {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-md my-12">
+      <div className="relative z-10 w-full max-w-md my-6 sm:my-12">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -72,7 +72,7 @@ export default function Login() {
 ========================================================= */
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative rounded-[24px] border border-white/5 bg-[#0e1422]/90 p-8 shadow-[0_25px_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl overflow-hidden w-full">
+    <div className="relative rounded-[24px] border border-white/5 bg-[#0e1422]/90 p-5 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl overflow-hidden w-full">
       <div className="relative z-10 space-y-6">
         {children}
       </div>

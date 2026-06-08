@@ -383,7 +383,7 @@ export default function VendorRegister() {
     <Shell>
       <div className="mx-auto max-w-2xl px-4 py-14">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
             {mode === "register" ? "Become a Vendor" : forgotMode ? "Reset Password" : "Vendor Login"}
           </h1>
           <p className="mt-2 text-gray-400">Join India's marketplace for electronics &amp; industrial goods.</p>

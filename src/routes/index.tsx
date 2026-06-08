@@ -621,7 +621,7 @@ function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-glow-hero font-display text-4xl sm:text-[3.2rem] lg:text-[4rem] font-black leading-[1.0] tracking-[-0.04em]"
+              className="text-glow-hero font-display text-2xl sm:text-[3.2rem] lg:text-[4rem] font-black leading-[1.0] tracking-[-0.04em]"
             >
               <span
                 className={`bg-gradient-to-r ${slide.accent} bg-clip-text text-transparent`}
@@ -636,16 +636,16 @@ function Hero() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05 }}
-              className="mt-6 max-w-[55ch] font-sans text-[1.1rem] leading-[1.75] text-slate-400"
+              className="mt-3 sm:mt-6 max-w-[55ch] font-sans text-xs sm:text-[1.1rem] leading-[1.75] text-slate-400"
             >
               {slide.left_subtext}
             </motion.p>
 
             {/* CTA buttons */}
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-6 sm:mt-8 flex flex-wrap gap-3 sm:gap-4">
               <Link
                 to="/products"
-                className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 font-sans font-bold text-[0.9rem] uppercase tracking-[0.05em] gradient-primary text-primary-foreground transition-all duration-300 hover:shadow-glow"
+                className="group inline-flex items-center gap-2 rounded-xl px-5 py-2.5 sm:px-7 sm:py-3.5 font-sans font-bold text-xs sm:text-[0.9rem] uppercase tracking-[0.05em] gradient-primary text-primary-foreground transition-all duration-300 hover:shadow-glow"
               >
                 Shop Now
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -653,7 +653,7 @@ function Hero() {
 
               <Link
                 to="/vendor-register"
-                className="group inline-flex items-center gap-2 rounded-xl glass px-7 py-3.5 font-sans font-bold text-[0.9rem] uppercase tracking-[0.05em] hover:bg-white/10 transition-colors duration-200"
+                className="group inline-flex items-center gap-2 rounded-xl glass px-5 py-2.5 sm:px-7 sm:py-3.5 font-sans font-bold text-xs sm:text-[0.9rem] uppercase tracking-[0.05em] hover:bg-white/10 transition-colors duration-200"
               >
                 <Store className="h-4 w-4" />
                 Become a Vendor
@@ -741,28 +741,28 @@ function DealsBanner() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-3xl gradient-accent p-10 text-white"
+        className="relative overflow-hidden rounded-3xl gradient-accent p-6 sm:p-10 text-white"
       >
-        <div className="relative flex flex-col items-center justify-between gap-8 md:flex-row">
+        <div className="relative flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="text-center md:text-left flex flex-col items-center md:items-start">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">
+            <div className="mb-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">
               Limited Time Offer
             </div>
 
-            <h2 className="font-display text-4xl font-black leading-tight lg:text-5xl">
+            <h2 className="font-display text-2xl sm:text-4xl font-black leading-tight lg:text-5xl">
               Biggest Sale
               <br />
               of the Season
             </h2>
 
-            <p className="mt-3 text-lg text-white/70">
+            <p className="mt-2 text-sm sm:text-lg text-white/70">
               Up to <span className="font-bold text-white">44% off</span>
             </p>
           </div>
 
           <Link
             to="/products"
-            className="group inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 font-bold text-black"
+            className="group inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 sm:px-7 sm:py-3.5 text-xs sm:text-base font-bold text-black"
           >
             Explore Deals
 
@@ -870,36 +870,36 @@ function WhyChooseUs() {
 
 function VendorCTA() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-20">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:py-20">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="relative glass-strong rounded-3xl overflow-hidden p-12 text-center border border-glass-border"
+        className="relative glass-strong rounded-3xl overflow-hidden p-6 sm:p-12 text-center border border-glass-border"
       >
         <div className="relative">
-          <div className="inline-flex items-center gap-2 glass px-3 py-1.5 rounded-full text-xs font-semibold mb-5">
+          <div className="inline-flex items-center gap-2 glass px-3 py-1.5 rounded-full text-xs font-semibold mb-4 sm:mb-5">
             <Sparkles className="h-3 w-3 text-primary" />
 
             Vendor Partnership Program
           </div>
 
-          <h2 className="font-display text-4xl lg:text-5xl font-black leading-tight">
+          <h2 className="font-display text-2xl sm:text-4xl lg:text-5xl font-black leading-tight">
             Sell across India
             <br />
             with Egnaro Mart
           </h2>
 
-          <p className="mt-5 text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
+          <p className="mt-3 sm:mt-5 text-muted-foreground max-w-xl mx-auto text-xs sm:text-base leading-relaxed">
             Join our premium marketplace and reach thousands of verified
             business customers.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <Link
               to="/vendor-register"
-              className="group gradient-primary text-primary-foreground px-7 py-3.5 rounded-xl font-bold inline-flex items-center gap-2"
+              className="group gradient-primary text-primary-foreground px-5 py-2.5 sm:px-7 sm:py-3.5 rounded-xl font-bold inline-flex items-center gap-2 text-xs sm:text-base"
             >
               <Store className="h-4 w-4" />
 

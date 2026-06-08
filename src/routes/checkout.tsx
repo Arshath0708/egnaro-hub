@@ -202,7 +202,7 @@ Please find my payment screenshot attached.
       <Shell>
         <div className="mx-auto max-w-3xl px-4 py-24 text-center">
           <div className="rounded-3xl border border-border bg-card p-10">
-            <h1 className="font-display text-4xl font-bold">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold">
               Your Cart is Empty
             </h1>
 
@@ -329,30 +329,30 @@ Please find my payment screenshot attached.
 
   return (
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-10">
         {/* HEADER */}
 
-        <div className="mb-10">
-          <h1 className="font-display text-4xl font-black">
+        <div className="mb-5 sm:mb-10">
+          <h1 className="font-display text-xl sm:text-3xl md:text-4xl font-black">
             Checkout
           </h1>
 
-          <p className="mt-2 text-muted-foreground">
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
             Securely complete your order with Egnaro Mart
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="grid gap-12 lg:grid-cols-[1fr_400px]"
+          className="grid gap-6 sm:gap-12 lg:grid-cols-[1fr_400px]"
         >
-          <fieldset disabled={submitting} className="space-y-12 border-none p-0 m-0 min-w-0">
+          <fieldset disabled={submitting} className="space-y-6 sm:space-y-12 border-none p-0 m-0 min-w-0">
           {/* LEFT */}
 
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* SHIPPING */}
 
-            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <section className="rounded-3xl border border-border bg-card p-4 sm:p-6 shadow-sm">
               <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
                   <CheckCircle2 className="h-5 w-5 text-primary" />

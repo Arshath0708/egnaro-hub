@@ -233,9 +233,9 @@ export default function TrackOrder() {
 
   return (
     <Shell>
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto max-w-5xl px-4 py-5 sm:py-10">
         {/* Back Link */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Link
             to="/my-account"
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-card hover:bg-accent px-4 py-2.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-all select-none cursor-pointer"
@@ -245,10 +245,10 @@ export default function TrackOrder() {
           </Link>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Search */}
-          <div className="rounded-xl border border-border bg-card p-8">
-          <h1 className="mb-1 font-display text-3xl font-black">
+          <div className="rounded-xl border border-border bg-card p-5 sm:p-8">
+          <h1 className="mb-1 font-display text-2xl sm:text-3xl font-black">
             Track Your Order 📦
           </h1>
 
@@ -302,20 +302,20 @@ export default function TrackOrder() {
 
         {/* Login Required */}
         {order === "login" && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-8 text-center">
-            <Lock className="mx-auto mb-3 h-12 w-12 text-primary" />
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 sm:p-8 text-center">
+            <Lock className="mx-auto mb-3 h-10 w-10 text-primary" />
 
-            <h2 className="text-xl font-bold">
+            <h2 className="text-lg sm:text-xl font-bold">
               Login Required
             </h2>
 
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
               Please login to your account to track your order details.
             </p>
 
             <Link
               to="/login?redirect=/track-order"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white transition-all hover:bg-primary/90"
+              className="mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 sm:px-6 sm:py-3 text-xs sm:text-sm font-bold text-white transition-all hover:bg-primary/90"
             >
               <LogIn className="h-4 w-4" />
               Login to Account
@@ -325,14 +325,14 @@ export default function TrackOrder() {
 
         {/* Not found */}
         {order === "none" && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-            <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-red-400" />
+          <div className="rounded-xl border border-red-200 bg-red-50 p-5 sm:p-8 text-center">
+            <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-red-400" />
 
-            <h2 className="text-xl font-bold text-red-800">
+            <h2 className="text-lg sm:text-xl font-bold text-red-800">
               Order Not Found
             </h2>
 
-            <p className="mt-1 text-sm text-red-600">
+            <p className="mt-1 text-xs sm:text-sm text-red-600">
               Please check your order ID or
               phone number.
             </p>
@@ -341,18 +341,18 @@ export default function TrackOrder() {
 
         {/* User Orders List */}
         {!order && isLoggedIn && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Your Orders</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-bold">Your Orders</h2>
             {isLoadingOrders ? (
-              <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              <div className="rounded-xl border border-border bg-card p-5 sm:p-8 text-center text-sm text-muted-foreground">
                 Loading orders…
               </div>
             ) : userOrdersData?.success === false ? (
-              <div className="rounded-xl border border-red-200/20 bg-red-500/5 p-8 text-center text-red-400 font-semibold">
+              <div className="rounded-xl border border-red-200/20 bg-red-500/5 p-5 sm:p-8 text-center text-red-400 font-semibold">
                 {userOrdersData.message || "Failed to load orders. Please try logging in again."}
               </div>
             ) : userOrders.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+              <div className="rounded-xl border border-border bg-card p-5 sm:p-8 text-center text-muted-foreground">
                 You have no previous orders.
               </div>
             ) : (
@@ -367,7 +367,7 @@ export default function TrackOrder() {
                           inputRef.current.value = uo.order_id;
                         }
                       }}
-                      className="cursor-pointer rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg"
+                      className="cursor-pointer rounded-xl border border-border bg-card p-4 sm:p-6 transition-all hover:-translate-y-1 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg"
                     >
                       <div className="mb-4 flex items-center justify-between">
                         <div>
@@ -493,20 +493,20 @@ const OrderDetails = memo(function OrderDetails({
   order: Order;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="flex flex-col gap-4 border-b border-border bg-primary/5 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3.5 border-b border-border bg-primary/5 p-4 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="mb-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="mb-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Order ID
             </div>
 
-            <h2 className="text-2xl font-black">
+            <h2 className="text-xl sm:text-2xl font-black">
               {order.order_id}
             </h2>
 
-            <div className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="mt-1.5 inline-flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
               <Clock3 className="h-4 w-4" />
               Est. Delivery:{" "}
               {["Cancelled", "Pending"].includes(order.estimatedDelivery) || isNaN(new Date(order.estimatedDelivery).getTime())
@@ -515,18 +515,18 @@ const OrderDetails = memo(function OrderDetails({
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-background p-4">
-            <div className="text-xs text-muted-foreground">
+          <div className="rounded-lg border border-border bg-background p-3 sm:p-4">
+            <div className="text-[10px] sm:text-xs text-muted-foreground">
               Total Amount
             </div>
 
-            <div className="text-3xl font-black text-primary">
+            <div className="text-2xl sm:text-3xl font-black text-primary">
               {inr(order.total || 0)}
             </div>
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <Timeline
             current={order.status}
             history={order.history || []}
@@ -535,7 +535,7 @@ const OrderDetails = memo(function OrderDetails({
       </div>
 
       {/* Items + Shipping */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <ItemsCard items={order.items} />
 
         <ShippingCard order={order} />
@@ -550,7 +550,7 @@ const ItemsCard = memo(function ItemsCard({
   items: any[];
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
       <div className="mb-4 flex items-center gap-2">
         <Package className="h-5 w-5 text-primary" />
 
@@ -622,7 +622,7 @@ const ShippingCard = memo(
     order: Order;
   }) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-2">
           <MapPin className="h-5 w-5 text-primary" />
 

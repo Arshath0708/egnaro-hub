@@ -223,18 +223,18 @@ export default function ProductDetail() {
 
   return (
     <Shell>
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-10 sm:px-6 lg:px-8">
         {/* BACK BUTTON */}
 
         <button
           onClick={() => nav("/products")}
-          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
+          className="mb-4 sm:mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
           Back
         </button>
 
-        <div className="grid gap-10 md:grid-cols-2">
+        <div className="grid gap-6 md:gap-10 md:grid-cols-2">
 
           {/* IMAGE */}
 
@@ -269,13 +269,13 @@ export default function ProductDetail() {
               {product.category?.replace("-", " ")}
             </div>
 
-            <h1 className="font-display text-3xl font-black md:text-5xl">
+            <h1 className="font-display text-2xl sm:text-3xl font-black md:text-5xl">
               {product.name}
             </h1>
 
             {/* RATING */}
 
-            <div className="mt-4 flex items-center gap-3 text-sm">
+            <div className="mt-3 sm:mt-4 flex items-center gap-3 text-sm">
               <div className="flex items-center gap-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 px-2.5 py-0.5">
                 <svg className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500 drop-shadow-[0_2px_4px_rgba(234,179,8,0.2)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -286,32 +286,32 @@ export default function ProductDetail() {
                 </span>
               </div>
 
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground text-xs sm:text-sm">
                 ({reviews.length} reviews)
               </span>
 
               <span className="text-muted-foreground">·</span>
 
-              <span className="text-green-400 font-bold">
+              <span className="text-green-400 font-bold text-xs sm:text-sm">
                 In Stock
               </span>
             </div>
 
             {/* PRICE */}
 
-            <div className="mt-6 flex items-end gap-4">
-              <div className="text-5xl font-black text-primary">
+            <div className="mt-4 sm:mt-6 flex items-end gap-3 sm:gap-4">
+              <div className="text-2xl sm:text-4xl md:text-5xl font-black text-primary">
                 {inr(Number(product.price))}
               </div>
 
               {Number(product.original_price) >
                 Number(product.price) && (
                   <>
-                    <div className="pb-1 text-lg text-muted-foreground line-through">
+                    <div className="pb-1 text-sm sm:text-lg text-muted-foreground line-through">
                       {inr(Number(product.original_price))}
                     </div>
 
-                    <div className="pb-1 text-sm font-semibold text-green-400">
+                    <div className="pb-1 text-xs sm:text-sm font-semibold text-green-400">
                       Save{" "}
                       {inr(
                         Number(product.original_price) -
@@ -324,7 +324,7 @@ export default function ProductDetail() {
 
             {/* DESCRIPTION */}
 
-            <p className="mt-6 leading-relaxed text-muted-foreground">
+            <p className="mt-4 sm:mt-6 leading-relaxed text-muted-foreground text-xs sm:text-sm md:text-base">
               {product.description}
             </p>
 
@@ -488,7 +488,7 @@ export default function ProductDetail() {
 
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-white/10 to-transparent p-6 text-center">
-                        <span className="text-5xl font-black text-primary">
+                        <span className="text-3xl sm:text-4xl md:text-5xl font-black text-primary">
                           {calculatedAverage.toFixed(1)}
                         </span>
                         <div className="mt-2 flex items-center gap-0.5">
