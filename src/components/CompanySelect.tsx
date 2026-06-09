@@ -9,6 +9,7 @@ interface CompanySelectProps {
   options: string[];
   placeholder?: string;
   loading?: boolean;
+  disabled?: boolean;
 }
 
 export function CompanySelect({
@@ -17,6 +18,7 @@ export function CompanySelect({
   options,
   placeholder = "Brand / Company...",
   loading = false,
+  disabled = false,
 }: CompanySelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -49,7 +51,7 @@ export function CompanySelect({
         <PopoverTrigger asChild>
           <button
             type="button"
-            disabled={loading}
+            disabled={disabled || loading}
             className={`flex items-center justify-between w-full h-11 rounded-xl border px-4 text-sm placeholder:text-gray-500 shadow-lg shadow-black/20 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-left cursor-pointer ${
               value 
                 ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-400 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500" 

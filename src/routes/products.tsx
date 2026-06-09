@@ -139,17 +139,30 @@ export default function ProductsPage() {
     return Array.from(new Set([...fromLocs, ...fromProducts])).filter(Boolean).sort((a, b) => a.localeCompare(b));
   }, [locations, normalizedProducts]);
 
-  /* NORMALIZED CITIES LIST BASED ON STATE */
+  /* NORMALIZED CITIES LIST BASED ON STATE & COMPANY */
   const availableCities = useMemo(() => {
     if (!currentState) return [];
+    
+    // Base list of products matching selected state
+    let filteredProducts = normalizedProducts.filter(
+      (p: any) => p.vendor_state?.toLowerCase() === currentState.toLowerCase()
+    );
+
+    // If a brand is selected, narrow the cities list down to where that brand has products
+    if (currentCo) {
+      filteredProducts = filteredProducts.filter(
+        (p: any) => p.vendor_company?.toLowerCase() === currentCo.toLowerCase()
+      );
+      const fromProducts = filteredProducts.map((p: any) => toTitleCase(p.vendor_city));
+      return Array.from(new Set(fromProducts)).filter(Boolean).sort((a, b) => a.localeCompare(b));
+    }
+
     const fromLocs = locations
       .filter((l: any) => l.state?.toLowerCase() === currentState.toLowerCase())
       .map((l: any) => toTitleCase(l.city));
-    const fromProducts = normalizedProducts
-      .filter((p: any) => p.vendor_state?.toLowerCase() === currentState.toLowerCase())
-      .map((p: any) => toTitleCase(p.vendor_city));
+    const fromProducts = filteredProducts.map((p: any) => toTitleCase(p.vendor_city));
     return Array.from(new Set([...fromLocs, ...fromProducts])).filter(Boolean).sort((a, b) => a.localeCompare(b));
-  }, [locations, normalizedProducts, currentState]);
+  }, [locations, normalizedProducts, currentState, currentCo]);
 
   /* NORMALIZED COMPANIES LIST BASED ON STATE/CITY */
   const availableCompanies = useMemo((): string[] => {
@@ -320,10 +333,8 @@ export default function ProductsPage() {
   function handleCityChange(value: string) {
     if (value === "all" || !value) {
       params.delete("city");
-      params.delete("company");
     } else {
       params.set("city", value);
-      params.delete("company");
     }
     navigate(`/products?${params.toString()}`);
   }
@@ -375,28 +386,8 @@ export default function ProductsPage() {
             </p>
           </div>
 
-          {/* SEARCH & CATEGORY SELECTOR */}
+          {/* SEARCH INPUT ONLY */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:max-w-2xl xl:max-w-3xl">
-            {/* CATEGORIES SELECT */}
-            <div className="w-full sm:w-48 shrink-0">
-              <Select value={currentCats[0] || "all"} onValueChange={handleCategoryChange}>
-                <SelectTrigger className="w-full h-[46px] rounded-xl border border-glass-border bg-[#0b1220]/50 px-3.5 text-sm outline-none text-white focus:ring-1 focus:ring-primary backdrop-blur-md">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {[...categories]
-                    .sort((a: any, b: any) => a.name.localeCompare(b.name))
-                    .map((c: any) => (
-                      <SelectItem key={c.id} value={c.name}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* SEARCH INPUT */}
             <form
               onSubmit={handleSearchSubmit}
               className="glass flex-1 flex items-center gap-2 rounded-xl p-1.5 min-w-0"
@@ -409,7 +400,7 @@ export default function ProductsPage() {
                   params.get("q") ?? ""
                 }
                 placeholder="Search products..."
-                className="flex-1 bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground min-w-0"
+                className="flex-grow bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground min-w-0"
               />
 
               <button
@@ -424,18 +415,34 @@ export default function ProductsPage() {
 
         {/* SELECTED VENDOR DISPLAY */}
         {currentCo && (
-          <div className="mb-6 flex items-center animate-fadeIn">
-            <div className="inline-flex items-center gap-2.5 text-emerald-400">
-              <span className="font-display text-lg sm:text-2xl font-semibold sm:font-bold tracking-tight text-emerald-400 truncate max-w-[280px] sm:max-w-2xl">
-                {currentCo}
-              </span>
+          <div className="mb-8 animate-fadeIn">
+            <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent p-5 sm:p-6 backdrop-blur-md shadow-lg shadow-emerald-500/5 flex items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-inner">
+                  <Store className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">
+                      Verified Vendor
+                    </span>
+                  </div>
+                  <h2 className="mt-1 font-display text-xl sm:text-3xl font-black text-white tracking-wide uppercase">
+                    {currentCo}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1 font-medium">
+                    Showing products from this company
+                  </p>
+                </div>
+              </div>
+
               <button
                 type="button"
                 onClick={() => handleCompanyChange("")}
-                className="rounded-full p-1 hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer shrink-0"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/20 hover:border-emerald-500 text-emerald-400 hover:text-emerald-300 transition-all duration-200 cursor-pointer active:scale-90"
                 title="Remove Vendor Filter"
               >
-                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -447,6 +454,9 @@ export default function ProductsPage() {
 
           <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <Sidebar
+              categories={categories}
+              currentCats={currentCats}
+              onToggleCategory={handleToggleFilter}
               availableStates={availableStates}
               availableCities={availableCities}
               availableCompanies={availableCompanies}
@@ -466,78 +476,7 @@ export default function ProductsPage() {
           {/* MAIN */}
 
           <div>
-            {/* ACTIVE FILTER CHIPS */}
-            {(currentCats.length > 0 || currentState || currentCity || currentCo) && (
-              <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-1.5 sm:gap-2 bg-[#090d1a]/40 border border-white/5 rounded-2xl p-2.5 sm:p-4 backdrop-blur-md">
-                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 mr-1.5 sm:mr-2">
-                  Active Filters:
-                </span>
-                {currentCats.map((cat) => (
-                  <span
-                    key={`cat-${cat}`}
-                    className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] sm:text-xs font-medium rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 animate-fadeIn shadow-sm"
-                  >
-                    {cat}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleFilter("categories", cat)}
-                      className="hover:bg-white/10 rounded-full p-0.5 transition-colors cursor-pointer text-slate-400 hover:text-white"
-                    >
-                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    </button>
-                  </span>
-                ))}
-                {currentState && (
-                  <span
-                    key={`state-${currentState}`}
-                    className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] sm:text-xs font-medium rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 animate-fadeIn shadow-sm"
-                  >
-                    State: {currentState}
-                    <button
-                      type="button"
-                      onClick={() => handleStateChange("")}
-                      className="hover:bg-white/10 rounded-full p-0.5 transition-colors cursor-pointer text-slate-400 hover:text-white"
-                    >
-                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    </button>
-                  </span>
-                )}
-                {currentCity && (
-                  <span
-                    key={`city-${currentCity}`}
-                    className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] sm:text-xs font-medium rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 animate-fadeIn shadow-sm"
-                  >
-                    City: {currentCity}
-                    <button
-                      type="button"
-                      onClick={() => handleCityChange("")}
-                      className="hover:bg-white/10 rounded-full p-0.5 transition-colors cursor-pointer text-slate-400 hover:text-white"
-                    >
-                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    </button>
-                  </span>
-                )}
-                {currentCo && (
-                  <span
-                    key={`co-${currentCo}`}
-                    className="inline-flex items-center gap-1.5 bg-emerald-500/15 border-2 border-emerald-500/50 text-emerald-400 text-[11px] sm:text-sm font-bold rounded-full px-3 py-1 sm:px-4 sm:py-1.5 animate-fadeIn shadow-md shadow-emerald-500/10"
-                    title={currentCo}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                    <span className="max-w-[150px] truncate sm:max-w-xs md:max-w-md inline-block align-bottom">
-                      Company: {currentCo}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCompanyChange("")}
-                      className="hover:bg-emerald-500/20 rounded-full p-0.5 transition-colors cursor-pointer text-emerald-400"
-                    >
-                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    </button>
-                  </span>
-                )}
-              </div>
-            )}
+
             {isLoading ? (
               <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
                 {Array.from({
@@ -622,6 +561,9 @@ export default function ProductsPage() {
 
                 {/* Sidebar filters rendered inside the mobile drawer */}
                 <Sidebar
+                  categories={categories}
+                  currentCats={currentCats}
+                  onToggleCategory={handleToggleFilter}
                   availableStates={availableStates}
                   availableCities={availableCities}
                   availableCompanies={availableCompanies}
@@ -670,6 +612,9 @@ export default function ProductsPage() {
 
 const Sidebar = memo(
   function Sidebar({
+    categories,
+    currentCats,
+    onToggleCategory,
     availableStates,
     availableCities,
     availableCompanies,
@@ -684,6 +629,9 @@ const Sidebar = memo(
     onClearAll,
     hasActiveFilters,
   }: {
+    categories: any[];
+    currentCats: string[];
+    onToggleCategory: (type: "categories" | "locations" | "companies", value: string) => void;
     availableStates: string[];
     availableCities: string[];
     availableCompanies: string[];
@@ -715,6 +663,38 @@ const Sidebar = memo(
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* CATEGORIES */}
+        <div className="glass rounded-2xl p-5">
+          <div className="mb-3 text-sm font-semibold text-white">Categories</div>
+          <div className="space-y-2.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+            {categories.length === 0 ? (
+              <div className="text-xs text-muted-foreground py-2">No categories found</div>
+            ) : (
+              [...categories]
+                .sort((a: any, b: any) => a.name.localeCompare(b.name))
+                .map((cat: any) => {
+                  const isChecked = currentCats.includes(cat.name);
+                  return (
+                    <label
+                      key={cat.id}
+                      className="flex items-center gap-2.5 text-xs text-slate-300 hover:text-white cursor-pointer select-none py-0.5 group"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => onToggleCategory("categories", cat.name)}
+                        className="h-4 w-4 rounded border border-white/10 bg-[#090d1a]/60 text-primary accent-primary cursor-pointer transition-all duration-200"
+                      />
+                      <span className={`transition-colors duration-200 ${isChecked ? "text-emerald-400 font-semibold" : "group-hover:text-slate-100"}`}>
+                        {cat.name}
+                      </span>
+                    </label>
+                  );
+                })
+            )}
+          </div>
         </div>
 
         {/* LOCATION & BRAND CARD */}
@@ -790,6 +770,7 @@ const Sidebar = memo(
               options={availableCompanies}
               placeholder={currentState ? "All Brands" : "Select a State first"}
               loading={false}
+              disabled={!currentState}
             />
           </div>
         </div>

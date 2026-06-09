@@ -12,16 +12,18 @@ import {
   MessageSquare,
   User,
   Calendar,
+  Store,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shell } from "@/components/layout/Shell";
-import { getProducts, getReviews, addReview, getProductById } from "@/services/api";
+import { getProducts, getReviews, addReview, getProductById, getVendorProducts } from "@/services/api";
 import { queryKeys } from "@/lib/query-keys";
 import { inr } from "@/lib/format";
 import { useCart } from "@/context/cart-store";
 import { toast } from "sonner";
 import { sanitizeInput, validateName } from "@/lib/validation";
+import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 
 type Product = {
   total_reviews: number;
@@ -38,6 +40,12 @@ type Product = {
   specifications?: Record<string, string>;
   status?: string;
   approved?: boolean | number;
+  vendor_id?: number;
+  vendor_company?: string;
+  vendor_state?: string;
+  vendor_city?: string;
+  created_by_id?: number | string;
+  created_by_type?: string;
 };
 
 type Review = {
@@ -234,6 +242,50 @@ export default function ProductDetail() {
           Back
         </button>
 
+        {/* PREMIUM VENDOR BANNER */}
+        {product.vendor_company && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent p-5 backdrop-blur-md shadow-lg shadow-emerald-500/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shadow-inner">
+                <Store className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] font-black uppercase tracking-[0.15em] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">
+                    Sold By
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400/90">
+                    <svg className="h-3.5 w-3.5 fill-emerald-400 text-emerald-950" viewBox="0 0 24 24">
+                      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Verified Vendor
+                  </span>
+                </div>
+                <h2 className="mt-1 font-display text-lg sm:text-xl font-extrabold text-white tracking-wide uppercase">
+                  {product.vendor_company}
+                </h2>
+                {(product.vendor_city || product.vendor_state) && (
+                  <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                    {[product.vendor_city, product.vendor_state].filter(Boolean).join(" • ")}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <Link
+              to={`/products?company=${encodeURIComponent(product.vendor_company)}`}
+              className="sm:self-center inline-flex items-center justify-center gap-1.5 rounded-2xl bg-emerald-500 px-5 py-3 text-xs font-black text-slate-950 hover:bg-emerald-400 active:scale-95 transition-all duration-200 shadow-lg shadow-emerald-500/20 uppercase tracking-wider cursor-pointer w-full sm:w-auto"
+            >
+              View Vendor Products
+              <ChevronRight className="h-4 w-4 stroke-[3]" />
+            </Link>
+          </motion.div>
+        )}
+
         <div className="grid gap-6 md:gap-10 md:grid-cols-2">
 
           {/* IMAGE */}
@@ -272,6 +324,7 @@ export default function ProductDetail() {
             <h1 className="font-display text-2xl sm:text-3xl font-black md:text-5xl">
               {product.name}
             </h1>
+
 
             {/* RATING */}
 
@@ -669,7 +722,79 @@ export default function ProductDetail() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* MORE PRODUCTS FROM THIS VENDOR */}
+        {(product.vendor_id || product.created_by_id) && (
+          <VendorRecommendations
+            vendorId={(product.vendor_id || product.created_by_id)!}
+            currentProductId={product.id}
+            vendorCompany={product.vendor_company || "this Vendor"}
+          />
+        )}
       </div>
     </Shell>
+  );
+}
+
+/* VENDOR RECOMMENDATIONS */
+
+interface VendorRecommendationsProps {
+  vendorId: string | number;
+  currentProductId: string | number;
+  vendorCompany: string;
+}
+
+function VendorRecommendations({
+  vendorId,
+  currentProductId,
+  vendorCompany,
+}: VendorRecommendationsProps) {
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: queryKeys.vendorProductsAll(vendorId),
+    queryFn: () => getVendorProducts(vendorId),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p: any) => String(p.id) !== String(currentProductId)).slice(0, 4);
+  }, [products, currentProductId]);
+
+  if (isLoading) {
+    return (
+      <div className="mt-16 border-t border-white/5 pt-16">
+        <h3 className="mb-8 font-display text-lg sm:text-2xl font-black text-white uppercase tracking-wider">
+          More from {vendorCompany}
+        </h3>
+        <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (filteredProducts.length === 0) return null;
+
+  return (
+    <div className="mt-16 border-t border-white/5 pt-16 animate-fadeIn">
+      <div className="mb-8 flex items-center justify-between">
+        <h3 className="font-display text-lg sm:text-2xl font-black text-white uppercase tracking-wider flex items-center gap-2.5">
+          <Store className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400" />
+          More from {vendorCompany}
+        </h3>
+        <Link
+          to={`/products?company=${encodeURIComponent(vendorCompany)}`}
+          className="text-[10px] sm:text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-wider"
+        >
+          View All Products
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+        {filteredProducts.map((p: any, i: number) => (
+          <ProductCard key={p.id} product={p} index={i} />
+        ))}
+      </div>
+    </div>
   );
 }
