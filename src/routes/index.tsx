@@ -26,6 +26,7 @@ import { Section } from "@/components/Section";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { getProducts, getCategories, getHomeContent } from "@/services/api";
 import { queryKeys } from "@/lib/query-keys";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 const CATEGORY_META: Record<string, { image: string, accent: string }> = {
   "accessories": {
@@ -81,6 +82,8 @@ const trustBadges = [
 /* ───────────────────────────────────────────────────────────── */
 
 export default function Home() {
+  useDocumentMetadata("Egnaro Mart — Premium Electronics, Hardware & Industrial Goods", "Egnaro Mart — Buy electronics, electricals, hardware, motor pumps & industrial goods at the best prices across Tamil Nadu.");
+
   const { data: products = [], isLoading } = useQuery({
     queryKey: queryKeys.products(),
     queryFn: getProducts,

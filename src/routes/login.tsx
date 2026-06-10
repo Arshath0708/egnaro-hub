@@ -7,12 +7,15 @@ import { loginCustomer } from "@/services/api";
 import { toast } from "sonner";
 import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 import { validateEmail, validatePassword, sanitizeInput } from "@/lib/validation";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 const API = "https://egnaromart.com/api";
 
 type Step = "login" | "forgot-email" | "forgot-otp" | "forgot-newpw";
 
 export default function Login() {
+  useDocumentMetadata("Customer Login", "Log in to your Egnaro Mart account to track your orders, view vendor profiles, and manage saved shipping addresses.");
+
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState<Step>(
     (searchParams.get("step") as Step) || "login"

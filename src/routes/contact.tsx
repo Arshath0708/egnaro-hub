@@ -3,8 +3,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Shell } from "@/components/layout/Shell";
 import { validateName, validateEmail, sanitizeInput } from "@/lib/validation";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 export default function Contact() {   
+  useDocumentMetadata("Contact Us", "Get in touch with Egnaro Mart for B2B electronics, hardware, electricals, motor pumps, and industrial goods support.");
+
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const inp =
     "w-full bg-secondary/60 border border-glass-border rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring transition";

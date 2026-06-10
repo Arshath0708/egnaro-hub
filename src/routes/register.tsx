@@ -5,8 +5,11 @@ import { motion } from "framer-motion";
 import { CheckCircle2, AlertCircle, Shield, User, Mail, Phone, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { registerCustomer } from "@/services/api";
 import { validateName, validateEmail, validatePhone, validatePassword, sanitizeInput } from "@/lib/validation";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 export default function Register() {   
+  useDocumentMetadata("Customer Register", "Create your Egnaro Mart customer account to browse verified premium industrial, electrical, and electronic products.");
+
   const [form, setForm] = useState({
     fullName: "",
     email: "",

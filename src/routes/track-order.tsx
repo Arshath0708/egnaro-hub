@@ -29,6 +29,7 @@ import type { Order, OrderStatus } from "@/types";
 import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 import { sanitizeInput } from "@/lib/validation";
 import { queryKeys } from "@/lib/query-keys";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 const STEPS: {
   id: OrderStatus;
@@ -143,6 +144,8 @@ function buildOrder(raw: any): Order {
 }
 
 export default function TrackOrder() {
+  useDocumentMetadata("Track Order", "Enter your order ID or registered phone number to view live courier tracking status on Egnaro Mart.");
+
   const [searchParams] = useSearchParams();
   const searchId = searchParams.get("id");
 

@@ -1,4 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Star,
@@ -112,6 +113,11 @@ export default function ProductDetail() {
       return found || null;
     },
   });
+
+  useDocumentMetadata(
+    product ? product.name : "Loading Product...",
+    product ? product.description : "Explore verified premium B2B products on Egnaro Mart."
+  );
 
   /* REVIEWS */
 

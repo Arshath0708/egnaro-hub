@@ -38,6 +38,7 @@ import { DeleteProductModal } from "@/modals/DeleteProductModal";
 import { AddProductModal } from "@/modals/AddProductModal";
 import { ViewVendorModal } from "@/modals/ViewVendorModal";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { clearUserSession } from "@/lib/session";
 import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct, updateOrderStatus, createSupportRequest, getSupportRequests } from "@/services/api";
 import { inr } from "@/lib/format";
@@ -89,6 +90,8 @@ type ProductForm = {
 };
 
 export default function VendorDashboard() {
+  useDocumentMetadata("Vendor Dashboard", "Manage products, track order sales, and configure corporate profiles on the Egnaro Mart Vendor Portal.");
+
   const vendorId = useAuth((s) => s.vendorId);
   const isVendor = useAuth(selectIsVendor);
   const queryClient = useQueryClient();

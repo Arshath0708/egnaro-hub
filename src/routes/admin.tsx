@@ -38,6 +38,7 @@ import { HomeContentModal } from "@/modals/HomeContentModal";
 import { ViewUserModal } from "@/modals/ViewUserModal";
 
 import { useAuth, selectIsAdmin } from "@/context/auth-store";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { toast } from "sonner";
 import { clearUserSession } from "@/lib/session";
 
@@ -102,6 +103,8 @@ const inputClass =
   "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-400 outline-none backdrop-blur-xl transition-all focus:border-primary";
 
 export default function AdminPage() {
+  useDocumentMetadata("Admin Console", "Manage products, orders, categories, locations, and vendors for Egnaro Mart.");
+
   const isAdmin = useAuth(selectIsAdmin);
   const queryClient = useQueryClient();
 

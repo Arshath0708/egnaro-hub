@@ -11,8 +11,11 @@ import { getProducts } from "@/services/api";
 import { inr } from "@/lib/format";
 import { sanitizeInput } from "@/lib/validation";
 import { queryKeys } from "@/lib/query-keys";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 export default function CartPage() {
+  useDocumentMetadata("Your Shopping Cart", "Review your items, apply coupons, and manage order attributes before checkout.");
+
   const items = useCart((s) => s.items);
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);

@@ -34,6 +34,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { inr } from "@/lib/format";
 import { toast } from "sonner";
 import { validateName, validatePhone, validatePincode, sanitizeInput } from "@/lib/validation";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 type Address = {
   label: string;
@@ -244,6 +245,8 @@ function GoldMedallion() {
 }
 
 export default function MyAccount() {
+  useDocumentMetadata("My Account", "Manage your customer account, view your orders, update addresses, and change account passwords on Egnaro Mart.");
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const token = useAuth((s) => s.token);
@@ -347,7 +350,7 @@ export default function MyAccount() {
     },
   });
 
-  if (!isLoggedIn || !token || isProfileLoading || isOrdersLoading) {
+  if (!isLoggedIn || !token) {
     return (
       <Shell>
         <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#020617] text-white">
@@ -504,7 +507,13 @@ export default function MyAccount() {
                   className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group"
                 >
                   <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Total Orders</span>
-                  <span className="block text-lg sm:text-2xl font-black text-white mt-1.5 sm:mt-2">{orders.length}</span>
+                  <span className="block text-lg sm:text-2xl font-black text-white mt-1.5 sm:mt-2">
+                    {isOrdersLoading ? (
+                      <span className="inline-block h-6 w-8 animate-pulse rounded bg-white/10" />
+                    ) : (
+                      orders.length
+                    )}
+                  </span>
                   <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View History →</span>
                 </div>
 
@@ -514,7 +523,13 @@ export default function MyAccount() {
                   className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-primary/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group"
                 >
                   <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Products Ordered</span>
-                  <span className="block text-lg sm:text-2xl font-black text-primary mt-1.5 sm:mt-2">{productsOrdered}</span>
+                  <span className="block text-lg sm:text-2xl font-black text-primary mt-1.5 sm:mt-2">
+                    {isOrdersLoading ? (
+                      <span className="inline-block h-6 w-8 animate-pulse rounded bg-white/10" />
+                    ) : (
+                      productsOrdered
+                    )}
+                  </span>
                   <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-primary transition-colors">View Items →</span>
                 </div>
 
@@ -524,7 +539,13 @@ export default function MyAccount() {
                   className="bg-white/5 border border-white/5 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:bg-white/10 hover:border-green-500/30 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between min-h-[90px] sm:min-h-[100px] group"
                 >
                   <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Saved Addresses</span>
-                  <span className="block text-lg sm:text-2xl font-black text-white mt-1.5 sm:mt-2">{addresses.length}</span>
+                  <span className="block text-lg sm:text-2xl font-black text-white mt-1.5 sm:mt-2">
+                    {isProfileLoading ? (
+                      <span className="inline-block h-6 w-8 animate-pulse rounded bg-white/10" />
+                    ) : (
+                      addresses.length
+                    )}
+                  </span>
                   <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-green-400 transition-colors">Manage →</span>
                 </div>
 
@@ -535,7 +556,11 @@ export default function MyAccount() {
                 >
                   <span className="block text-slate-500 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase group-hover:text-slate-300 transition-colors">Account Details</span>
                   <span className="block text-xs sm:text-sm font-black text-[#00ddff] mt-2.5 sm:mt-3.5 uppercase tracking-wider">
-                    {profile?.fullName && profile?.phone ? "Complete" : "Incomplete"}
+                    {isProfileLoading ? (
+                      <span className="inline-block h-4 w-16 animate-pulse rounded bg-white/10" />
+                    ) : (
+                      profile?.fullName && profile?.phone ? "Complete" : "Incomplete"
+                    )}
                   </span>
                   <span className="block text-[7px] sm:text-[8px] font-bold text-slate-500 mt-1 uppercase tracking-wider group-hover:text-[#00ddff] transition-colors">Edit Profile →</span>
                 </div>
@@ -592,7 +617,7 @@ export default function MyAccount() {
                     Track live deliveries, view purchase histories, and fetch transaction receipts.
                   </p>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-primary uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-primary/20">
-                    View Orders ({orders.length})
+                    View Orders ({isOrdersLoading ? "..." : orders.length})
                   </span>
                 </motion.div>
 
@@ -604,7 +629,7 @@ export default function MyAccount() {
                   className="group relative cursor-pointer rounded-3xl border border-white/5 bg-[#0e1626]/40 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl transition-[transform,border-color,background-color,box-shadow,color] duration-300 hover:border-slate-800 hover:bg-[#0c1220]/75 hover:shadow-[0_20px_50px_rgba(34,197,94,0.06),0_0_30px_rgba(34,197,94,0.03)]"
                 >
                   <div className="absolute top-6 right-6 text-slate-500 transition-[transform,border-color,background-color,box-shadow,color] duration-300 group-hover:text-green-400 group-hover:translate-x-1">
-                    <ArrowRight className="h-5 w-5" />
+                     <ArrowRight className="h-5 w-5" />
                   </div>
 
                   <div className="mb-6 flex justify-start">
@@ -618,7 +643,7 @@ export default function MyAccount() {
                     Manage coordinate directories, add home/work entries, or configure primary endpoints.
                   </p>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/25 px-3 py-1.2 text-[10px] font-bold tracking-wider text-green-400 uppercase transition-[transform,border-color,background-color,box-shadow,color] group-hover:bg-green-500/20">
-                    Configure Addresses ({addresses.length})
+                    Configure Addresses ({isProfileLoading ? "..." : addresses.length})
                   </span>
                 </motion.div>
 

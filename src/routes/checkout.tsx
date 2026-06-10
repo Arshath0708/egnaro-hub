@@ -19,6 +19,7 @@ import { inr } from "@/lib/format";
 import { toast } from "sonner";
 import { clearUserSession } from "@/lib/session";
 import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 const inputCls =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
@@ -59,6 +60,7 @@ export default function CheckoutPage() {
   const token = useAuth((s) => s.token);
 
   const [submitting, setSubmitting] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const [saveAddress, setSaveAddress] = useState(false);
 
   const [payment, setPayment] = useState<
@@ -67,12 +69,24 @@ export default function CheckoutPage() {
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
-  // AUTH PROTECTION
+  useDocumentMetadata("Secure Checkout", "Provide your shipping address and choose your payment method to complete the checkout process on Egnaro Mart.");
+
+  // AUTH & CART PROTECTION
   useEffect(() => {
     if (!isLoggedIn) {
       toast.error("Please login to place your order");
       nav(`/login?redirect=${location.pathname}`);
-    } else if (user) {
+      return;
+    }
+    if (orderPlaced) {
+      return;
+    }
+    if (items.length === 0 && !submitting) {
+      toast.error("Your cart is empty");
+      nav("/cart");
+      return;
+    }
+    if (user) {
       // PRE-FILL FORM
       setForm(prev => ({
         ...prev,
@@ -81,7 +95,7 @@ export default function CheckoutPage() {
         phone: user.phone || ""
       }));
     }
-  }, [isLoggedIn, nav, location.pathname, user]);
+  }, [isLoggedIn, items.length, nav, location.pathname, user, submitting, orderPlaced]);
 
   const { data: products = [] } = useQuery({
     queryKey: queryKeys.products(),
@@ -197,7 +211,7 @@ Please find my payment screenshot attached.
 
   const whatsappUrl = `https://wa.me/919442581506?text=${whatsappMessage}`;
 
-  if (items.length === 0) {
+  if (items.length === 0 && !orderPlaced) {
     return (
       <Shell>
         <div className="mx-auto max-w-3xl px-4 py-24 text-center">
@@ -286,7 +300,9 @@ Please find my payment screenshot attached.
 
       const data = await res.json();
 
-      if (data.success) {
+      if (data.success && data.order_id) {
+        // ✅ STEP 1: Mark order as placed FIRST (disables cart-empty guard)
+        setOrderPlaced(true);
         toast.success("Order placed successfully 🎉");
 
         if (saveAddress && isLoggedIn && token) {
@@ -313,11 +329,14 @@ Please find my payment screenshot attached.
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS] });
 
         localStorage.removeItem("egnaro_coupon");
-        clear();
 
-        nav(`/order-success?orderId=${data.order_id}`);
+        // ✅ STEP 2: Navigate BEFORE clearing cart
+        await nav(`/order-success?orderId=${data.order_id}`);
+
+        // ✅ STEP 3: Clear cart AFTER navigation
+        clear();
       } else {
-        toast.error(data.message || "Order failed");
+        toast.error(data.message || "Order failed. Please try again.");
       }
     } catch (err) {
       console.error(err);

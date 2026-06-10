@@ -1,4 +1,5 @@
 import { Shell } from "@/components/layout/Shell";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 const SECTIONS = [
   {
@@ -31,7 +32,9 @@ const SECTIONS = [
   },
 ];
 
-export default function Refund() {  
+export default function Refund() {
+  useDocumentMetadata("Refund Policy", "Learn about return eligibility, refund timelines, and cancellation policies at Egnaro Mart.");
+
   return (
     <Shell>
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8 sm:py-16">

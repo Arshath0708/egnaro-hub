@@ -4,6 +4,7 @@ import { CheckCircle2, LogIn, ShieldCheck, Lock, Mail, KeyRound, Loader2, ArrowL
 import { Shell } from "@/components/layout/Shell";
 import { addVendor, getLocations, addLocation } from "@/services/api";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { toast } from "sonner";
 import { LocationSelect } from "@/components/LocationSelect";
 import { validateName, validateEmail, validatePhone, validatePassword, sanitizeInput } from "@/lib/validation";
@@ -42,6 +43,8 @@ type ResetStep =
   | "waiting_admin_reactivation";
 
 export default function VendorRegister() {
+  useDocumentMetadata("Vendor Portal", "Register or log in as a vendor on Egnaro Mart to start selling your products online.");
+
   const navigate = useNavigate();
   const loginVendor = useAuth((s) => s.loginVendor);
   const isVendor = useAuth(selectIsVendor);

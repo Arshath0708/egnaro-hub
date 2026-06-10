@@ -8,6 +8,7 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -91,6 +92,13 @@ export default function ProductsPage() {
   const currentCity = params.get("city") ?? "";
   const currentCo = params.get("company") ?? "";
 
+  const pageTitle = currentCo
+    ? `${toTitleCase(currentCo)} Products`
+    : currentCats.length === 1
+    ? `${toTitleCase(currentCats[0])} Category`
+    : "Shop Products";
+  useDocumentMetadata(pageTitle, "Browse our catalog of electronics, electrical, hardware, motor pumps, and industrial products on Egnaro Mart.");
+
   const searchRef = useRef<HTMLInputElement>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -154,14 +162,14 @@ export default function ProductsPage() {
         (p: any) => p.vendor_company?.toLowerCase() === currentCo.toLowerCase()
       );
       const fromProducts = filteredProducts.map((p: any) => toTitleCase(p.vendor_city));
-      return Array.from(new Set(fromProducts)).filter(Boolean).sort((a, b) => a.localeCompare(b));
+      return Array.from(new Set(fromProducts)).filter(Boolean).sort((a: any, b: any) => a.localeCompare(b));
     }
 
     const fromLocs = locations
       .filter((l: any) => l.state?.toLowerCase() === currentState.toLowerCase())
       .map((l: any) => toTitleCase(l.city));
     const fromProducts = filteredProducts.map((p: any) => toTitleCase(p.vendor_city));
-    return Array.from(new Set([...fromLocs, ...fromProducts])).filter(Boolean).sort((a, b) => a.localeCompare(b));
+    return Array.from(new Set([...fromLocs, ...fromProducts])).filter(Boolean).sort((a: any, b: any) => a.localeCompare(b));
   }, [locations, normalizedProducts, currentState, currentCo]);
 
   /* NORMALIZED COMPANIES LIST BASED ON STATE/CITY */

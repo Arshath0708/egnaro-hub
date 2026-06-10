@@ -19,8 +19,10 @@ import {
   Sparkles
 } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
+import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
 export default function AboutPage() {
+  useDocumentMetadata("About Us", "Learn more about Egnaro Mart, India's premium B2B marketplace for electronics, hardware, electricals, and industrial goods.");
 
   const coreValues = [
     {
