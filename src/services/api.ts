@@ -513,6 +513,20 @@ export async function approveVendor(id: number, status: string) {
   });
 }
 
+export async function haltVendor(vendorId: number, action: "halt" | "unhalt") {
+  return await request("/halt-vendor.php", {
+    method: "POST",
+    body: JSON.stringify({ vendor_id: vendorId, action }),
+  });
+}
+
+export async function deleteVendor(vendorId: number, force: boolean = false) {
+  return await request("/delete-vendor.php", {
+    method: "POST",
+    body: JSON.stringify({ vendor_id: vendorId, force }),
+  });
+}
+
 export async function vendorLogin(data: any) {
   return await request("/vendor-login.php", {
     method: "POST",

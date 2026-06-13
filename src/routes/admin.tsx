@@ -20,6 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
+  Play,
+  Pause,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -36,6 +38,8 @@ import { ViewProductModal } from "@/modals/ViewProductModal";
 import { ViewVendorModal } from "@/modals/ViewVendorModal";
 import { HomeContentModal } from "@/modals/HomeContentModal";
 import { ViewUserModal } from "@/modals/ViewUserModal";
+import { HaltVendorModal } from "@/modals/HaltVendorModal";
+import { DeleteVendorModal } from "@/modals/DeleteVendorModal";
 
 import { useAuth, selectIsAdmin } from "@/context/auth-store";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
@@ -339,6 +343,12 @@ function AdminPanel({
   const admin = useAuth((s) => s.admin);
 
   const [deletingProduct, setDeletingProduct] =
+    useState<any>(null);
+
+  const [haltingVendor, setHaltingVendor] =
+    useState<any>(null);
+
+  const [deletingVendor, setDeletingVendor] =
     useState<any>(null);
 
   const [contentModalOpen, setContentModalOpen] =
@@ -1229,19 +1239,51 @@ function AdminPanel({
                               </TableCell>
 
                               <TableCell>
-                                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-black text-emerald-400 border border-emerald-500/20">
-                                  Approved
-                                </span>
+                                {vendor.status === "halted" ? (
+                                  <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-black text-amber-400 border border-amber-500/20 animate-pulse">
+                                    Halted
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-black text-emerald-400 border border-emerald-500/20">
+                                    Approved
+                                  </span>
+                                )}
                               </TableCell>
 
                               <TableCell className="text-right py-4.5 pr-6">
-                                <button
-                                  onClick={() => setViewingVendor(vendor)}
-                                  className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20 cursor-pointer"
-                                  title="View Vendor Details"
-                                >
-                                  <Search className="h-4.5 w-4.5" />
-                                </button>
+                                <div className="flex justify-end gap-2.5">
+                                  <button
+                                    onClick={() => setViewingVendor(vendor)}
+                                    className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20 cursor-pointer"
+                                    title="View Vendor Details"
+                                  >
+                                    <Search className="h-4.5 w-4.5" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => setHaltingVendor(vendor)}
+                                    className={`rounded-xl p-2 transition cursor-pointer ${
+                                      vendor.status === "halted"
+                                        ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                                        : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                                    }`}
+                                    title={vendor.status === "halted" ? "Unhalt Vendor" : "Halt Vendor"}
+                                  >
+                                    {vendor.status === "halted" ? (
+                                      <Play className="h-4.5 w-4.5" />
+                                    ) : (
+                                      <Pause className="h-4.5 w-4.5" />
+                                    )}
+                                  </button>
+
+                                  <button
+                                    onClick={() => setDeletingVendor(vendor)}
+                                    className="rounded-xl bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/20 cursor-pointer"
+                                    title="Delete Vendor"
+                                  >
+                                    <Trash2 className="h-4.5 w-4.5" />
+                                  </button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -1716,6 +1758,28 @@ function AdminPanel({
             isAdmin={true}
             onClose={() => {
               setDeletingProduct(null);
+              loadStats();
+            }}
+          />,
+          document.body
+        )}
+
+        {haltingVendor && createPortal(
+          <HaltVendorModal
+            vendor={haltingVendor}
+            onClose={() => {
+              setHaltingVendor(null);
+              loadStats();
+            }}
+          />,
+          document.body
+        )}
+
+        {deletingVendor && createPortal(
+          <DeleteVendorModal
+            vendor={deletingVendor}
+            onClose={() => {
+              setDeletingVendor(null);
               loadStats();
             }}
           />,

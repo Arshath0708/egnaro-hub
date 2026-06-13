@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { X, Building2, User, Mail, Phone, MapPin, CheckCircle, Clock, XCircle, CreditCard, Landmark, Hash, Package, IndianRupee, ShoppingCart, ShieldAlert, Loader2 } from "lucide-react";
+import { X, Building2, User, Mail, Phone, MapPin, CheckCircle, Clock, XCircle, CreditCard, Landmark, Hash, Package, IndianRupee, ShoppingCart, ShieldAlert, Loader2, Pause, Play } from "lucide-react";
 import { getVendorById, updateBankDetails } from "@/services/api";
 import { toast } from "sonner";
 import { sanitizeInput } from "@/lib/validation";
@@ -342,7 +342,16 @@ function StatMini({ icon, label, value, color, bg }: { icon: any, label: string,
 function StatusBadge({ status }: { status: string }) {
   const isApproved = status === "active" || status === "approved";
   const isPending = status === "pending";
+  const isHalted = status === "halted";
 
+  if (isHalted) {
+    return (
+      <div className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-[10px] font-black uppercase text-amber-400 tracking-wider animate-pulse">
+        <Pause className="h-3 w-3" />
+        Halted Account
+      </div>
+    );
+  }
   if (isApproved) {
     return (
       <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[10px] font-black uppercase text-emerald-400 tracking-wider">

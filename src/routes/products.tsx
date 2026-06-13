@@ -197,6 +197,7 @@ export default function ProductsPage() {
         p &&
         p.status !== "rejected" &&
         p.status !== "deleted" &&
+        p.status !== "halted" &&
         (p.approved === true ||
           Number(p.approved) === 1 ||
           p.status === "approved")

@@ -29,6 +29,7 @@ import {
   Building2,
   Calendar,
   MessageSquare,
+  ShieldAlert,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
@@ -40,7 +41,7 @@ import { ViewVendorModal } from "@/modals/ViewVendorModal";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { clearUserSession } from "@/lib/session";
-import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct, updateOrderStatus, createSupportRequest, getSupportRequests } from "@/services/api";
+import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct, updateOrderStatus, createSupportRequest, getSupportRequests, getVendorById } from "@/services/api";
 import { inr } from "@/lib/format";
 import { sanitizeInput } from "@/lib/validation";
 import { toast } from "sonner";
@@ -194,6 +195,18 @@ function DashboardContent({
     gcTime: 10 * 60 * 1000,
   });
 
+  const { data: vendorDetails } = useQuery({
+    queryKey: ["vendor-details", vendorId],
+    queryFn: async () => {
+      const res = await getVendorById(Number(vendorId));
+      if (res.success && res.vendor) {
+        return res.vendor;
+      }
+      return null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Paginated query for the listing grid
   const {
     data: productsRes,
@@ -260,6 +273,29 @@ function DashboardContent({
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(6,182,212,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.15),transparent_35%)]" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-10">
+
+          {vendorDetails?.details?.status === "halted" && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 rounded-[32px] border border-red-500/20 bg-gradient-to-b from-[#1a0c0f] to-[#0d0608] p-6 text-left shadow-[0_20px_50px_rgba(239,68,68,0.05)] relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-5"
+            >
+              {/* background light flare */}
+              <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full blur-2xl opacity-10 bg-red-500 pointer-events-none" />
+
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500">
+                <ShieldAlert className="h-6 w-6 animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-black text-white tracking-wide">
+                  Account Halted
+                </h3>
+                <p className="mt-1.5 text-xs text-red-400 font-semibold leading-relaxed">
+                  Your account is halted by admin. All your listed products are temporarily hidden from the shop. You can still fulfill and update your active orders.
+                </p>
+              </div>
+            </motion.div>
+          )}
 
           {/* HERO */}
           <motion.div
