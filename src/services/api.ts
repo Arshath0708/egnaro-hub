@@ -1,5 +1,5 @@
 import { useAuth } from "@/context/auth-store";
-const API_BASE = "https://egnaromart.com/api";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 async function request(endpoint: string, options?: RequestInit) {
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;

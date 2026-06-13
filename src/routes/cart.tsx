@@ -12,6 +12,7 @@ import { inr } from "@/lib/format";
 import { sanitizeInput } from "@/lib/validation";
 import { queryKeys } from "@/lib/query-keys";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
+import { handleImageError } from "@/lib/utils";
 
 export default function CartPage() {
   useDocumentMetadata("Your Shopping Cart", "Review your items, apply coupons, and manage order attributes before checkout.");
@@ -177,6 +178,7 @@ export default function CartPage() {
                           src={i.product.image}
                           alt={i.product.name}
                           className="h-20 w-20 sm:h-24 sm:w-24 rounded-xl object-cover flex-shrink-0 border border-white/5"
+                          onError={handleImageError}
                         />
                         <div className="flex-1 min-w-0">
                           <Link
@@ -239,6 +241,7 @@ export default function CartPage() {
                             src={p.image}
                             alt={p.name}
                             className="h-24 w-full object-cover rounded-xl border border-white/5 mb-3"
+                            onError={handleImageError}
                           />
                           <h4 className="font-bold text-xs text-slate-200 line-clamp-1 hover:text-primary transition-colors">
                             <Link to={`/product/${p.id}`}>{p.name}</Link>

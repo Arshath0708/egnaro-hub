@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { clearUserSession } from "@/lib/session";
 import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
+import { handleImageError } from "@/lib/utils";
 
 const inputCls =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
@@ -273,8 +274,9 @@ Please find my payment screenshot attached.
         price: i.product.price,
       }));
 
+      const apiBase = import.meta.env.VITE_API_URL || "/api";
       const res = await fetch(
-        "https://egnaromart.com/api/create-order.php",
+        `${apiBase}/create-order.php`,
         {
           method: "POST",
           headers: {
@@ -721,11 +723,7 @@ Please find my payment screenshot attached.
                     src={i.product.image}
                     alt={i.product.name}
                     className="h-16 w-16 rounded-2xl object-cover border"
-                    onError={(e) => {
-                      (
-                        e.target as HTMLImageElement
-                      ).src = "/placeholder.png";
-                    }}
+                    onError={handleImageError}
                   />
 
                   <div className="min-w-0 flex-1">

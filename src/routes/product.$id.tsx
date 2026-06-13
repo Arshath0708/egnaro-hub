@@ -25,6 +25,7 @@ import { useCart } from "@/context/cart-store";
 import { toast } from "sonner";
 import { sanitizeInput, validateName } from "@/lib/validation";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
+import { handleImageError } from "@/lib/utils";
 
 type Product = {
   total_reviews: number;
@@ -306,6 +307,7 @@ export default function ProductDetail() {
               alt={product.name}
               decoding="async"
               className="h-full w-full object-cover transform-gpu transition-transform duration-500 will-change-transform hover:scale-102"
+              onError={handleImageError}
             />
 
             {Number(product.discount) > 0 && (

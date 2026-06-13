@@ -25,6 +25,7 @@ import { Shell } from "@/components/layout/Shell";
 import { Section } from "@/components/Section";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { getProducts, getCategories, getHomeContent } from "@/services/api";
+import { handleImageError } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
@@ -397,6 +398,7 @@ function CategoryCardLarge({
           loading="lazy"
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-[transform,opacity] duration-1000 group-hover:scale-110"
+          onError={handleImageError}
         />
 
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
@@ -445,6 +447,7 @@ function CategoryCardSmall({
           loading="lazy"
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:opacity-70 transition-[transform,opacity] duration-1000 group-hover:scale-110"
+          onError={handleImageError}
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -697,6 +700,7 @@ function Hero() {
                     alt={slide.left_title}
                     decoding="async"
                     className="h-full w-full object-cover"
+                    onError={handleImageError}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 </div>

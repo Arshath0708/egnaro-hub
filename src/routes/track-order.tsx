@@ -30,6 +30,7 @@ import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 import { sanitizeInput } from "@/lib/validation";
 import { queryKeys } from "@/lib/query-keys";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
+import { handleImageError } from "@/lib/utils";
 
 const STEPS: {
   id: OrderStatus;
@@ -397,6 +398,7 @@ export default function TrackOrder() {
                                   src={item.image}
                                   alt={item.name}
                                   className="h-8 w-8 object-cover rounded-lg border border-border bg-muted flex-shrink-0"
+                                  onError={handleImageError}
                                 />
                               ) : (
                                 <div className="h-8 w-8 rounded-lg border border-border bg-muted flex items-center justify-center flex-shrink-0">
@@ -590,11 +592,7 @@ const ItemRow = memo(function ItemRow({
           alt={item.name}
           loading="lazy"
           className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
-          onError={(e) => {
-            (
-              e.target as HTMLImageElement
-            ).style.display = "none";
-          }}
+          onError={handleImageError}
         />
       )}
 

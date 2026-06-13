@@ -102,7 +102,8 @@ export function AddProductModal({
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
 
-      const res = await fetch("https://egnaromart.com/api/upload-image.php", {
+      const apiBase = import.meta.env.VITE_API_URL || "/api";
+      const res = await fetch(`${apiBase}/upload-image.php`, {
         method: "POST",
         body: formData,
       });

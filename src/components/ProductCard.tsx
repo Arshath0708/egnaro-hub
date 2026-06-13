@@ -4,6 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import { inr } from "@/lib/format";
 import { useCart } from "@/context/cart-store";
 import { toast } from "sonner";
+import { handleImageError } from "@/lib/utils";
 
 export const ProductCard = memo(function ProductCard({
   product,
@@ -40,9 +41,7 @@ export const ProductCard = memo(function ProductCard({
             loading="lazy"
             decoding="async"
             className="h-full w-full object-cover transform-gpu transition-transform duration-700 will-change-transform group-hover:scale-105"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/placeholder.png";
-            }}
+            onError={handleImageError}
           />
 
           {/* BADGES */}

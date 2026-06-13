@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { LocationSelect } from "@/components/LocationSelect";
 import { validateName, validateEmail, validatePhone, validatePassword, sanitizeInput } from "@/lib/validation";
 
-const API = "https://egnaromart.com/api";
+const API = import.meta.env.VITE_API_URL || "/api";
 
 type RegisterForm = {
   vendor_name: string;

@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import { Shell } from "@/components/layout/Shell";
 import { inr } from "@/lib/format";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
+import { handleImageError } from "@/lib/utils";
 import { toast } from "sonner";
 
 type OrderItem = {
@@ -66,7 +67,8 @@ export default function OrderSuccessPage() {
       navigate("/products");
       return;
     }
-    fetch(`https://egnaromart.com/api/get-order.php?order_id=${orderId}`)
+    const apiBase = import.meta.env.VITE_API_URL || "/api";
+    fetch(`${apiBase}/get-order.php?order_id=${orderId}`)
       .then((r) => r.json())
       .then((data) => {
         data.success && data.order ? setOrder(data.order) : setFetchError(true);
@@ -387,9 +389,7 @@ export default function OrderSuccessPage() {
                         src={item.image}
                         alt={item.name}
                         className="h-14 w-14 rounded-xl object-cover border border-white/5 flex-shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder.png";
-                        }}
+                        onError={handleImageError}
                       />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-sm text-slate-200 line-clamp-1">{item.name}</h4>

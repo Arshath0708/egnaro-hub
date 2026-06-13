@@ -9,7 +9,7 @@ import { useAuth, selectIsLoggedIn } from "@/context/auth-store";
 import { validateEmail, validatePassword, sanitizeInput } from "@/lib/validation";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 
-const API = "https://egnaromart.com/api";
+const API = import.meta.env.VITE_API_URL || "/api";
 
 type Step = "login" | "forgot-email" | "forgot-otp" | "forgot-newpw";
 

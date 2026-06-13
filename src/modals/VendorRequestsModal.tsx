@@ -6,7 +6,7 @@ import { approveVendor, getPendingVendors } from "@/services/api";
 import { toast } from "sonner";
 import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 
-const API = "https://egnaromart.com/api";
+const API = import.meta.env.VITE_API_URL || "/api";
 
 type Vendor = {
   id: number;
