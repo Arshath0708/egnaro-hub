@@ -171,6 +171,8 @@ export type ProductForm = {
   vendorId: string;
   name: string;
   category: string;
+  subcategory_id?: number;
+  subcategory?: string;
   image: string;
   price: string;
   original_price: string;
@@ -641,6 +643,27 @@ export async function updateCategory(
 
 export async function deleteCategory(id: number) {
   return await request("/delete-category.php", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function addSubcategory(categoryId: number, name: string) {
+  return await request("/add-subcategory.php", {
+    method: "POST",
+    body: JSON.stringify({ category_id: categoryId, name }),
+  });
+}
+
+export async function updateSubcategory(id: number, name: string) {
+  return await request("/update-subcategory.php", {
+    method: "POST",
+    body: JSON.stringify({ id, name }),
+  });
+}
+
+export async function deleteSubcategory(id: number) {
+  return await request("/delete-subcategory.php", {
     method: "POST",
     body: JSON.stringify({ id }),
   });

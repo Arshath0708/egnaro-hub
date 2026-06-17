@@ -33,6 +33,8 @@ type Product = {
   id: number;
   name: string;
   category: string;
+  subcategory_id?: number | string;
+  subcategory?: string;
   image: string;
   price: number;
   original_price: number;
@@ -325,8 +327,18 @@ export default function ProductDetail() {
             transition={{ delay: 0.05 }}
             className="transform-gpu"
           >
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-              {product.category?.replace("-", " ")}
+            <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              <Link to={`/products?categories=${encodeURIComponent(product.category)}`} className="hover:text-cyan-300 transition-colors">
+                {product.category?.replace("-", " ")}
+              </Link>
+              {product.subcategory && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                  <Link to={`/products?subcategories=${encodeURIComponent(product.subcategory_id || "")}`} className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                    {product.subcategory}
+                  </Link>
+                </>
+              )}
             </div>
 
             <h1 className="font-display text-2xl sm:text-3xl font-black md:text-5xl">

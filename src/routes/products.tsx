@@ -25,7 +25,10 @@ import {
   SlidersHorizontal,
   X,
   Store,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Shell } from "@/components/layout/Shell";
 
@@ -88,6 +91,7 @@ export default function ProductsPage() {
   const currentSort = params.get("sort") ?? "new";
   const currentQ = params.get("q")?.toLowerCase() ?? "";
   const currentCats = useMemo(() => params.get("categories")?.split(",").filter(Boolean) ?? [], [location.search]);
+  const currentSubcats = useMemo(() => params.get("subcategories")?.split(",").filter(Boolean) ?? [], [location.search]);
   const currentState = params.get("state") ?? "";
   const currentCity = params.get("city") ?? "";
   const currentCo = params.get("company") ?? "";
@@ -203,14 +207,20 @@ export default function ProductsPage() {
           p.status === "approved")
     );
 
-    /* CATEGORIES FILTER */
-    if (currentCats.length > 0) {
+    /* CATEGORIES & SUBCATEGORIES FILTER */
+    if (currentCats.length > 0 || currentSubcats.length > 0) {
       arr = arr.filter((p: any) => {
-        return currentCats.some((catName) => {
+        const matchCat = currentCats.some((catName) => {
           const catObj = categories.find((c: any) => c.name.toLowerCase() === catName.toLowerCase());
           const catID = catObj?.id;
           return p.category === catName || String(p.category) === String(catID);
         });
+
+        const matchSub = currentSubcats.some((subId) => {
+          return String(p.subcategory_id) === String(subId);
+        });
+
+        return matchCat || matchSub;
       });
     }
 
@@ -275,6 +285,7 @@ export default function ProductsPage() {
     normalizedProducts,
     categories,
     currentCats,
+    currentSubcats,
     currentState,
     currentCity,
     currentCo,
@@ -357,8 +368,26 @@ export default function ProductsPage() {
     navigate(`/products?${params.toString()}`);
   }
 
+  function handleToggleSubcategory(value: string) {
+    const list = params.get("subcategories")?.split(",").filter(Boolean) ?? [];
+    const index = list.indexOf(value);
+    if (index > -1) {
+      list.splice(index, 1);
+    } else {
+      list.push(value);
+    }
+    
+    if (list.length > 0) {
+      params.set("subcategories", list.join(","));
+    } else {
+      params.delete("subcategories");
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
   function handleClearAllFilters() {
     params.delete("categories");
+    params.delete("subcategories");
     params.delete("state");
     params.delete("city");
     params.delete("company");
@@ -463,9 +492,12 @@ export default function ProductsPage() {
 
           <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <Sidebar
+              products={normalizedProducts}
               categories={categories}
               currentCats={currentCats}
+              currentSubcats={currentSubcats}
               onToggleCategory={handleToggleFilter}
+              onToggleSubcategory={handleToggleSubcategory}
               availableStates={availableStates}
               availableCities={availableCities}
               availableCompanies={availableCompanies}
@@ -478,14 +510,13 @@ export default function ProductsPage() {
               onCityChange={handleCityChange}
               onCompanyChange={handleCompanyChange}
               onClearAll={handleClearAllFilters}
-              hasActiveFilters={currentCats.length > 0 || !!currentState || !!currentCity || !!currentCo}
+              hasActiveFilters={currentCats.length > 0 || currentSubcats.length > 0 || !!currentState || !!currentCity || !!currentCo}
             />
           </div>
 
           {/* MAIN */}
 
           <div>
-
             {isLoading ? (
               <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
                 {Array.from({
@@ -535,7 +566,7 @@ export default function ProductsPage() {
             className="flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-bold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary-hover active:scale-95 transition-[transform,border-color,background-color,color] cursor-pointer"
           >
             <SlidersHorizontal className="h-4 w-4" />
-            <span>Filter {currentCats.length + (currentState ? 1 : 0) + (currentCity ? 1 : 0) + (currentCo ? 1 : 0) > 0 ? `(${currentCats.length + (currentState ? 1 : 0) + (currentCity ? 1 : 0) + (currentCo ? 1 : 0)})` : ""}</span>
+            <span>Filter {currentCats.length + currentSubcats.length + (currentState ? 1 : 0) + (currentCity ? 1 : 0) + (currentCo ? 1 : 0) > 0 ? `(${currentCats.length + currentSubcats.length + (currentState ? 1 : 0) + (currentCity ? 1 : 0) + (currentCo ? 1 : 0)})` : ""}</span>
           </button>
         </div>
 
@@ -569,10 +600,13 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Sidebar filters rendered inside the mobile drawer */}
-                <Sidebar
+                 <Sidebar
+                  products={normalizedProducts}
                   categories={categories}
                   currentCats={currentCats}
+                  currentSubcats={currentSubcats}
                   onToggleCategory={handleToggleFilter}
+                  onToggleSubcategory={handleToggleSubcategory}
                   availableStates={availableStates}
                   availableCities={availableCities}
                   availableCompanies={availableCompanies}
@@ -585,7 +619,7 @@ export default function ProductsPage() {
                   onCityChange={handleCityChange}
                   onCompanyChange={handleCompanyChange}
                   onClearAll={handleClearAllFilters}
-                  hasActiveFilters={currentCats.length > 0 || !!currentState || !!currentCity || !!currentCo}
+                  hasActiveFilters={currentCats.length > 0 || currentSubcats.length > 0 || !!currentState || !!currentCity || !!currentCo}
                 />
               </div>
 
@@ -621,9 +655,12 @@ export default function ProductsPage() {
 
 const Sidebar = memo(
   function Sidebar({
+    products = [],
     categories,
     currentCats,
+    currentSubcats,
     onToggleCategory,
+    onToggleSubcategory,
     availableStates,
     availableCities,
     availableCompanies,
@@ -638,9 +675,12 @@ const Sidebar = memo(
     onClearAll,
     hasActiveFilters,
   }: {
+    products?: any[];
     categories: any[];
     currentCats: string[];
+    currentSubcats: string[];
     onToggleCategory: (type: "categories" | "locations" | "companies", value: string) => void;
+    onToggleSubcategory: (value: string) => void;
     availableStates: string[];
     availableCities: string[];
     availableCompanies: string[];
@@ -655,6 +695,86 @@ const Sidebar = memo(
     onClearAll: () => void;
     hasActiveFilters: boolean;
   }) {
+    const [catSearch, setCatSearch] = useState("");
+    const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+
+    const categoryCounts = useMemo(() => {
+      const counts: Record<string, number> = {};
+      categories.forEach((cat: any) => {
+        let count = 0;
+        products.forEach((p: any) => {
+          if (
+            p.category === cat.name ||
+            String(p.category) === String(cat.id)
+          ) {
+            count++;
+          }
+        });
+        counts[cat.name] = count;
+      });
+      return counts;
+    }, [products, categories]);
+
+    const subcategoryCounts = useMemo(() => {
+      const counts: Record<string, number> = {};
+      categories.forEach((cat: any) => {
+        const subcats = cat.subcategories || [];
+        subcats.forEach((sub: any) => {
+          let count = 0;
+          products.forEach((p: any) => {
+            if (String(p.subcategory_id) === String(sub.id)) {
+              count++;
+            }
+          });
+          counts[String(sub.id)] = count;
+        });
+      });
+      return counts;
+    }, [products, categories]);
+
+    useEffect(() => {
+      const next = { ...expandedCats };
+      let changed = false;
+      categories.forEach((cat: any) => {
+        const isCatChecked = currentCats.includes(cat.name);
+        const subcats = cat.subcategories || [];
+        const hasActiveSubcat = subcats.some((sub: any) => currentSubcats.includes(String(sub.id)));
+        
+        if ((isCatChecked || hasActiveSubcat) && !next[cat.name]) {
+          next[cat.name] = true;
+          changed = true;
+        }
+      });
+      if (changed) {
+        setExpandedCats(next);
+      }
+    }, [currentCats, currentSubcats, categories]);
+
+    const expandAll = () => {
+      const next: Record<string, boolean> = {};
+      categories.forEach((cat: any) => {
+        next[cat.name] = true;
+      });
+      setExpandedCats(next);
+    };
+
+    const collapseAll = () => {
+      setExpandedCats({});
+    };
+
+    const toggleExpand = (catName: string) => {
+      setExpandedCats(prev => ({ ...prev, [catName]: !prev[catName] }));
+    };
+
+
+    const filteredCats = categories
+      .filter((cat: any) => {
+        const matchesCat = cat.name.toLowerCase().includes(catSearch.toLowerCase());
+        const matchesSub = (cat.subcategories || []).some((sub: any) => sub.name.toLowerCase().includes(catSearch.toLowerCase()));
+        return matchesCat || matchesSub;
+      })
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+
     return (
       <aside className="space-y-6 animate-fadeUp">
         {/* SORT */}
@@ -674,34 +794,139 @@ const Sidebar = memo(
           </Select>
         </div>
 
-        {/* CATEGORIES */}
-        <div className="glass rounded-2xl p-5">
-          <div className="mb-3 text-sm font-semibold text-white">Categories</div>
-          <div className="space-y-2.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-            {categories.length === 0 ? (
-              <div className="text-xs text-muted-foreground py-2">No categories found</div>
+        {/* CATEGORIES & SUBCATEGORIES ACCORDION PANEL */}
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <div className="flex flex-col gap-2">
+            <div className="text-sm font-semibold text-white">Categories</div>
+            
+            {/* Search Input */}
+            <div className="relative group">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500 group-focus-within:text-primary transition-colors" />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={catSearch}
+                onChange={(e) => setCatSearch(e.target.value)}
+                className="w-full h-8 pl-8 pr-7 text-xs text-white bg-slate-950/40 border border-white/10 rounded-lg outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 placeholder:text-gray-600 transition-all"
+              />
+              {catSearch && (
+                <button 
+                  type="button" 
+                  onClick={() => setCatSearch("")} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white cursor-pointer"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Expand / Collapse Controls */}
+            {categories.length > 0 && (
+              <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 px-0.5">
+                <button type="button" onClick={expandAll} className="hover:text-primary transition-colors cursor-pointer">Expand All</button>
+                <span>•</span>
+                <button type="button" onClick={collapseAll} className="hover:text-primary transition-colors cursor-pointer">Collapse All</button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1.5 custom-scrollbar">
+            {filteredCats.length === 0 ? (
+              <div className="text-xs text-muted-foreground py-2 text-center">No categories match search</div>
             ) : (
-              [...categories]
-                .sort((a: any, b: any) => a.name.localeCompare(b.name))
-                .map((cat: any) => {
-                  const isChecked = currentCats.includes(cat.name);
-                  return (
-                    <label
-                      key={cat.id}
-                      className="flex items-center gap-2.5 text-xs text-slate-300 hover:text-white cursor-pointer select-none py-0.5 group"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => onToggleCategory("categories", cat.name)}
-                        className="h-4 w-4 rounded border border-white/10 bg-[#090d1a]/60 text-primary accent-primary cursor-pointer transition-all duration-200"
-                      />
-                      <span className={`transition-colors duration-200 ${isChecked ? "text-emerald-400 font-semibold" : "group-hover:text-slate-100"}`}>
-                        {cat.name}
-                      </span>
-                    </label>
-                  );
-                })
+              filteredCats.map((cat: any) => {
+                const isCatChecked = currentCats.includes(cat.name);
+                const subcats = cat.subcategories || [];
+                const isExpanded = !!expandedCats[cat.name];
+                const count = categoryCounts[cat.name] || 0;
+
+                return (
+                  <div 
+                    key={cat.id} 
+                    className={`rounded-xl border transition-all duration-300 overflow-hidden ${
+                      isCatChecked 
+                        ? "border-primary bg-slate-950/80 shadow-[0_0_15px_rgba(255,107,0,0.15)]" 
+                        : "border-white/5 bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/10"
+                    }`}
+                  >
+                    {/* Header trigger */}
+                    <div className="flex items-center justify-between group">
+                      {/* Left: Category name & count */}
+                      <div 
+                        onClick={() => onToggleCategory("categories", cat.name)}
+                        className="flex items-center gap-2 flex-1 cursor-pointer select-none py-3.5 pl-3.5 min-w-0"
+                      >
+                        <span className={`text-xs truncate transition-colors ${
+                          isCatChecked ? "text-primary font-bold" : "text-gray-300 font-medium group-hover:text-white"
+                        }`}>
+                          {cat.name}
+                        </span>
+
+                        <span className="text-[10px] text-gray-500 font-mono font-semibold">
+                          ({count})
+                        </span>
+                      </div>
+
+                      {/* Right: expansion chevron */}
+                      <div 
+                        onClick={() => toggleExpand(cat.name)}
+                        className="flex items-center justify-center p-3.5 cursor-pointer hover:bg-white/5 transition-colors shrink-0"
+                      >
+                        <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-300 ${
+                          isExpanded ? "rotate-180 text-gray-300" : ""
+                        }`} />
+                      </div>
+                    </div>
+
+                    {/* Animated subcategories panel */}
+                    <AnimatePresence initial={false}>
+                      {isExpanded && subcats.length > 0 && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          <div className="border-t border-white/5 bg-slate-950/20 px-3.5 py-2 space-y-1.5">
+                            {subcats.map((sub: any) => {
+                              const isSubChecked = currentSubcats.includes(String(sub.id));
+                              const subCount = subcategoryCounts[String(sub.id)] || 0;
+
+                              return (
+                                <div 
+                                  key={sub.id}
+                                  onClick={() => onToggleSubcategory(String(sub.id))}
+                                  className="flex items-center justify-between pl-3 border-l border-white/10 hover:border-primary/50 py-1.5 cursor-pointer select-none group transition-all duration-150"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {/* Small check indicator instead of large checkbox */}
+                                    {isSubChecked && (
+                                      <svg className="h-3 w-3 text-primary shrink-0 animate-fadeIn" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4.5">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    )}
+
+                                    <span className={`text-[11px] truncate transition-colors ${
+                                      isSubChecked ? "text-primary font-bold" : "text-gray-400 group-hover:text-gray-200"
+                                    }`}>
+                                      {sub.name}
+                                    </span>
+                                  </div>
+
+                                  <span className="text-[10px] text-gray-500 font-mono font-semibold pr-1">
+                                    ({subCount})
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
