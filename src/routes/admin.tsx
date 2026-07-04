@@ -40,6 +40,7 @@ import { HomeContentModal } from "@/modals/HomeContentModal";
 import { ViewUserModal } from "@/modals/ViewUserModal";
 import { HaltVendorModal } from "@/modals/HaltVendorModal";
 import { DeleteVendorModal } from "@/modals/DeleteVendorModal";
+import { LogisticsModal } from "@/components/vendor/LogisticsModal";
 
 import { useAuth, selectIsAdmin } from "@/context/auth-store";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
@@ -50,6 +51,7 @@ import {
   adminDeleteProduct,
   getProducts,
   getOrders,
+  getAdminShipments,
   getVendors,
   getAdminStats,
   getLocations,
@@ -207,6 +209,7 @@ function AdminPanel({
   const [menuOpen, setMenuOpen] = useState(false);
   const [supportStatusFilter, setSupportStatusFilter] = useState("all");
   const [supportTypeFilter, setSupportTypeFilter] = useState("all");
+  const [manageOrder, setManageOrder] = useState<any | null>(null);
 
   // Standard active queries to ensure order, product, vendor, and user list counts are synchronized immediately on load
   const { data: productsData } = useQuery({
@@ -222,14 +225,12 @@ function AdminPanel({
   });
 
   const { data: ordersData } = useQuery({
-    queryKey: queryKeys.adminOrders(orderPage, orderStatus, debouncedOrderSearch, orderDateFrom, orderDateTo),
-    queryFn: () => getOrders({
+    queryKey: queryKeys.adminShipments(orderPage, orderStatus === "all" ? "" : orderStatus, "", debouncedOrderSearch),
+    queryFn: () => getAdminShipments({
       page: orderPage,
       limit: 10,
       status: orderStatus === "all" ? "" : orderStatus,
-      search: debouncedOrderSearch,
-      date_from: orderDateFrom,
-      date_to: orderDateTo,
+      search: debouncedOrderSearch
     }),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes
@@ -275,7 +276,7 @@ function AdminPanel({
   });
 
   const allProducts = (productsData?.products || []) as any[];
-  const orders = (ordersData?.orders || []) as any[];
+  const orders = (ordersData?.shipments || []) as any[];
   const allVendors = (vendorsData?.vendors || []) as any[];
   const allUsers = (usersData?.users || []) as any[];
 
@@ -884,6 +885,7 @@ function AdminPanel({
                       <OrderRow
                         key={o.id}
                         order={o}
+                        onManageOrder={setManageOrder}
                       />
                     ))
                   )}
@@ -1824,6 +1826,15 @@ function AdminPanel({
           />,
           document.body
         )}
+
+        {manageOrder && createPortal(
+          <LogisticsModal
+            order={manageOrder}
+            role="admin"
+            onClose={() => setManageOrder(null)}
+          />,
+          document.body
+        )}
       </div>
     </Shell>
   );
@@ -1993,53 +2004,28 @@ const ORDER_STATUSES = [
 ];
 
 const OrderRow = memo(
-  ({ order }: { order: Order }) => {
+  ({ order, onManageOrder }: { order: any; onManageOrder: (order: any) => void }) => {
     const queryClient = useQueryClient();
-    const [status, setStatus] = useState(
-      order.status || "Processing"
-    );
+    const [status, setStatus] = useState(order.status || "pending");
+    const [updating, setUpdating] = useState(false);
 
-    const [estimatedDays, setEstimatedDays] = useState(
-      (order as any).estimated_days || ""
-    );
-
-    const [updating, setUpdating] =
-      useState(false);
-
-    async function updateStatus(
-      newStatus: string,
-      newEstimatedDays?: string
-    ) {
+    async function updateStatus(newStatus: string) {
       try {
         setUpdating(true);
-
         const data = await updateOrderStatus(
-          order.order_id,
-          newStatus,
-          newEstimatedDays
+          order.shipment_id || order.order_id,
+          newStatus
         );
 
         if (data.success) {
           setStatus(data.status || newStatus);
-          if (data.estimated_days) setEstimatedDays(data.estimated_days);
-          
           await Promise.all([
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] }),
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] }),
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRACK_ORDER] }),
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] }),
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_SHIPMENTS] }),
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_STATS] }),
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] }),
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] }),
           ]);
-
-          toast.success(
-            "Order updated successfully"
-          );
+          toast.success("Shipment status updated successfully");
         } else {
-          toast.error(
-            data.message || "Failed"
-          );
+          toast.error(data.message || "Failed");
         }
       } catch (err) {
         console.error(err);
@@ -2048,11 +2034,28 @@ const OrderRow = memo(
         setUpdating(false);
       }
     }
+
     const parsedItems = Array.isArray(order.items)
       ? order.items
       : typeof order.items === "string"
         ? JSON.parse(order.items)
         : [];
+
+    const getStatusStyle = (st: string) => {
+      switch (st?.toLowerCase()) {
+        case "delivered":
+          return "bg-green-500/10 text-green-400 border border-green-500/20";
+        case "rto":
+          return "bg-red-500/10 text-red-400 border border-red-500/20";
+        case "shipped":
+          return "bg-blue-500/10 text-blue-400 border border-blue-500/20";
+        case "ready_to_ship":
+          return "bg-purple-500/10 text-purple-400 border border-purple-500/20";
+        case "pending":
+        default:
+          return "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20";
+      }
+    };
 
     return (
       <motion.div
@@ -2065,58 +2068,56 @@ const OrderRow = memo(
           <div className="flex-1">
             <div className="flex items-center justify-between mb-4.5 pb-4.5 border-b border-white/5">
               <div>
-                <h3 className="font-display text-xl font-black text-white tracking-wide">
-                  #{order.order_id}
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">Shipment ID</span>
+                <h3 className="font-display text-xl font-black text-white mt-1 tracking-wide">
+                  #{order.shipment_id}
                 </h3>
                 <p className="text-xs text-gray-400 mt-1">
-                  Placed: {(order as any).created_at ? new Date((order as any).created_at).toLocaleDateString('en-IN') : 'N/A'}
-                  <span className="mx-2 text-gray-600">•</span>
-                  Estimated Delivery: <strong className="text-gray-300">{estimatedDays || 'Pending'}</strong>
+                  Parent Order ID: <span className="text-gray-300 font-semibold">#{order.parent_order_id || order.order_id}</span>
+                  <span className="mx-2 text-gray-650">•</span>
+                  Placed: {order.created_at ? new Date(order.created_at).toLocaleDateString('en-IN') : 'N/A'}
                 </p>
               </div>
-              <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-cyan-400">
-                {status}
+              <span className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider ${getStatusStyle(status)}`}>
+                {status.replace(/_/g, " ")}
               </span>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
               {/* CUSTOMER INFO */}
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Customer</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Customer Info</p>
                 <p className="text-sm font-extrabold text-white">{order.customer_name}</p>
                 <p className="text-xs text-gray-400">📞 {order.phone}</p>
-                {(order as any).email && <p className="text-xs text-gray-400 break-all">✉️ {(order as any).email}</p>}
-                <p className="text-xs text-gray-500 leading-relaxed max-w-xs mt-1.5 italic">📍 {order.address}</p>
+                {order.email && <p className="text-xs text-gray-400 break-all">✉️ {order.email}</p>}
+                <p className="text-xs text-gray-500 leading-relaxed max-w-xs mt-1.5 italic">📍 {order.delivery_address || order.address}</p>
               </div>
 
               {/* VENDOR ATTR */}
               <div className="space-y-1.5">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Attributed Vendor</p>
-                {(order as any).vendor_name ? (
+                {order.vendor_name ? (
                   <>
-                    <p className="text-sm font-extrabold text-cyan-400">
-                      {(order as any).vendor_name}
+                    <p className="text-sm font-extrabold text-cyan-400 pr-2 truncate">
+                      {order.vendor_name}
                     </p>
-                    {(order as any).vendor_company && (
-                      <p className="text-xs text-gray-300 font-medium">
-                        🏢 {(order as any).vendor_company}
+                    {order.company_name && (
+                      <p className="text-xs text-gray-300 font-semibold">
+                        🏢 {order.company_name}
                       </p>
                     )}
-                    {(order as any).vendor_phone && (
-                      <p className="text-xs text-gray-400 mt-1.5">📞 {(order as any).vendor_phone}</p>
-                    )}
-                    {(order as any).vendor_email && (
-                      <p className="text-xs text-gray-400 break-all">✉️ {(order as any).vendor_email}</p>
-                    )}
+                    <span className="inline-block mt-2 rounded bg-white/5 border border-white/10 px-2 py-1 text-[9px] text-gray-400 font-bold uppercase">
+                      Vendor ID: {order.vendor_id}
+                    </span>
                   </>
                 ) : (
-                  <p className="text-xs text-gray-500 italic">Egnaro Mart (Direct / Admin)</p>
+                  <p className="text-xs text-gray-500 italic">Egnaro Mart (Direct / Admin Warehouse)</p>
                 )}
               </div>
 
-              {/* ORDER ITEMS */}
+              {/* SHIPMENT ITEMS */}
               <div className="space-y-3">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Products Ordered</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Consignment Products</p>
                 <div className="space-y-2">
                   {parsedItems.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-2 hover:bg-white/5 transition-colors">
@@ -2138,34 +2139,75 @@ const OrderRow = memo(
               </div>
             </div>
 
-            {((order as any).courier_partner || (order as any).tracking_number) && (
-              <div className="mt-6 rounded-2xl border border-white/5 bg-white/[0.02] p-4 flex flex-wrap gap-6">
-                {((order as any).courier_partner) && (
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Courier Partner</span>
-                    <span className="text-xs text-white font-semibold mt-0.5 block">{(order as any).courier_partner}</span>
+            {/* Logistics Status Box */}
+            {order.awb_code && (
+              <div className="mt-6 rounded-2xl border border-cyan-500/10 bg-cyan-500/[0.02] p-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400">
+                    🚚
                   </div>
-                )}
-                {((order as any).tracking_number) && (
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">Tracking Number</span>
-                    <span className="text-xs text-white font-semibold mt-0.5 block">{(order as any).tracking_number}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400/80">Logistics Track</span>
+                    <div className="text-xs text-gray-300 font-semibold mt-0.5">
+                      {order.courier_name} — <span className="text-white font-mono">{order.awb_code}</span>
+                    </div>
                   </div>
-                )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {order.label_url && (
+                    <a
+                      href={order.label_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase text-gray-300 hover:bg-white/10 transition"
+                    >
+                      Print Label
+                    </a>
+                  )}
+                  {order.manifest_url && (
+                    <a
+                      href={order.manifest_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase text-gray-300 hover:bg-white/10 transition"
+                    >
+                      Print Manifest
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 
-            <div className="mt-6 pt-4.5 border-t border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Grand Total:</span>
-                <span className="text-xl font-black text-primary">₹{Number(order.total).toLocaleString('en-IN')}</span>
+            {/* Package details */}
+            <div className="mt-6 pt-4.5 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Valuation:</span>
+                  <span className="text-xl font-black text-primary">
+                    ₹{Number(parsedItems.reduce((sum: number, it: any) => sum + (it.price * it.quantity), 0)).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                {order.weight_g > 0 && (
+                  <div className="text-xs text-gray-400">
+                    📐 {order.weight_g}g ({order.length_cm}x{order.width_cm}x{order.height_cm} cm)
+                  </div>
+                )}
               </div>
+              
+              {/* Checkpoints display */}
+              {order.history && order.history.length > 0 && (
+                <div className="text-xs text-gray-400 font-semibold">
+                  Last Activity: <span className="text-cyan-400 font-bold">{order.history[0].activity}</span> ({order.history[0].location || 'In Transit'})
+                </div>
+              )}
             </div>
           </div>
 
+          {/* Admin Override Controller */}
           <div className="min-w-[250px] rounded-[2rem] bg-white/[0.02] p-5 border border-white/5">
             <label className="mb-3 block text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Update Order Status
+              Manual Status Override
             </label>
 
             <select
@@ -2178,34 +2220,23 @@ const OrderRow = memo(
               }}
               className="w-full rounded-xl border border-white/10 bg-[#0a0a0a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all cursor-pointer mb-4"
             >
-              {ORDER_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value="pending">Pending Booking</option>
+              <option value="ready_to_ship">Ready To Ship</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="rto">RTO Returned</option>
             </select>
 
-            <label className="mb-3 block text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Change Delivery Date
-            </label>
-            <input
-              type="text"
-              value={estimatedDays}
-              disabled={updating}
-              onChange={(e) => setEstimatedDays(e.target.value)}
-              placeholder="e.g. 21 May 2026"
-              className="w-full rounded-xl border border-white/10 bg-[#0a0a0a] px-4 py-3 text-sm font-semibold text-white outline-none focus:border-primary transition-all mb-3.5"
-            />
             <button
-              disabled={updating}
-              onClick={() => updateStatus(status, estimatedDays)}
-              className="w-full rounded-xl bg-cyan-500/20 py-2.5 text-xs font-bold text-cyan-400 transition hover:bg-cyan-500/30 disabled:opacity-50 cursor-pointer active:scale-95"
+              type="button"
+              onClick={() => onManageOrder(order)}
+              className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:scale-[1.02] shadow-lg shadow-cyan-500/20 cursor-pointer select-none mb-4"
             >
-              Save Date
+              {order.awb_code ? "View Logistics" : "Ship Package"}
             </button>
 
-            <p className="mt-3 text-[10px] text-gray-500 italic text-center">
-              Reflected instantly in user portal.
+            <p className="text-[10px] text-gray-500 italic text-center leading-relaxed">
+              Logistics changes sync automatically via Shiprocket API webhook checkpoints.
             </p>
           </div>
         </div>

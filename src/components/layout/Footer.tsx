@@ -105,8 +105,7 @@ export function Footer() {
               <li className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 mt-0.5 text-primary" />
                 <span>
-                  No: 2A, Venkatesh, Sarkarsamakulam, Kovilpalayam, Tamil Nadu -
-                  641107
+                  2A, Venkatesh Nagar, Sarkarsamakulam Kovilpalayam, Coimbatore - 641107, Tamil Nadu
                 </span>
               </li>
             </ul>

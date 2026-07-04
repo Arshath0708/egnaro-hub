@@ -31,6 +31,9 @@ export const QUERY_KEYS = {
   VENDOR_STATS: "vendor-stats",
   VENDOR_ORDERS: "vendor-orders",
   VENDOR_SUPPORT_REQUESTS: "vendor-support-requests",
+  VENDOR_SHIPMENTS: "vendor-shipments",
+  ADMIN_SHIPMENTS: "admin-shipments",
+  PICKUP_LOCATIONS: "pickup-locations",
 } as const;
 
 // Key builders for queries with dynamic arguments to guarantee structure consistency
@@ -78,4 +81,9 @@ export const queryKeys = {
   vendorOrders: (vendorId: string | number, page: number, status: string, search: string) => 
     [QUERY_KEYS.VENDOR_ORDERS, String(vendorId), page, status, search] as const,
   vendorSupportRequests: (vendorId: string | number) => [QUERY_KEYS.VENDOR_SUPPORT_REQUESTS, String(vendorId)] as const,
+  vendorShipments: (vendorId: string | number, page: number, status: string, search: string) => 
+    [QUERY_KEYS.VENDOR_SHIPMENTS, String(vendorId), page, status, search] as const,
+  adminShipments: (page: number, status: string, vendorId: string | number, search: string) => 
+    [QUERY_KEYS.ADMIN_SHIPMENTS, page, status, String(vendorId), search] as const,
+  pickupLocations: (vendorId?: string | number) => [QUERY_KEYS.PICKUP_LOCATIONS, vendorId ? String(vendorId) : "admin"] as const,
 };

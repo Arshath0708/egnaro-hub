@@ -492,59 +492,161 @@ export default function TrackOrder() {
   );
 };
 
+function normalizeShipmentStatus(st?: string): OrderStatus {
+  switch (st?.toLowerCase().trim()) {
+    case "delivered": return "delivered";
+    case "shipped": return "shipped";
+    case "ready_to_ship": return "packed";
+    case "pending":
+    default:
+      return "processing";
+  }
+}
+
 const OrderDetails = memo(function OrderDetails({
   order,
 }: {
-  order: Order;
+  order: any;
 }) {
+  const shipments = order.shipments || [];
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
+      {/* Main Order Card */}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-3.5 border-b border-border bg-primary/5 p-4 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Order ID
             </div>
-
             <h2 className="text-xl sm:text-2xl font-black">
               {order.order_id}
             </h2>
-
             <div className="mt-1.5 inline-flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
               <Clock3 className="h-4 w-4" />
-              Est. Delivery:{" "}
-              {["Cancelled", "Pending"].includes(order.estimatedDelivery) || isNaN(new Date(order.estimatedDelivery).getTime())
-                ? order.estimatedDelivery
-                : dateShort(order.estimatedDelivery)}
+              Placed: {dateTime(order.createdAt)}
             </div>
           </div>
 
           <div className="rounded-lg border border-border bg-background p-3 sm:p-4">
             <div className="text-[10px] sm:text-xs text-muted-foreground">
-              Total Amount
+              Total Invoice Amount
             </div>
-
             <div className="text-2xl sm:text-3xl font-black text-primary">
               {inr(order.total || 0)}
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="p-4 sm:p-6">
-          <Timeline
-            current={order.status}
-            history={order.history || []}
-          />
+      {shipments.length > 0 ? (
+        <div className="space-y-6">
+          {/* Multi-Consignment Packages */}
+          <h3 className="text-lg font-bold text-foreground flex items-center gap-2 px-1">
+            <Package className="h-5 w-5 text-primary" /> Delivery Packages ({shipments.length})
+          </h3>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {shipments.map((shipment: any) => {
+              const shipmentHistory = (shipment.history || []).map((h: any) => ({
+                status: normalizeShipmentStatus(h.status || shipment.status),
+                at: h.checkpoint_time
+              }));
+
+              // If history is empty, make a default element
+              if (shipmentHistory.length === 0) {
+                shipmentHistory.push({
+                  status: normalizeShipmentStatus(shipment.status),
+                  at: shipment.created_at || order.createdAt
+                });
+              }
+
+              return (
+                <div key={shipment.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="border-b border-border bg-primary/5 p-4 flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                      <span className="text-[9px] font-bold text-primary uppercase tracking-wider block">Package Shipment</span>
+                      <h4 className="font-extrabold text-sm text-foreground">#{shipment.shipment_id}</h4>
+                    </div>
+                    <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-cyan-400">
+                      {shipment.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+
+                  <div className="p-4 sm:p-6 space-y-6">
+                    {/* Shiprocket Courier Summary */}
+                    {shipment.awb_code ? (
+                      <div className="rounded-lg border border-border bg-background p-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">Logistic Courier</p>
+                          <p className="text-xs font-bold text-foreground mt-0.5">{shipment.courier_name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">AWB Tracking</p>
+                          <p className="text-xs font-mono font-bold text-primary mt-0.5">{shipment.awb_code}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground italic">
+                        Logistics tracking details will update shortly.
+                      </div>
+                    )}
+
+                    {/* Timeline per Shipment */}
+                    <div className="border-t border-border pt-4">
+                      <Timeline
+                        current={normalizeShipmentStatus(shipment.status)}
+                        history={shipmentHistory}
+                      />
+                    </div>
+
+                    {/* Package Items */}
+                    <div className="border-t border-border pt-4 space-y-3">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Items in this Package</span>
+                      <div className="space-y-2">
+                        {shipment.items.map((item: any, i: number) => (
+                          <div key={i} className="flex items-center gap-3 rounded-lg border border-border p-2">
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-10 w-10 flex-shrink-0 rounded-md object-cover border border-border"
+                              />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold text-foreground truncate">{item.name}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">Qty: {item.quantity} • {inr(item.price)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-4 sm:gap-6">
+            <ShippingCard order={order} />
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="p-4 sm:p-6 rounded-xl border border-border bg-card">
+            <Timeline
+              current={order.status}
+              history={order.history || []}
+            />
+          </div>
 
-      {/* Items + Shipping */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        <ItemsCard items={order.items} />
-
-        <ShippingCard order={order} />
-      </div>
+          {/* Items + Shipping Traditional Layout */}
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+            <ItemsCard items={order.items} />
+            <ShippingCard order={order} />
+          </div>
+        </>
+      )}
     </div>
   );
 });

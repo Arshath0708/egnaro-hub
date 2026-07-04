@@ -363,6 +363,136 @@ export async function getUserOrders(
 }
 
 /* =========================
+   SHIPMENTS & LOGISTICS
+========================= */
+
+export async function getVendorShipments(vendorId: string | number, params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+}) {
+  const queryParts = [`vendor_id=${vendorId}`];
+  if (params) {
+    if (params.page !== undefined) queryParts.push(`page=${params.page}`);
+    if (params.limit !== undefined) queryParts.push(`limit=${params.limit}`);
+    if (params.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+    if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+  }
+  const queryString = `?${queryParts.join("&")}`;
+  const data = await request(`/get-vendor-shipments.php${queryString}`);
+  if (!data.success) {
+    throw new Error(data.message || "Failed to fetch vendor shipments");
+  }
+  return data;
+}
+
+export async function getAdminShipments(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  vendor_id?: number | string;
+  search?: string;
+}) {
+  const queryParts = [];
+  if (params) {
+    if (params.page !== undefined) queryParts.push(`page=${params.page}`);
+    if (params.limit !== undefined) queryParts.push(`limit=${params.limit}`);
+    if (params.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+    if (params.vendor_id !== undefined && params.vendor_id !== '') queryParts.push(`vendor_id=${params.vendor_id}`);
+    if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+  }
+  const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  const data = await request(`/get-admin-shipments.php${queryString}`);
+  if (!data.success) {
+    throw new Error(data.message || "Failed to fetch admin shipments");
+  }
+  return data;
+}
+
+export async function prepareShipment(data: {
+  shipment_id: string;
+  weight_g?: number;
+  length_cm?: number;
+  width_cm?: number;
+  height_cm?: number;
+  vendor_id?: number | string;
+  action?: string;
+  role?: string;
+}) {
+  return await request("/prepare_shipment.php", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "prepare",
+      role: "vendor",
+      ...data
+    })
+  });
+}
+
+export async function requestCourierPickup(shipmentId: string, role: string, vendorId?: number | string) {
+  return await request("/prepare_shipment.php", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "request_pickup",
+      shipment_id: shipmentId,
+      role,
+      vendor_id: vendorId ? Number(vendorId) : undefined
+    })
+  });
+}
+
+export async function cancelCourierShipment(shipmentId: string, role: string, vendorId?: number | string) {
+  return await request("/prepare_shipment.php", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "cancel",
+      shipment_id: shipmentId,
+      role,
+      vendor_id: vendorId ? Number(vendorId) : undefined
+    })
+  });
+}
+
+export async function refreshCourierTracking(shipmentId: string, role: string, vendorId?: number | string) {
+  return await request("/prepare_shipment.php", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "refresh_tracking",
+      shipment_id: shipmentId,
+      role,
+      vendor_id: vendorId ? Number(vendorId) : undefined
+    })
+  });
+}
+
+export async function getPickupLocations(vendorId?: string | number) {
+  const param = vendorId !== undefined ? `?vendor_id=${vendorId}` : "";
+  const data = await request(`/get-pickup-locations.php${param}`);
+  if (!data.success) {
+    throw new Error(data.message || "Failed to fetch pickup locations");
+  }
+  return data.locations || [];
+}
+
+export async function addPickupLocation(data: {
+  vendor_id?: string | number;
+  pickup_location_name: string;
+  contact_name: string;
+  phone: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+}) {
+  return await request("/add-pickup-location.php", {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
+}
+
+/* =========================
    ADMIN
 ========================= */
 

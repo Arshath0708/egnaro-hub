@@ -41,7 +41,10 @@ import { ViewVendorModal } from "@/modals/ViewVendorModal";
 import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { clearUserSession } from "@/lib/session";
-import { getVendorStats, getVendorProducts, getVendorOrders, deleteProduct, updateOrderStatus, createSupportRequest, getSupportRequests, getVendorById } from "@/services/api";
+import { getVendorStats, getVendorProducts, getVendorShipments, prepareShipment, getPickupLocations, deleteProduct, updateOrderStatus, createSupportRequest, getSupportRequests, getVendorById } from "@/services/api";
+import { PickupLocationsTab } from "@/components/vendor/PickupLocationsTab";
+import { AddPickupLocationModal } from "@/components/vendor/AddPickupLocationModal";
+import { LogisticsModal } from "@/components/vendor/LogisticsModal";
 import { inr } from "@/lib/format";
 import { sanitizeInput } from "@/lib/validation";
 import { toast } from "sonner";
@@ -170,6 +173,7 @@ function DashboardContent({
   const [manageOrder, setManageOrder] = useState<any | null>(null);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [viewSupportRequest, setViewSupportRequest] = useState<any | null>(null);
+  const [showAddPickup, setShowAddPickup] = useState(false);
 
   const [activeTab, setActiveTab] = useState("products");
   const [orderSearch, setOrderSearch] = useState("");
@@ -235,16 +239,21 @@ function DashboardContent({
     gcTime: 10 * 60 * 1000,
   });
 
-  const { data: ordersRes, isLoading: isOrdersLoading } = useQuery({
-    queryKey: queryKeys.vendorOrders(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, debouncedOrderSearch),
-    queryFn: () => getVendorOrders(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, 10, debouncedOrderSearch),
+  const { data: shipmentsRes, isLoading: isOrdersLoading } = useQuery({
+    queryKey: queryKeys.vendorShipments(vendorId, orderPage, orderStatus === "all" ? "" : orderStatus, debouncedOrderSearch),
+    queryFn: () => getVendorShipments(vendorId, {
+      page: orderPage,
+      limit: 10,
+      status: orderStatus === "all" ? "" : orderStatus,
+      search: debouncedOrderSearch
+    }),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 
-  const ordersData = (ordersRes?.orders || []) as any[];
-  const totalPages = ordersRes?.total_pages || 1;
-  const totalRows = ordersRes?.total_rows || 0;
+  const ordersData = (shipmentsRes?.shipments || []) as any[];
+  const totalPages = shipmentsRes?.total_pages || 1;
+  const totalRows = shipmentsRes?.total_rows || 0;
   const filteredOrders = ordersData;
 
   const { data: supportRes } = useQuery({
@@ -497,7 +506,7 @@ function DashboardContent({
 
           {/* TABS CONTAINER */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-8 grid grid-cols-3 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10 max-w-xl mx-auto">
+            <TabsList className="mb-8 grid grid-cols-4 h-auto w-full gap-2 rounded-[24px] bg-white/5 p-2 border border-white/10 max-w-2xl mx-auto">
               <TabsTrigger
                 value="products"
                 className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer text-xs sm:text-sm"
@@ -508,7 +517,13 @@ function DashboardContent({
                 value="orders"
                 className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer text-xs sm:text-sm"
               >
-                Orders ({totalRows})
+                Shipments ({totalRows})
+              </TabsTrigger>
+              <TabsTrigger
+                value="pickup"
+                className="w-full rounded-[16px] py-3.5 font-bold transition-[background-color,color,box-shadow] duration-300 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-white cursor-pointer text-xs sm:text-sm"
+              >
+                Pickup Locations
               </TabsTrigger>
               <TabsTrigger
                 value="support"
@@ -842,6 +857,29 @@ function DashboardContent({
               </div>
             </TabsContent>
 
+            <TabsContent value="pickup" className="animate-fadeIn focus:outline-none">
+              <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+                <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <h2 className="text-2xl font-black text-white">Pickup Locations</h2>
+                    <p className="text-sm text-gray-400">
+                      Manage warehouse and dispatch addresses registered with Shiprocket.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPickup(true)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:scale-105 cursor-pointer shadow-lg shadow-cyan-500/20"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Location
+                  </button>
+                </div>
+
+                <PickupLocationsTab vendorId={vendorId} />
+              </div>
+            </TabsContent>
+
             <TabsContent value="support" className="animate-fadeIn focus:outline-none">
               <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
                 <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -993,9 +1031,10 @@ function DashboardContent({
       )}
 
       {manageOrder && (
-        <VendorLogisticsModal
+        <LogisticsModal
           order={manageOrder}
-          vendorId={vendorId}
+          role="vendor"
+          vendorId={vendorId || ""}
           onClose={() => setManageOrder(null)}
         />
       )}
@@ -1013,6 +1052,13 @@ function DashboardContent({
         <ViewSupportRequestModal
           request={viewSupportRequest}
           onClose={() => setViewSupportRequest(null)}
+        />
+      )}
+
+      {showAddPickup && (
+        <AddPickupLocationModal
+          vendorId={vendorId}
+          onClose={() => setShowAddPickup(false)}
         />
       )}
     </Shell>
@@ -1060,10 +1106,12 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
     switch (status?.toLowerCase()) {
       case "delivered":
         return "bg-green-500/10 text-green-400 border border-green-500/20";
-      case "cancelled":
+      case "rto":
         return "bg-red-500/10 text-red-400 border border-red-500/20";
       case "shipped":
         return "bg-blue-500/10 text-blue-400 border border-blue-500/20";
+      case "ready_to_ship":
+        return "bg-purple-500/10 text-purple-400 border border-purple-500/20";
       case "processing":
       default:
         return "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20";
@@ -1077,18 +1125,21 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">
             <div>
-              <span className="text-[10px] font-bold text-cyan-400 tracking-wider uppercase">Order ID</span>
+              <span className="text-[10px] font-bold text-cyan-400 tracking-wider uppercase">Shipment ID</span>
               <h3 className="font-black text-xl text-white mt-1">
-                #{order.order_id}
+                #{order.shipment_id}
               </h3>
               <p className="text-xs text-gray-500 mt-1">
+                Parent Order: <span className="text-gray-300 font-semibold">#{order.parent_order_id || order.order_id}</span>
+              </p>
+              <p className="text-[10px] text-gray-500 mt-0.5">
                 Placed: {order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : 'N/A'}
               </p>
             </div>
             
             <div className="flex items-center gap-3">
-              <span className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider ${getStatusStyle(order.status || "Processing")}`}>
-                {order.status || "Processing"}
+              <span className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider ${getStatusStyle(order.status || "Pending")}`}>
+                {(order.status || "Pending").replace(/_/g, " ")}
               </span>
             </div>
           </div>
@@ -1102,13 +1153,13 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
               {order.email && <p className="text-xs text-gray-400 break-all">✉️ {order.email}</p>}
               <div className="mt-2 pt-2 border-t border-white/5">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 block mb-1">Shipping Address</span>
-                <p className="text-xs text-gray-400 leading-relaxed max-w-xs">{order.address}</p>
+                <p className="text-xs text-gray-400 leading-relaxed max-w-xs">{order.delivery_address || order.address}</p>
               </div>
             </div>
 
             {/* Products list */}
             <div className="md:col-span-2 space-y-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block">Ordered Items</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block">Consignment Items</span>
               <div className="grid gap-3 sm:grid-cols-2">
                 {parsedItems.map((item: any, idx: number) => (
                   <div key={idx} className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3 transition hover:bg-white/5">
@@ -1136,18 +1187,40 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
           </div>
 
           {/* Logistics Tracking Display */}
-          {order.courier_partner && order.tracking_number && (
-            <div className="mt-6 rounded-2xl border border-orange-500/10 bg-orange-500/[0.02] p-4 flex flex-wrap items-center justify-between gap-4">
+          {order.awb_code && (
+            <div className="mt-6 rounded-2xl border border-cyan-500/10 bg-cyan-500/[0.02] p-4 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400">
                   🚚
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400/80">Logistics Tracking</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400/80">Shiprocket Tracking</span>
                   <div className="text-xs text-gray-300 font-semibold mt-0.5">
-                    {order.courier_partner} — <span className="text-white">{order.tracking_number}</span>
+                    {order.courier_name} — <span className="text-white font-mono">{order.awb_code}</span>
                   </div>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {order.label_url && (
+                  <a
+                    href={order.label_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10 transition"
+                  >
+                    Print Label
+                  </a>
+                )}
+                {order.manifest_url && (
+                  <a
+                    href={order.manifest_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10 transition"
+                  >
+                    Print Manifest
+                  </a>
+                )}
               </div>
             </div>
           )}
@@ -1156,29 +1229,33 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
           <div className="mt-6 pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 text-sm">
             <div className="flex items-center gap-6">
               <div>
-                <span className="text-xs text-gray-500 block">Payment Method</span>
+                <span className="text-xs text-gray-500 block">Payment Mode</span>
                 <span className="font-semibold text-gray-300 uppercase mt-0.5 block">{order.payment_method || "COD"}</span>
               </div>
-              <div>
-                <span className="text-xs text-gray-500 block">Estimated Delivery</span>
-                <span className="font-semibold text-cyan-400 mt-0.5 block">{order.estimated_days || "Pending confirmation"}</span>
-              </div>
+              {order.weight_g > 0 && (
+                <div>
+                  <span className="text-xs text-gray-500 block">Dimensions & Weight</span>
+                  <span className="font-semibold text-gray-300 mt-0.5 block">
+                    {order.weight_g}g ({order.length_cm}x{order.width_cm}x{order.height_cm} cm)
+                  </span>
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <span className="text-xs text-gray-500 block">Grand Total</span>
+                <span className="text-xs text-gray-500 block">Package Valuation</span>
                 <span className="text-xl font-black text-primary mt-0.5 block">
-                  {inr(order.total)}
+                  {inr(parsedItems.reduce((sum: number, it: any) => sum + (it.price * it.quantity), 0))}
                 </span>
               </div>
               
               <button
                 type="button"
                 onClick={() => onManageOrder(order)}
-                className="rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:scale-105 shadow-lg shadow-orange-500/20 cursor-pointer select-none"
+                className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:scale-105 shadow-lg shadow-cyan-500/20 cursor-pointer select-none"
               >
-                Manage Order
+                {order.awb_code ? "View Logistics" : "Ship Package"}
               </button>
             </div>
           </div>
@@ -1188,138 +1265,12 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
   );
 });
 
-function VendorLogisticsModal({
-  order,
-  vendorId,
-  onClose,
-}: {
-  order: any;
-  vendorId: string;
-  onClose: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const [status, setStatus] = useState(order.status || "Processing");
-  const [courierPartner, setCourierPartner] = useState(order.courier_partner || "");
-  const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || "");
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const res = await updateOrderStatus(
-        order.order_id,
-        status,
-        undefined, // estimated_days
-        Number(vendorId),
-        trackingNumber,
-        courierPartner
-      );
-      if (!res.success) {
-        throw new Error(res.message || "Failed to update order");
-      }
-      return res;
-    },
-    onSuccess: () => {
-      toast.success("Order logistics updated successfully!");
-      // Invalidate all query keys as requested
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TRACK_ORDER] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] });
-      onClose();
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "An error occurred while updating order");
-    },
-  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateMutation.mutate();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#0f172a]/95 p-6 shadow-2xl backdrop-blur-xl"
-      >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-6">
-          <h2 className="text-xl font-black text-white">Manage Order #{order.order_id}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-full p-1.5 text-gray-400 hover:bg-white/10 hover:text-white transition cursor-pointer"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Status Selection */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Order Status</label>
-            <div className="relative flex items-center rounded-2xl border border-white/10 bg-black/40 px-4">
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="h-12 w-full bg-transparent text-sm text-white outline-none border-none cursor-pointer focus:ring-0"
-              >
-                <option value="Processing" className="bg-[#0f172a]">Processing</option>
-                <option value="Packed" className="bg-[#0f172a]">Packed</option>
-                <option value="Shipped" className="bg-[#0f172a]">Shipped</option>
-                <option value="Out for Delivery" className="bg-[#0f172a]">Out for Delivery</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Courier Partner */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Courier Partner</label>
-            <input
-              type="text"
-              placeholder="e.g. BlueDart, Delhivery, DTDC"
-              value={courierPartner}
-              onChange={(e) => setCourierPartner(e.target.value)}
-              className="w-full h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-orange-500 placeholder:text-gray-600 transition"
-            />
-          </div>
-
-          {/* Tracking Number */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Tracking Number</label>
-            <input
-              type="text"
-              placeholder="e.g. 1234567890"
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
-              className="w-full h-12 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none focus:border-orange-500 placeholder:text-gray-600 transition"
-            />
-          </div>
-
-          {/* Submit Button */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-white/5 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-300 hover:bg-white/10 transition cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={updateMutation.isPending}
-              className="rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 text-xs font-bold uppercase tracking-wider text-white hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50 cursor-pointer"
-            >
-              {updateMutation.isPending ? "Updating..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
-  );
+// Utility function inside file scope
+function intval(val: any): number {
+  const num = parseInt(val, 10);
+  return isNaN(num) ? 0 : num;
 }
 
 function VendorSupportModal({

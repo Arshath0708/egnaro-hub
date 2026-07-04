@@ -52,7 +52,7 @@ export default function Contact() {
                 icon: MapPin,
                 label: "Address",
                 value:
-                  "No: 2A, Venkatesh, Sarkarsamakulam, Kovilpalayam, Tamil Nadu - 641107",
+                  "2A, Venkatesh Nagar, Sarkarsamakulam Kovilpalayam, Coimbatore - 641107, Tamil Nadu",
               },
             ].map((c) => (
               <a
