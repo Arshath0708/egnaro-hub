@@ -21,6 +21,7 @@ import { clearUserSession } from "@/lib/session";
 import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { handleImageError } from "@/lib/utils";
+import { PAYMENT_CONFIG } from "@/config/payment";
 
 const inputCls =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all";
@@ -182,6 +183,7 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
     () => localStorage.getItem("egnaro_coupon") || null
   );
+  const [utr, setUtr] = useState("");
 
   const subtotal = detailed.reduce(
     (s, i) => s + i.product.price * i.quantity,
@@ -194,7 +196,7 @@ export default function CheckoutPage() {
 
   const total = subtotal - discountAmount + shipping;
 
-  const upiLink = `upi://pay?pa=samsonelectronics50@oksbi&pn=EgnaroMart&am=${total}&cu=INR`;
+  const upiLink = `upi://pay?pa=${PAYMENT_CONFIG.upi.upiId}&pn=${encodeURIComponent(PAYMENT_CONFIG.upi.payeeName)}&am=${total}&cu=INR`;
 
   const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
     upiLink
@@ -258,6 +260,14 @@ Please find my payment screenshot attached.
     if (!validatePhone(form.phone)) { toast.error("Valid 10-digit phone number required"); return; }
     if (!validatePincode(form.pincode)) { toast.error("Valid 6-digit pincode required"); return; }
 
+    if (payment === "upi") {
+      const cleanUtr = utr.trim();
+      if (!/^\d{12}$/.test(cleanUtr)) {
+        toast.error("Valid 12-digit UPI UTR / Transaction Reference Number is required");
+        return;
+      }
+    }
+
     if (submitting) return;
 
     setSubmitting(true);
@@ -290,6 +300,7 @@ Please find my payment screenshot attached.
             address: `${cleanAddress}, ${cleanCity}, ${cleanState} - ${form.pincode}`,
             total,
             payment_method: payment,
+            payment_reference: payment === "upi" ? utr.trim() : null,
             order_items: orderItems,
             items: orderItems,
             notes: cleanNotes,
@@ -613,10 +624,10 @@ Please find my payment screenshot attached.
                       <div className="mt-4 space-y-3 text-sm">
                         <div>
                           <span className="text-muted-foreground">
-                            UPI ID:
+                            UPI VPA:
                           </span>{" "}
-                          <span className="font-semibold">
-                            samsonelectronics50@oksbi
+                          <span className="font-mono font-semibold text-white bg-white/5 px-2.5 py-0.5 rounded border border-white/10">
+                            {PAYMENT_CONFIG.upi.upiId}
                           </span>
                         </div>
 
@@ -627,6 +638,34 @@ Please find my payment screenshot attached.
                           <span className="text-xl font-black text-primary">
                             {inr(total)}
                           </span>
+                        </div>
+                      </div>
+
+                      {/* Professional Direct Bank Transfer Alternative Card */}
+                      <div className="mt-6 rounded-2xl border border-white/5 bg-[#0e1420]/45 p-4.5 space-y-3 shadow-inner">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-display">
+                            Direct Bank Transfer Alternative (NEFT/IMPS)
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                          <div>
+                            <span className="text-slate-500 block text-[10px] uppercase font-bold">Bank Name</span>
+                            <span className="font-semibold text-slate-200">{PAYMENT_CONFIG.bankAccount.bankName}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block text-[10px] uppercase font-bold">Account Holder</span>
+                            <span className="font-semibold text-slate-200">{PAYMENT_CONFIG.bankAccount.holderName}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block text-[10px] uppercase font-bold">Account Number</span>
+                            <span className="font-mono font-bold text-white tracking-wider">{PAYMENT_CONFIG.bankAccount.accountNumber}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block text-[10px] uppercase font-bold">IFSC Code</span>
+                            <span className="font-mono font-bold text-primary tracking-wide">{PAYMENT_CONFIG.bankAccount.ifscCode}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -654,6 +693,24 @@ Please find my payment screenshot attached.
                         <strong>Send Receipt</strong> and share
                         your payment screenshot on WhatsApp.
                       </div>
+
+                      <div className="mt-5 space-y-2">
+                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                          UPI Ref No. / UTR Number (12-Digit) <span className="text-primary">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={12}
+                          placeholder="e.g. 612345678901"
+                          value={utr}
+                          onChange={(e) => setUtr(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                          className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                        />
+                        <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
+                          Please enter the 12-digit transaction ID or UTR number from your payment app. Your order will be placed on hold until our finance team verifies the transaction.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -666,6 +723,7 @@ Please find my payment screenshot attached.
                   <div className="space-y-4">
                     <Field label="Card Number">
                       <input
+                        required
                         className={inputCls}
                         placeholder="0000 0000 0000 0000"
                       />
@@ -674,6 +732,7 @@ Please find my payment screenshot attached.
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Expiry">
                         <input
+                          required
                           className={inputCls}
                           placeholder="MM/YY"
                         />
@@ -681,6 +740,7 @@ Please find my payment screenshot attached.
 
                       <Field label="CVV">
                         <input
+                          required
                           className={inputCls}
                           placeholder="123"
                         />

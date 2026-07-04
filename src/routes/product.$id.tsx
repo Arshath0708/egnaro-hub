@@ -41,6 +41,7 @@ type Product = {
   discount: number;
   description: string;
   stock?: number;
+  stock_quantity?: number;
   specifications?: Record<string, string>;
   status?: string;
   approved?: boolean | number;
@@ -365,9 +366,15 @@ export default function ProductDetail() {
 
               <span className="text-muted-foreground">·</span>
 
-              <span className="text-green-400 font-bold text-xs sm:text-sm">
-                In Stock
-              </span>
+              {Number(product.stock_quantity ?? product.stock ?? 0) > 0 ? (
+                <span className="text-green-400 font-bold text-xs sm:text-sm">
+                  In Stock ({product.stock_quantity ?? product.stock})
+                </span>
+              ) : (
+                <span className="text-red-400 font-bold text-xs sm:text-sm">
+                  Out of Stock
+                </span>
+              )}
             </div>
 
             {/* PRICE */}
@@ -409,18 +416,20 @@ export default function ProductDetail() {
                   onClick={() =>
                     setQty((q) => Math.max(1, q - 1))
                   }
-                  className="p-4 transition hover:text-primary"
+                  disabled={Number(product.stock_quantity ?? product.stock ?? 0) <= 0}
+                  className="p-4 transition hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
 
                 <div className="w-12 text-center font-bold">
-                  {qty}
+                  {Number(product.stock_quantity ?? product.stock ?? 0) <= 0 ? 0 : qty}
                 </div>
 
                 <button
-                  onClick={() => setQty((q) => q + 1)}
-                  className="p-4 transition hover:text-primary"
+                  onClick={() => setQty((q) => Math.min(Number(product.stock_quantity ?? product.stock ?? 1), q + 1))}
+                  disabled={Number(product.stock_quantity ?? product.stock ?? 0) <= 0 || qty >= Number(product.stock_quantity ?? product.stock ?? 0)}
+                  className="p-4 transition hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -436,11 +445,12 @@ export default function ProductDetail() {
                       description: product.name,
                     });
                   }}
-                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-4 font-bold text-foreground transition hover:bg-white/10 hover:scale-[1.02]"
+                  disabled={Number(product.stock_quantity ?? product.stock ?? 0) <= 0}
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-4 font-bold text-foreground transition hover:bg-white/10 hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <div className="flex items-center justify-center gap-2">
                     <ShoppingCart className="h-5 w-5" />
-                    Add to Cart
+                    {Number(product.stock_quantity ?? product.stock ?? 0) <= 0 ? "Out of Stock" : "Add to Cart"}
                   </div>
                 </button>
 
@@ -450,7 +460,8 @@ export default function ProductDetail() {
                     add(product.id.toString(), qty);
                     nav("/checkout");
                   }}
-                  className="flex-1 rounded-2xl gradient-primary py-4 font-bold text-primary-foreground shadow-glow transition hover:scale-[1.02] shimmer"
+                  disabled={Number(product.stock_quantity ?? product.stock ?? 0) <= 0}
+                  className="flex-1 rounded-2xl gradient-primary py-4 font-bold text-primary-foreground shadow-glow transition hover:scale-[1.02] shimmer disabled:opacity-50 disabled:pointer-events-none"
                 >
                   Buy Now
                 </button>

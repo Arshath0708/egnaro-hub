@@ -74,6 +74,12 @@ export default function CartPage() {
   };
 
   const handleSetQty = (productId: string, currentQty: number, newQty: number, name: string) => {
+    const p = products.find((x: any) => String(x.id) === String(productId));
+    const stock = p ? Number(p.stock_quantity ?? p.stock ?? 0) : 0;
+    if (newQty > currentQty && newQty > stock) {
+      toast.error(`Only ${stock} units of ${name} are available in stock.`);
+      return;
+    }
     if (newQty <= 0) {
       handleRemove(productId, currentQty, name);
     } else {
@@ -250,6 +256,12 @@ export default function CartPage() {
                         </div>
                         <button
                           onClick={() => {
+                            const currentInCart = items.find(i => String(i.productId) === String(p.id))?.quantity || 0;
+                            const stock = Number(p.stock_quantity ?? p.stock ?? 0);
+                            if (currentInCart + 1 > stock) {
+                              toast.error(`Only ${stock} units of ${p.name} are available in stock.`);
+                              return;
+                            }
                             useCart.getState().add(p.id, 1);
                             toast.success(`${p.name} added to cart!`);
                           }}

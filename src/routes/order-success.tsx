@@ -24,6 +24,8 @@ import { inr } from "@/lib/format";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { handleImageError } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/context/auth-store";
+import { PAYMENT_CONFIG } from "@/config/payment";
 
 type OrderItem = {
   id: number;
@@ -68,7 +70,10 @@ export default function OrderSuccessPage() {
       return;
     }
     const apiBase = import.meta.env.VITE_API_URL || "/api";
-    fetch(`${apiBase}/get-order.php?order_id=${orderId}`)
+    const token = useAuth.getState().token;
+    fetch(`${apiBase}/get-order.php?order_id=${orderId}&token=${encodeURIComponent(token || "")}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {}
+    })
       .then((r) => r.json())
       .then((data) => {
         data.success && data.order ? setOrder(data.order) : setFetchError(true);
@@ -470,10 +475,25 @@ export default function OrderSuccessPage() {
                   <span className="text-lg mt-0.5">💳</span>
                   <div>
                     <span className="text-[10px] uppercase font-black text-slate-500 tracking-wider">Payment Method</span>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${paymentBadges[order.payment_method?.toLowerCase()] || "bg-slate-800 text-slate-400"}`}>
-                        {order.payment_method || "COD"}
-                      </span>
+                    <div className="mt-1 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${paymentBadges[order.payment_method?.toLowerCase()] || "bg-slate-800 text-slate-400"}`}>
+                          {order.payment_method || "COD"}
+                        </span>
+                        {order.payment_reference && (
+                          <span className="font-mono text-xs text-slate-400 font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded">
+                            UTR: {order.payment_reference}
+                          </span>
+                        )}
+                      </div>
+                      {order.payment_method?.toLowerCase() === "upi" && (
+                        <div className="mt-2 rounded-xl border border-white/5 bg-[#0e1420]/45 p-3.5 text-xs space-y-1.5 w-full max-w-sm">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">Official Settlement Account</span>
+                          <div><span className="text-slate-400">Account Number:</span> <span className="font-mono text-white font-bold">{PAYMENT_CONFIG.bankAccount.accountNumber}</span></div>
+                          <div><span className="text-slate-400">IFSC Code:</span> <span className="font-mono text-primary font-bold">{PAYMENT_CONFIG.bankAccount.ifscCode}</span></div>
+                          <div><span className="text-slate-400">Bank Name:</span> <span className="text-slate-200 font-medium">{PAYMENT_CONFIG.bankAccount.bankName}</span></div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
