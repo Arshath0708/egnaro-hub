@@ -44,6 +44,7 @@ type Order = {
   address: string;
   total: string;
   payment_method: string;
+  payment_reference?: string;
   status: string;
   estimated_days: string | null;
   created_at: string;

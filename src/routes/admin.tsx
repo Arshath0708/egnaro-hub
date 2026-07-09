@@ -102,6 +102,7 @@ type Order = {
   address: string;
   total: number;
   status: string;
+  payment_reference?: string;
   items?: string | any[];
 };
 
