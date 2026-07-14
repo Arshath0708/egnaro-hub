@@ -663,9 +663,19 @@ function DashboardContent({
                         </div>
 
                         <div className="p-6">
-                          <div className="mb-2 flex items-center justify-between">
-                            <div className="text-xs uppercase tracking-[0.2em] text-cyan-300">
-                              {product.category}
+                          <div className="mb-2 flex items-start sm:items-center justify-between gap-4">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300 truncate max-w-[120px]">
+                                {product.category}
+                              </span>
+                              {product.subcategory && (
+                                <>
+                                  <span className="text-[10px] text-cyan-300/50">/</span>
+                                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-cyan-200/80 truncate max-w-[120px]">
+                                    {product.subcategory}
+                                  </span>
+                                </>
+                              )}
                             </div>
                             <div>
                               {product.stock_quantity === 0 ? (

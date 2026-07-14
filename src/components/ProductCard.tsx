@@ -85,9 +85,16 @@ export const ProductCard = memo(function ProductCard({
                 ({reviews})
               </span>
             </div>
-            <span className="font-mono text-[9px] sm:text-[0.65rem] font-bold uppercase tracking-[0.12em] text-slate-400 bg-white/5 border border-white/5 rounded-md px-1 sm:px-1.5 py-0.5">
-              {product.category || "General"}
-            </span>
+            <div className="flex items-center flex-wrap justify-end gap-1 pl-2">
+              <span className="font-mono text-[9px] sm:text-[0.65rem] font-bold uppercase tracking-[0.12em] text-slate-400 bg-white/5 border border-white/5 rounded-md px-1 sm:px-1.5 py-0.5 whitespace-nowrap truncate max-w-[100px]">
+                {product.category || "General"}
+              </span>
+              {product.subcategory && (
+                <span className="hidden sm:inline font-mono text-[9px] sm:text-[0.65rem] font-bold uppercase tracking-[0.12em] text-cyan-400/90 bg-cyan-500/10 border border-cyan-500/20 rounded-md px-1 sm:px-1.5 py-0.5 whitespace-nowrap truncate max-w-[100px]">
+                  {product.subcategory}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* INFO */}

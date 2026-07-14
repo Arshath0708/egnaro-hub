@@ -20,6 +20,8 @@ import {
   Info,
   Phone,
   Package,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 import {
@@ -37,7 +39,9 @@ import {
 import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { sanitizeInput } from "@/lib/validation";
 import { clearUserSession } from "@/lib/session";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { getCategories } from "@/services/api";
+import { queryKeys } from "@/lib/query-keys";
 
 import logo from "@/assets/logo.jpeg";
 
@@ -61,6 +65,13 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState<number | string | null>(null);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: queryKeys.categories(),
+    queryFn: getCategories,
+    staleTime: 1000 * 60 * 30, // 30 mins
+  });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -141,19 +152,18 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 w-full ${
-        scrolled
+      className={`sticky top-0 z-50 transition-all duration-300 w-full ${scrolled
           ? "border-b border-white/5 bg-[#080C14]/90 backdrop-blur-xl shadow-lg py-3"
           : "bg-[#080C14]/30 backdrop-blur-sm py-4 border-b border-transparent"
-      }`}
+        }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
+
         {/* =========================================================
            1. DESKTOP HEADER LAYOUT (lg & above)
         ========================================================= */}
         <div className="hidden lg:flex h-16 items-center justify-between">
-          
+
           {/* Brand Logo Only (Removed border and name text for clean visual look) */}
           <Link to="/" className="flex items-center active:scale-98 transition-transform shrink-0">
             <img
@@ -165,29 +175,97 @@ export function Header() {
 
           {/* Desktop Navigation Links */}
           <nav className="flex items-center gap-1.5">
-            {NAV.map((n) => (
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${isActive
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
+                }`
+              }
+            >
+              Home
+            </NavLink>
+
+            {/* Categories Mega Menu */}
+            <div className="group relative">
               <NavLink
-                key={n.to}
-                to={n.to}
-                end={n.to === "/"}
+                to="/products"
                 className={({ isActive }) =>
-                  `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${
-                    isActive
-                      ? "bg-primary/10 text-primary font-bold"
-                      : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
+                  `flex items-center gap-1 rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${isActive
+                    ? "bg-primary/10 text-primary font-bold"
+                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
                   }`
                 }
               >
-                {n.label}
+                Shop
+                <ChevronDown className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" />
               </NavLink>
-            ))}
+
+              <div className="absolute left-0 top-full mt-1 hidden w-[520px] rounded-2xl border border-white/10 bg-[#0e1420]/95 p-6 shadow-2xl backdrop-blur-3xl group-hover:block z-50">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                  {categories.slice(0, 10).map((cat: any) => (
+                    <div key={cat.id} className="flex flex-col">
+                      <Link
+                        to={`/products?categories=${encodeURIComponent(cat.name)}`}
+                        className="mb-3 font-display text-sm font-bold text-slate-200 hover:text-primary transition-colors border-b border-white/5 pb-1 inline-block w-fit"
+                      >
+                        {cat.name}
+                      </Link>
+                      <div className="flex flex-col gap-2">
+                        {cat.subcategories && cat.subcategories.slice(0, 4).map((sub: any) => (
+                          <Link
+                            key={sub.id}
+                            to={`/products?subcategories=${sub.id}`}
+                            className="text-[0.75rem] text-slate-400 hover:text-cyan-400 transition-colors pl-2 border-l border-white/10 hover:border-cyan-400/50"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                        {cat.subcategories && cat.subcategories.length > 4 && (
+                          <Link
+                            to={`/products?categories=${encodeURIComponent(cat.name)}`}
+                            className="text-[0.7rem] uppercase tracking-wider font-bold text-primary hover:text-primary-hover transition-colors pl-2 mt-1"
+                          >
+                            View All {cat.subcategories.length} Subcategories
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <NavLink
+              to="/about"
+              className={({ isActive }) =>
+                `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${isActive
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
+                }`
+              }
+            >
+              About
+            </NavLink>
+
+            <NavLink
+              to="/contact"
+              className={({ isActive }) =>
+                `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${isActive
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
+                }`
+              }
+            >
+              Contact
+            </NavLink>
             <NavLink
               to="/my-account"
               className={({ isActive }) =>
-                `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary/10 text-primary font-bold"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
+                `rounded-lg px-4 py-2 font-sans text-xs uppercase tracking-[0.06em] transition-all duration-200 ${isActive
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-100 font-medium"
                 }`
               }
             >
@@ -227,11 +305,10 @@ export function Header() {
                 </button>
 
                 <div
-                  className={`absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/10 bg-[#0e1420]/95 backdrop-blur-2xl shadow-xl transition-all duration-150 ${
-                    userMenuOpen
+                  className={`absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/10 bg-[#0e1420]/95 backdrop-blur-2xl shadow-xl transition-all duration-150 ${userMenuOpen
                       ? "pointer-events-auto translate-y-0 opacity-100"
                       : "pointer-events-none -translate-y-1 opacity-0"
-                  }`}
+                    }`}
                 >
                   <Link
                     to="/my-account"
@@ -283,9 +360,9 @@ export function Header() {
            2. PREMIUM MOBILE HEADER BAR (below lg)
         ========================================================= */}
         <div className="lg:hidden flex flex-col gap-3 py-1 w-full">
-          
+
           <div className="flex items-center justify-between w-full">
-            
+
             {/* Logo only (No border, no name text) */}
             <Link to="/" className="flex items-center active:scale-98 transition-all shrink-0">
               <img
@@ -297,7 +374,7 @@ export function Header() {
 
             {/* Compact Header Icons Panel */}
             <div className="flex items-center gap-2">
-              
+
               {/* Shopping Cart */}
               <Link
                 to="/cart"
@@ -331,7 +408,7 @@ export function Header() {
             <div className="absolute left-4.5 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             </div>
-            
+
             <input
               type="text"
               placeholder="Search premium electronics, hardware..."
@@ -339,7 +416,7 @@ export function Header() {
               onChange={(e) => setSearchVal(e.target.value)}
               className="w-full h-11 pl-11 pr-24 rounded-2xl border border-white/10 bg-[#080C14]/60 text-xs text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-primary/80 focus:ring-2 focus:ring-primary/10 hover:border-white/15 font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
             />
-            
+
             <button
               type="submit"
               className="absolute right-1.5 h-8 px-4 rounded-xl bg-primary text-[9px] font-bold text-primary-foreground uppercase tracking-widest hover:bg-primary-hover transition-colors cursor-pointer"
@@ -376,10 +453,10 @@ export function Header() {
               transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.25 }}
               className="fixed inset-y-0 left-0 z-50 w-[85%] max-w-[340px] bg-gradient-to-b from-[#0d1117] to-[#0f1624] flex flex-col justify-between shadow-2xl lg:hidden h-[100dvh] overflow-hidden"
             >
-              
+
               {/* Upper Section */}
               <div className="flex flex-col flex-1 overflow-y-auto scrollbar-none">
-                
+
                 {/* 3.1 Header Bar (64px height, completely removed logo) */}
                 <div className="h-[64px] bg-white/[0.03] border-b border-white/[0.07] px-5 flex items-center justify-between shrink-0">
                   <div className="text-[10px] font-bold tracking-widest text-primary uppercase font-display">
@@ -439,28 +516,91 @@ export function Header() {
                   <div className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#64748b] px-5 pt-3 pb-1">
                     Explore
                   </div>
-                  
+
                   <nav className="space-y-1">
-                    {NAV.map((n, idx) => {
-                      const isActive = path === n.to;
-                      const Icon = n.icon;
-                      return (
-                        <NavLink
-                          key={n.to}
-                          to={n.to}
-                          end={n.to === "/"}
-                          onClick={() => setOpen(false)}
-                          className={`mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${
-                            isActive
-                              ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
-                              : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
-                          }`}
-                        >
-                          <Icon className={`h-5 w-5 shrink-0 ${isActive ? "text-primary" : "text-[#64748b]"}`} />
-                          <span className="text-[0.95rem] font-semibold font-sans">{n.label}</span>
-                        </NavLink>
-                      );
-                    })}
+                    <NavLink
+                      to="/"
+                      onClick={() => setOpen(false)}
+                      className={({ isActive }) => `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${isActive ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]" : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"}`}
+                    >
+                      <Home className={`h-5 w-5 shrink-0 ${path === "/" ? "text-primary" : "text-[#64748b]"}`} />
+                      <span className="text-[0.95rem] font-semibold font-sans">Home</span>
+                    </NavLink>
+
+                    {/* Mobile Categories Accordion */}
+                    <div className="mx-3 rounded-xl bg-white/[0.02] border border-white/[0.05] overflow-hidden">
+                      <NavLink
+                        to="/products"
+                        onClick={() => setOpen(false)}
+                        className={({ isActive }) => `flex h-[52px] items-center gap-3.5 px-[1.25rem] transition-all duration-200 ${isActive ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]" : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"}`}
+                      >
+                        <ShoppingBag className={`h-5 w-5 shrink-0 ${path === "/products" ? "text-primary" : "text-[#64748b]"}`} />
+                        <span className="text-[0.95rem] font-semibold font-sans">Shop All</span>
+                      </NavLink>
+
+                      <div className="px-2 pb-2">
+                        {categories.slice(0, 10).map((cat: any) => (
+                          <div key={cat.id} className="mt-1">
+                            <button
+                              onClick={() => setExpandedCategory(expandedCategory === cat.id ? null : cat.id)}
+                              className="flex w-full items-center justify-between px-3 py-2 text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/5 rounded-lg"
+                            >
+                              <span>{cat.name}</span>
+                              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedCategory === cat.id ? "rotate-180 text-primary" : "text-slate-500"}`} />
+                            </button>
+
+                            <AnimatePresence>
+                              {expandedCategory === cat.id && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="flex flex-col gap-1 pl-6 pr-3 py-2 border-l border-white/10 ml-4 mb-2">
+                                    <Link
+                                      to={`/products?categories=${encodeURIComponent(cat.name)}`}
+                                      onClick={() => setOpen(false)}
+                                      className="py-1.5 text-xs font-bold text-primary"
+                                    >
+                                      All {cat.name}
+                                    </Link>
+                                    {cat.subcategories?.map((sub: any) => (
+                                      <Link
+                                        key={sub.id}
+                                        to={`/products?subcategories=${sub.id}`}
+                                        onClick={() => setOpen(false)}
+                                        className="py-1.5 text-xs text-slate-400 hover:text-cyan-400"
+                                      >
+                                        {sub.name}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <NavLink
+                      to="/about"
+                      onClick={() => setOpen(false)}
+                      className={({ isActive }) => `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${isActive ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]" : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"}`}
+                    >
+                      <Info className={`h-5 w-5 shrink-0 ${path === "/about" ? "text-primary" : "text-[#64748b]"}`} />
+                      <span className="text-[0.95rem] font-semibold font-sans">About</span>
+                    </NavLink>
+
+                    <NavLink
+                      to="/contact"
+                      onClick={() => setOpen(false)}
+                      className={({ isActive }) => `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${isActive ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]" : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"}`}
+                    >
+                      <Phone className={`h-5 w-5 shrink-0 ${path === "/contact" ? "text-primary" : "text-[#64748b]"}`} />
+                      <span className="text-[0.95rem] font-semibold font-sans">Contact</span>
+                    </NavLink>
                   </nav>
                 </div>
 
@@ -478,10 +618,9 @@ export function Header() {
                       to="/my-account"
                       onClick={() => setOpen(false)}
                       className={({ isActive }) =>
-                        `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${
-                          isActive
-                            ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
-                            : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
+                        `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl transition-all duration-200 ${isActive
+                          ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
+                          : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
                         }`
                       }
                     >
@@ -514,10 +653,9 @@ export function Header() {
                       to={isVendor ? "/vendor-dashboard" : "/vendor-register"}
                       onClick={() => setOpen(false)}
                       className={({ isActive }) =>
-                        `mx-3 flex h-[52px] items-center justify-between px-[1.25rem] rounded-xl bg-[#f59e0b]/[0.04] transition-all duration-200 ${
-                          isActive
-                            ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
-                            : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
+                        `mx-3 flex h-[52px] items-center justify-between px-[1.25rem] rounded-xl bg-[#f59e0b]/[0.04] transition-all duration-200 ${isActive
+                          ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
+                          : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
                         }`
                       }
                     >
@@ -534,10 +672,9 @@ export function Header() {
                       to="/admin"
                       onClick={() => setOpen(false)}
                       className={({ isActive }) =>
-                        `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl bg-[#f59e0b]/[0.04] transition-all duration-200 ${
-                          isActive
-                            ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
-                            : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
+                        `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl bg-[#f59e0b]/[0.04] transition-all duration-200 ${isActive
+                          ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
+                          : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
                         }`
                       }
                     >
@@ -551,12 +688,12 @@ export function Header() {
                 {currentUser && (
                   <>
                     <div className="h-px bg-white/[0.05] mx-5 my-2" />
-                    
+
                     <div className="py-2">
                       <div className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#64748b] px-5 pt-2 pb-1">
                         Session Management
                       </div>
-                      
+
                       <button
                         onClick={() => {
                           handleLogout();

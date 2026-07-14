@@ -531,6 +531,12 @@ export default function ProductDetail() {
                   <>
                     <dt className="text-muted-foreground">Category</dt>
                     <dd>{product.category}</dd>
+                    {product.subcategory && (
+                      <>
+                        <dt className="text-muted-foreground">Subcategory</dt>
+                        <dd>{product.subcategory}</dd>
+                      </>
+                    )}
                     <dt className="text-muted-foreground">Product ID</dt>
                     <dd>#{product.id}</dd>
                   </>
