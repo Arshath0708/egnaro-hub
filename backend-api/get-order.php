@@ -1,0 +1,357 @@
+<?php
+// get-order.php — Enrich order queries with dynamic, split shipments for customer tracking
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+include "db.php";
+
+// ── DEFENSIVE FALLBACK: getallheaders() ──
+if (!function_exists('getallheaders')) {
+    function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
+                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+            }
+        }
+        return $headers;
+    }
+}
+
+// ── HELPER: parse items JSON and enrich with product image ──
+function enrichItems($conn, $items_json) {
+    $items = json_decode($items_json, true);
+    if (!is_array($items)) return [];
+
+    foreach ($items as &$item) {
+        if (empty($item['image']) && !empty($item['product_id'])) {
+            $pid  = intval($item['product_id']);
+            $stmt = $conn->prepare("SELECT image FROM products WHERE id = ? LIMIT 1");
+            $stmt->bind_param("i", $pid);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $item['image'] = $row['image'] ?? '';
+        }
+    }
+    return $items;
+}
+
+// ── HELPER: format single order and attach shipments ──
+function formatOrder($conn, $order) {
+    $order['id']      = intval($order['id'] ?? 0);
+    $order['total']   = floatval($order['total']);
+    $order['user_id'] = intval($order['user_id'] ?? 0);
+    $order['items']   = enrichItems($conn, $order['items'] ?? '[]');
+    
+    // Fetch split shipments for this order if ID exists
+    if ($order['id'] > 0) {
+        $ship_stmt = $conn->prepare("SELECT id, shipment_id, status, awb_code, courier_name, created_at, label_url, manifest_url FROM shipments WHERE order_id = ?");
+        $ship_stmt->bind_param("i", $order['id']);
+        $ship_stmt->execute();
+        $ship_res = $ship_stmt->get_result();
+        
+        $shipments = [];
+        while ($ship_row = $ship_res->fetch_assoc()) {
+            $ship_db_id = intval($ship_row['id']);
+            
+            // Fetch shipment items
+            $item_stmt = $conn->prepare("SELECT oi.product_id, oi.price, oi.quantity, p.name, p.image 
+                                         FROM shipment_items si
+                                         JOIN order_items oi ON si.order_item_id = oi.id
+                                         JOIN products p ON oi.product_id = p.id
+                                         WHERE si.shipment_id = ?");
+            $item_stmt->bind_param("i", $ship_db_id);
+            $item_stmt->execute();
+            $item_res = $item_stmt->get_result();
+            
+            $ship_items = [];
+            while ($it = $item_res->fetch_assoc()) {
+                $it['product_id'] = intval($it['product_id']);
+                $it['price'] = floatval($it['price']);
+                $it['quantity'] = intval($it['quantity']);
+                $ship_items[] = $it;
+            }
+            $item_stmt->close();
+            
+            // Fetch checkpoints
+            $track_stmt = $conn->prepare("SELECT activity, location, status, checkpoint_time FROM shipment_tracking_checkpoints WHERE shipment_id = ? ORDER BY checkpoint_time DESC");
+            $track_stmt->bind_param("i", $ship_db_id);
+            $track_stmt->execute();
+            $track_res = $track_stmt->get_result();
+            
+            $checkpoints = [];
+            while ($chk = $track_res->fetch_assoc()) {
+                $checkpoints[] = $chk;
+            }
+            $track_stmt->close();
+            
+            $ship_row['items'] = $ship_items;
+            $ship_row['history'] = $checkpoints;
+            $shipments[] = $ship_row;
+        }
+        $ship_stmt->close();
+        $order['shipments'] = $shipments;
+    } else {
+        $order['shipments'] = [];
+    }
+    
+    return $order;
+}
+
+// ── PAGINATION PARAMS ──
+$page   = max(1, intval($_GET['page']  ?? 1));
+$limit  = max(1, min(100, intval($_GET['limit'] ?? 10)));
+$offset = ($page - 1) * $limit;
+
+$orderId = $_GET['order_id'] ?? null;
+$phone   = $_GET['phone']    ?? null;
+
+// ── TOKEN EXTRACTION ──
+$authHeader = '';
+$headers = getallheaders();
+foreach ($headers as $key => $val) {
+    if (strcasecmp($key, 'Authorization') === 0) {
+        $authHeader = trim($val);
+        break;
+    }
+}
+if (empty($authHeader)) {
+    if (isset($_SERVER['HTTP_AUTHORIZATION']))          $authHeader = trim($_SERVER['HTTP_AUTHORIZATION']);
+    elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) $authHeader = trim($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+}
+$token = '';
+if (!empty($authHeader)) {
+    if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
+        $token = trim($matches[1]);
+    } else {
+        $token = trim(str_ireplace('bearer', '', $authHeader));
+    }
+}
+if (empty($token) || strlen($token) < 5) {
+    $token = trim($_GET['token'] ?? '');
+}
+
+// ── CASE 1: Get ALL orders for logged-in user (paginated) ──
+if (!$orderId && !$phone) {
+    if (empty($token)) {
+        echo json_encode(["success" => false, "message" => "Token or order ID required"]);
+        exit;
+    }
+
+    $stmt = $conn->prepare("SELECT id, email, phone FROM users WHERE token = ? LIMIT 1");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $user = $stmt->get_result()->fetch_assoc();
+
+    if (!$user) {
+        echo json_encode(["success" => false, "message" => "Invalid or expired token"]);
+        exit;
+    }
+
+    $user_id  = intval($user['id']);
+    $email    = trim($user['email'] ?? '');
+    $uphone   = trim($user['phone'] ?? '');
+
+    $phone_variant1 = $uphone;
+    $phone_variant2 = str_replace("+91", "", $uphone);
+    $phone_variant3 = "+91" . $phone_variant2;
+
+    $where  = "WHERE (user_id = ?
+                   OR (email != '' AND email = ?)
+                   OR (phone != '' AND (phone = ? OR phone = ? OR phone = ?)))";
+    $types  = "issss";
+    $params = [$user_id, $email, $phone_variant1, $phone_variant2, $phone_variant3];
+
+    // Total count
+    $count_stmt = $conn->prepare("SELECT COUNT(*) AS total FROM orders $where");
+    $count_stmt->bind_param($types, ...$params);
+    $count_stmt->execute();
+    $total_rows = $count_stmt->get_result()->fetch_assoc()['total'];
+    $count_stmt->close();
+
+    // Paginated fetch
+    $params[] = $limit;
+    $params[] = $offset;
+    $types   .= "ii";
+
+    $stmt = $conn->prepare("
+        SELECT id, order_id, customer_name, phone, address, total,
+               payment_method, status, items, estimated_days, created_at, user_id,
+               tracking_number, courier_partner
+        FROM orders
+        $where
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+    ");
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $orders = [];
+    while ($row = $result->fetch_assoc()) {
+        $orders[] = formatOrder($conn, $row);
+    }
+
+    echo json_encode([
+        "success"     => true,
+        "page"        => $page,
+        "limit"       => $limit,
+        "total_rows"  => intval($total_rows),
+        "total_pages" => (int)ceil($total_rows / $limit),
+        "has_next"    => $page < ceil($total_rows / $limit),
+        "has_prev"    => $page > 1,
+        "orders"      => $orders,
+        "count"       => count($orders)
+    ]);
+    exit;
+}
+
+// ── CASE 2: Get single order by order_id ──
+if ($orderId) {
+    if (empty($token)) {
+        http_response_code(401);
+        echo json_encode(["success" => false, "message" => "Authorization token required"]);
+        exit;
+    }
+
+    $stmt = $conn->prepare("SELECT id, email, phone FROM users WHERE token = ? LIMIT 1");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $user = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(["success" => false, "message" => "Invalid or expired token"]);
+        exit;
+    }
+
+    $stmt = $conn->prepare("SELECT * FROM orders WHERE order_id = ? LIMIT 1");
+    $stmt->bind_param("s", $orderId);
+    $stmt->execute();
+    $order = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$order) {
+        echo json_encode(["success" => false, "message" => "Order not found"]);
+        exit;
+    }
+
+    // Check ownership
+    $userId = intval($user['id']);
+    $userEmail = trim($user['email']);
+    $userPhone = trim($user['phone']);
+
+    $orderUserId = intval($order['user_id']);
+    $orderEmail = trim($order['email']);
+    $orderPhone = trim($order['phone']);
+
+    $cleanUserPhone = str_replace("+91", "", $userPhone);
+    $cleanOrderPhone = str_replace("+91", "", $orderPhone);
+
+    if ($orderUserId !== $userId && 
+        strcasecmp($orderEmail, $userEmail) !== 0 && 
+        strcasecmp($cleanOrderPhone, $cleanUserPhone) !== 0) {
+        http_response_code(403);
+        echo json_encode(["success" => false, "message" => "Forbidden: You do not own this order."]);
+        exit;
+    }
+
+    echo json_encode([
+        "success" => true,
+        "order"   => formatOrder($conn, $order)
+    ]);
+    exit;
+}
+
+// ── CASE 3: Get orders by phone number (paginated) ──
+if ($phone) {
+    if (empty($token)) {
+        http_response_code(401);
+        echo json_encode(["success" => false, "message" => "Authorization token required"]);
+        exit;
+    }
+
+    $stmt = $conn->prepare("SELECT id, email, phone FROM users WHERE token = ? LIMIT 1");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $user = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(["success" => false, "message" => "Invalid or expired token"]);
+        exit;
+    }
+
+    $cleanUserPhone = str_replace("+91", "", trim($user['phone']));
+    $cleanQueryPhone = str_replace("+91", "", trim($phone));
+
+    if (strcasecmp($cleanUserPhone, $cleanQueryPhone) !== 0) {
+        http_response_code(403);
+        echo json_encode(["success" => false, "message" => "Forbidden: You can only query orders matching your phone number."]);
+        exit;
+    }
+
+    $where  = "WHERE phone = ?";
+    $params = [$phone];
+    $types  = "s";
+
+    // Total count
+    $count_stmt = $conn->prepare("SELECT COUNT(*) AS total FROM orders $where");
+    $count_stmt->bind_param($types, ...$params);
+    $count_stmt->execute();
+    $total_rows = $count_stmt->get_result()->fetch_assoc()['total'];
+    $count_stmt->close();
+
+    // Paginated fetch
+    $params[] = $limit;
+    $params[] = $offset;
+    $types   .= "ii";
+
+    $stmt = $conn->prepare("
+        SELECT id, order_id, customer_name, phone, address, total,
+               payment_method, status, items, estimated_days, created_at,
+               tracking_number, courier_partner
+        FROM orders
+        $where
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+    ");
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $orders = [];
+    while ($row = $result->fetch_assoc()) {
+        $orders[] = formatOrder($conn, $row);
+    }
+
+    if (count($orders) === 0 && $page === 1) {
+        echo json_encode(["success" => false, "message" => "No orders found for this phone number"]);
+        exit;
+    }
+
+    echo json_encode([
+        "success"     => true,
+        "page"        => $page,
+        "limit"       => $limit,
+        "total_rows"  => intval($total_rows),
+        "total_pages" => (int)ceil($total_rows / $limit),
+        "has_next"    => $page < ceil($total_rows / $limit),
+        "has_prev"    => $page > 1,
+        "orders"      => $orders,
+        "count"       => count($orders)
+    ]);
+    exit;
+}
+
+$conn->close();
+?>
