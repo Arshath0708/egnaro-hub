@@ -17,6 +17,7 @@ export interface Product {
   discount: number;
 
   category: string;
+  subcategory?: string;
 
   image: string;
 

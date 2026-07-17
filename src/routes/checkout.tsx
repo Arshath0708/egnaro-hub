@@ -355,8 +355,8 @@ export default function CheckoutPage() {
                     }
                   }
 
-                  queryClient.removeQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
-                  queryClient.removeQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
+                  queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
+                  queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
                   queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] });
                   queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
                   queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] });
@@ -419,9 +419,9 @@ export default function CheckoutPage() {
           }
         }
 
-        // Remove queries so that the statistics and order list fetch fresh and show loading state
-        queryClient.removeQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
-        queryClient.removeQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
+        // Invalidate queries so that the statistics and order list fetch fresh and show loading state
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_ORDERS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_PROFILE] });
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_ORDERS] });
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.VENDOR_STATS] });
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ADMIN_ORDERS] });

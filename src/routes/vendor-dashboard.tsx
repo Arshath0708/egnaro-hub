@@ -69,6 +69,7 @@ type Product = {
   created_by_id: string;
   name: string;
   category: string;
+  subcategory?: string;
   image: string;
   price: number;
   original_price: number;
