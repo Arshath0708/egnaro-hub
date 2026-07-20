@@ -6,7 +6,7 @@ import { InvoiceTemplate } from "@/components/invoice/InvoiceTemplate";
 /**
  * Enterprise PDF Generator for Egnaro Mart Invoices.
  * Renders an isolated, pixel-perfect A4 canvas (794px x 1123px),
- * waits for font & letterhead image decoding, exports to A4 PDF,
+ * waits for font & image decoding, exports to A4 PDF,
  * and performs strict DOM/pointer-events cleanup.
  */
 export async function generateAndDownloadPDF(
@@ -47,7 +47,7 @@ export async function generateAndDownloadPDF(
       await document.fonts.ready;
     }
 
-    // 4. Wait for letterhead & product images to fully decode
+    // 4. Wait for images to fully decode
     const images = Array.from(container.querySelectorAll("img"));
     await Promise.all(
       images.map(
@@ -66,7 +66,7 @@ export async function generateAndDownloadPDF(
     // Short paint delay for browser rendering engine
     await new Promise((r) => setTimeout(r, 120));
 
-    // 5. Run html2pdf with A4 options
+    // 5. Run html2pdf with A4 options and const orientation
     const opt = {
       margin: 0,
       filename: filename,
@@ -81,7 +81,7 @@ export async function generateAndDownloadPDF(
         windowWidth: 794,
         windowHeight: 1123,
       },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
 
     await html2pdf().set(opt).from(container).save();

@@ -1,368 +1,478 @@
-import letterheadImg from "@/assets/invoice-letterhead.png";
-import { inr } from "@/lib/format";
+import React from "react";
 
-export type OrderInvoiceProps = {
-  order: {
-    id?: number;
-    order_id?: string;
-    customer_name?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    total?: number | string;
-    subtotal?: number | string;
-    discount?: number | string;
-    shipping_charges?: number | string;
-    payment_method?: string;
-    payment_status?: string;
-    status?: string;
-    created_at?: string;
-    items?: Array<{
-      id?: number;
-      name?: string;
-      title?: string;
-      quantity?: number;
-      qty?: number;
-      price?: number | string;
-      seller_name?: string;
-      company_name?: string;
-      gst?: string;
-      seller_phone?: string;
-      seller_email?: string;
-      seller_address?: string;
-    }>;
-    seller?: {
-      name?: string;
-      company_name?: string;
-      gst?: string;
-      phone?: string;
-      email?: string;
-      address?: string;
-    };
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Product {
+  name: string;
+  sku: string;
+  qty: number;
+  unitPrice: number;
+  shipping: number;
+  discount: number;
+}
+
+interface InvoiceData {
+  invoiceNumber: string;
+  orderId: string;
+  invoiceDate: string;
+  dueDate: string;
+  paymentMethod: string;
+  paymentStatus: "Paid" | "Pending" | "Failed";
+  orderStatus: "Delivered" | "Processing" | "Shipped" | "Cancelled";
+  seller: {
+    name: string;
+    company: string;
+    gst: string;
+    address: string;
+    email: string;
+    phone: string;
   };
+  buyer: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+  };
+  products: Product[];
+}
+
+// ─── Sample Data ──────────────────────────────────────────────────────────────
+const sampleInvoiceData: InvoiceData = {
+  invoiceNumber: "INV-2026-00842",
+  orderId: "EM-ORD-20260703-5591",
+  invoiceDate: "03 July 2026",
+  dueDate: "03 July 2026",
+  paymentMethod: "UPI — GPay",
+  paymentStatus: "Paid",
+  orderStatus: "Delivered",
+  seller: {
+    name: "Rajesh Kumar",
+    company: "Ansel Power Systems Pvt. Ltd.",
+    gst: "33AABCA1234F1ZX",
+    address: "No: 2A, Venkatesh Nagar, Sarkarsamakulam, Kovilpalayam, Coimbatore – 641107, Tamil Nadu",
+    email: "seller@anselpower.com",
+    phone: "+91 98765 43210",
+  },
+  buyer: {
+    name: "Arjun Mehta",
+    address: "12B, Brigade Gateway, Rajajinagar, Bengaluru – 560010, Karnataka",
+    phone: "+91 98400 12345",
+    email: "arjun.mehta@email.com",
+  },
+  products: [
+    { name: "Industrial Motor Pump 2HP — Single Phase", sku: "EM-MP-2HP-SP", qty: 1, unitPrice: 8499, shipping: 199, discount: 500 },
+    { name: "Heavy Duty Extension Cable 25M — 6A", sku: "EM-EC-25M-6A", qty: 2, unitPrice: 1249, shipping: 0, discount: 100 },
+    { name: "Circuit Breaker MCB 32A — Double Pole", sku: "EM-CB-32A-DP", qty: 3, unitPrice: 649, shipping: 0, discount: 0 },
+    { name: "LED Flood Light 50W — Warm White IP65", sku: "EM-FL-50W-WW", qty: 1, unitPrice: 1899, shipping: 99, discount: 200 },
+  ],
 };
 
-export function InvoiceTemplate({ order }: OrderInvoiceProps) {
-  const orderId = order.order_id || `ORD-${order.id || "2026"}`;
-  const invoiceNo = `INV-${orderId.replace(/^ORD-/, "")}`;
-  const createdDate = order.created_at
+// ─── Database Order Mapper ──────────────────────────────────────────────────
+export function mapOrderToInvoiceData(order: any): InvoiceData {
+  if (!order) return sampleInvoiceData;
+
+  const rawOrderId = order.order_id || String(order.id || "2026");
+  const invoiceNumber = `INV-${rawOrderId.replace(/^ORD-/, "").replace(/^EM-ORD-/, "")}`;
+  
+  const invoiceDate = order.created_at
     ? new Date(order.created_at).toLocaleDateString("en-IN", {
-        day: "numeric",
+        day: "2-digit",
         month: "short",
         year: "numeric",
       })
     : new Date().toLocaleDateString("en-IN", {
-        day: "numeric",
+        day: "2-digit",
         month: "short",
         year: "numeric",
       });
 
-  const items = order.items && order.items.length > 0 ? order.items : [];
+  const rawItems = Array.isArray(order.items)
+    ? order.items
+    : typeof order.items === "string"
+    ? JSON.parse(order.items || "[]")
+    : [];
 
-  const subtotalNum =
-    Number(order.subtotal) ||
-    items.reduce(
-      (acc, it) => acc + Number(it.price || 0) * (it.quantity || it.qty || 1),
-      0
-    );
-  const discountNum = Number(order.discount) || 0;
-  const totalNum = Number(order.total) || Math.max(0, subtotalNum - discountNum);
-  const shippingNum =
-    Number(order.shipping_charges) || (totalNum >= 5000 ? 0 : 99);
+  const firstItem = rawItems[0] || {};
 
-  const seller = order.seller || {
-    name: items[0]?.seller_name || "Egnaro Mart Seller",
-    company_name: items[0]?.company_name || "Egnaro Mart Marketplace",
-    gst: items[0]?.gst || null,
-    phone: items[0]?.seller_phone || "+91 9442581506",
-    email: items[0]?.seller_email || "support@egnaromart.com",
-    address:
-      items[0]?.seller_address ||
-      "2A, Venkatesh Nagar, Sarkarsamakulam Kovilpalayam, Coimbatore, Tamil Nadu - 641107",
+  const sellerObj = order.seller || {};
+  const seller = {
+    name: sellerObj.name || sellerObj.vendor_name || firstItem.seller_name || "Egnaro Mart Seller",
+    company: sellerObj.company_name || sellerObj.company || firstItem.company_name || "Egnaro Mart Marketplace",
+    gst: sellerObj.gst || firstItem.gst || "N/A",
+    address: sellerObj.address || firstItem.seller_address || "No: 2A, Venkatesh Nagar, Sarkarsamakulam, Kovilpalayam, Coimbatore – 641107, Tamil Nadu",
+    email: sellerObj.email || firstItem.seller_email || "egnaromart@gmail.com",
+    phone: sellerObj.phone || firstItem.seller_phone || "+91 9442581506",
   };
 
+  const buyer = {
+    name: order.customer_name || order.customer?.fullName || "Valued Buyer",
+    address: order.address || order.customer?.address || "Delivery Address Provided at Checkout",
+    phone: order.phone || order.customer?.phone || "N/A",
+    email: order.email || order.customer?.email || "N/A",
+  };
+
+  const shippingChargesTotal = Number(order.shipping_charges || 0);
+  const discountTotal = Number(order.discount || 0);
+
+  const products: Product[] = rawItems.map((item: any, idx: number) => {
+    const qty = Number(item.quantity || item.qty || 1);
+    const unitPrice = Number(item.price || 0);
+    const shipping = item.shipping !== undefined ? Number(item.shipping) : (idx === 0 ? shippingChargesTotal : 0);
+    const discount = item.discount !== undefined ? Number(item.discount) : (idx === 0 ? discountTotal : 0);
+
+    return {
+      name: item.name || item.title || "Product Item",
+      sku: item.sku || (item.product_id ? `EM-PROD-${item.product_id}` : `EM-ITEM-${idx + 1}`),
+      qty,
+      unitPrice,
+      shipping,
+      discount,
+    };
+  });
+
+  if (products.length === 0) {
+    products.push({
+      name: "Egnaro Mart Order Purchase",
+      sku: `EM-ORD-${rawOrderId}`,
+      qty: 1,
+      unitPrice: Number(order.subtotal || order.total || 0),
+      shipping: shippingChargesTotal,
+      discount: discountTotal,
+    });
+  }
+
+  const rawPaymentStatus = (order.payment_status || "").toLowerCase();
+  const paymentStatus: "Paid" | "Pending" | "Failed" =
+    rawPaymentStatus === "paid" || order.payment_method === "upi" || order.payment_method === "online"
+      ? "Paid"
+      : rawPaymentStatus === "failed"
+      ? "Failed"
+      : "Pending";
+
+  const rawOrderStatus = (order.status || "").toLowerCase();
+  const orderStatus: "Delivered" | "Processing" | "Shipped" | "Cancelled" =
+    rawOrderStatus === "delivered"
+      ? "Delivered"
+      : rawOrderStatus === "cancelled"
+      ? "Cancelled"
+      : rawOrderStatus === "shipped" || rawOrderStatus === "out-for-delivery"
+      ? "Shipped"
+      : "Processing";
+
+  return {
+    invoiceNumber,
+    orderId: rawOrderId,
+    invoiceDate,
+    dueDate: invoiceDate,
+    paymentMethod: (order.payment_method || "COD").toUpperCase(),
+    paymentStatus,
+    orderStatus,
+    seller,
+    buyer,
+    products,
+  };
+}
+
+// ─── Calculations ─────────────────────────────────────────────────────────────
+function calcRow(p: Product) {
+  const lineTotal = p.unitPrice * p.qty;
+  const total = lineTotal + p.shipping - p.discount;
+  return { lineTotal, total };
+}
+
+function calcSummary(products: Product[]) {
+  let subtotal = 0, shipping = 0, discount = 0;
+  for (const p of products) {
+    subtotal += p.unitPrice * p.qty;
+    shipping += p.shipping;
+    discount += p.discount;
+  }
+  const grand = subtotal + shipping - discount;
+  return { subtotal, shipping, discount, grand };
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+
+// ─── Sub-Components ───────────────────────────────────────────────────────────
+const StatusPill: React.FC<{ label: string; type: "green" | "amber" | "red" | "blue" }> = ({ label, type }) => {
+  const styles = {
+    green: { bg: "#ECFDF5", color: "#065F46", dot: "#10B981" },
+    amber: { bg: "#FFFBEB", color: "#92400E", dot: "#F59E0B" },
+    red:   { bg: "#FEF2F2", color: "#991B1B", dot: "#EF4444" },
+    blue:  { bg: "#EFF6FF", color: "#1E40AF", dot: "#3B82F6" },
+  }[type];
   return (
-    <div
-      className="printable-invoice-page"
-      style={{
-        position: "relative",
-        width: "794px",
-        height: "1123px",
-        backgroundColor: "#ffffff",
-        color: "#0f172a",
-        fontFamily: "'Inter', Arial, Helvetica, sans-serif",
-        boxSizing: "border-box",
-        overflow: "hidden",
-        margin: "0 auto",
-      }}
-    >
-      {/* 1. OFFICIAL LETTERHEAD BACKGROUND IMAGE */}
-      <img
-        src={letterheadImg}
-        alt="Egnaro Mart Letterhead"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "794px",
-          height: "1123px",
-          objectFit: "fill",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
+      background: styles.bg, color: styles.color,
+      padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: styles.dot, display: "inline-block" }} />
+      {label}
+    </span>
+  );
+};
 
-      {/* 2. INNER CONTENT OVERLAY CONTAINER */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          width: "794px",
-          height: "1123px",
-          boxSizing: "border-box",
-          paddingTop: "215px",
-          paddingBottom: "140px",
-          paddingLeft: "44px",
-          paddingRight: "44px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-        }}
-      >
-        {/* TOP CONTENT WRAPPER */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          
-          {/* SECTION A: TAX INVOICE METADATA BAR */}
-          <div
-            style={{
-              border: "1px solid #cbd5e1",
-              backgroundColor: "rgba(248, 250, 252, 0.95)",
-              borderRadius: "10px",
-              padding: "12px 16px",
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: "8px",
-                marginBottom: "8px",
-                borderBottom: "1px solid #e2e8f0",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    backgroundColor: "#047857",
-                    display: "inline-block",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: 900,
-                    letterSpacing: "1px",
-                    color: "#0f172a",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Tax Invoice / Bill of Supply
-                </span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <span style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>
-                  Invoice No.
-                </span>
-                <span style={{ fontSize: "12px", fontFamily: "monospace", fontWeight: 900, color: "#047857" }}>
-                  {invoiceNo}
-                </span>
-              </div>
-            </div>
+const InfoRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div style={{ display: "flex", gap: 6, marginBottom: 5, lineHeight: 1.5 }}>
+    <span style={{ color: "#9CA3AF", fontSize: 11, minWidth: 96, flexShrink: 0 }}>{label}</span>
+    <span style={{ color: "#111827", fontSize: 11, fontWeight: 500, wordBreak: "break-word" }}>{value}</span>
+  </div>
+);
 
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
-              <tbody>
-                <tr>
-                  <td style={{ width: "20%" }}>
-                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Order ID</span>
-                    <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>{orderId}</span>
-                  </td>
-                  <td style={{ width: "20%" }}>
-                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Date</span>
-                    <span style={{ fontWeight: 600, color: "#0f172a" }}>{createdDate}</span>
-                  </td>
-                  <td style={{ width: "20%" }}>
-                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Payment Mode</span>
-                    <span style={{ fontWeight: 700, color: "#0f172a", textTransform: "uppercase" }}>{order.payment_method || "COD"}</span>
-                  </td>
-                  <td style={{ width: "20%" }}>
-                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Payment Status</span>
-                    <span
-                      style={{
-                        fontSize: "9px",
-                        fontWeight: 900,
-                        textTransform: "uppercase",
-                        padding: "2px 6px",
-                        borderRadius: "4px",
-                        display: "inline-block",
-                        backgroundColor: order.payment_status === "paid" ? "#d1fae5" : "#fef3c7",
-                        color: order.payment_status === "paid" ? "#065f46" : "#92400e",
-                        border: order.payment_status === "paid" ? "1px solid #6ee7b7" : "1px solid #fcd34d",
-                      }}
-                    >
-                      {order.payment_status || (order.payment_method === "cod" ? "Pending" : "Paid")}
-                    </span>
-                  </td>
-                  <td style={{ width: "20%" }}>
-                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Order Status</span>
-                    <span style={{ fontWeight: 700, color: "#0f172a", textTransform: "uppercase" }}>{order.status || "Confirmed"}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+const SectionCard: React.FC<{ title: string; children: React.ReactNode; accent?: string }> = ({
+  title, children, accent = "#E8500A"
+}) => (
+  <div style={{
+    background: "#FFFFFF", border: "1px solid #F3F4F6",
+    borderRadius: 12, overflow: "hidden",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)",
+  }}>
+    <div style={{
+      padding: "10px 16px", borderBottom: "1px solid #F9FAFB",
+      display: "flex", alignItems: "center", gap: 8, background: "#FAFAFA",
+    }}>
+      <div style={{ width: 3, height: 14, background: accent, borderRadius: 2, flexShrink: 0 }} />
+      <span style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em" }}>{title}</span>
+    </div>
+    <div style={{ padding: "14px 16px" }}>{children}</div>
+  </div>
+);
 
-          {/* SECTION B: SELLER & BUYER INFORMATION BOXES */}
-          <div style={{ display: "flex", gap: "16px", width: "100%" }}>
-            
-            {/* SELLER DETAILS BOX */}
-            <div
-              style={{
-                flex: 1,
-                border: "1px solid #a7f3d0",
-                backgroundColor: "rgba(236, 253, 245, 0.5)",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                boxSizing: "border-box",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingBottom: "6px",
-                  marginBottom: "6px",
-                  borderBottom: "1px solid #a7f3d0",
-                }}
-              >
-                <span style={{ fontSize: "9px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.5px", color: "#065f46" }}>
-                  Seller / Supplier Details
-                </span>
-                <span style={{ fontSize: "8px", fontWeight: 700, padding: "2px 6px", backgroundColor: "#d1fae5", color: "#065f46", borderRadius: "3px" }}>
-                  Verified Seller
-                </span>
-              </div>
-              <div style={{ fontSize: "12px", fontWeight: 900, color: "#0f172a", marginBottom: "2px" }}>{seller.name}</div>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>{seller.company_name}</div>
-              {seller.gst && (
-                <div style={{ fontSize: "10px", fontFamily: "monospace", fontWeight: 800, color: "#c2410c", marginBottom: "4px" }}>
-                  GSTIN: {seller.gst}
+// ─── Main Invoice Component ───────────────────────────────────────────────────
+export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = sampleInvoiceData }) => {
+  const summary = calcSummary(data.products);
+
+  const paymentColor = data.paymentStatus === "Paid" ? "green" : data.paymentStatus === "Pending" ? "amber" : "red";
+  const orderColor   = data.orderStatus === "Delivered" ? "green" : data.orderStatus === "Cancelled" ? "red" : data.orderStatus === "Shipped" ? "blue" : "amber";
+
+  return (
+    <>
+      {/* ── Global Print Styles ── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #F1F5F9;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .invoice-page {
+          width: 794px;
+          min-height: 1123px;
+          margin: 0 auto;
+          background: #FFFFFF;
+          border-radius: 0;
+          overflow: hidden;
+          box-shadow: none;
+        }
+
+        @media print {
+          body { background: white; }
+          .invoice-page {
+            margin: 0;
+            border-radius: 0;
+            box-shadow: none;
+            width: 794px;
+            min-height: 1123px;
+          }
+          .no-print { display: none !important; }
+        }
+
+        table { border-collapse: collapse; width: 100%; }
+      `}</style>
+
+      {/* ══ INVOICE PAGE ══════════════════════════════════════════════════════ */}
+      <div className="invoice-page">
+
+        {/* ── TOP ACCENT BAR ── */}
+        <div style={{ height: 5, background: "linear-gradient(90deg, #E8500A 0%, #F59E0B 50%, #16A34A 100%)" }} />
+
+        {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+        <div style={{ padding: "28px 36px 22px", borderBottom: "1px solid #F3F4F6" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+
+            {/* Logo + Tagline */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                {/* Brand mark — orange circle with leaf */}
+                <div style={{
+                  width: 44, height: 44, borderRadius: "50%",
+                  background: "radial-gradient(circle at 35% 32%, #FFD6A3 0%, #FFB347 18%, #FF8A00 45%, #E8500A 100%)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: "0 3px 10px rgba(232,80,10,0.3)",
+                  position: "relative", flexShrink: 0,
+                }}>
+                  <div style={{
+                    position: "absolute", top: -3, left: "50%",
+                    width: 12, height: 8, borderRadius: "50%",
+                    background: "linear-gradient(135deg, #86EFAC, #16A34A)",
+                    transform: "translateX(-50%) rotate(-12deg)",
+                  }} />
+                  <span style={{ fontSize: 18, color: "white", fontWeight: 800, letterSpacing: -1, marginTop: 4 }}>e</span>
                 </div>
-              )}
-              <div style={{ fontSize: "10px", color: "#475569", lineHeight: "1.3", marginBottom: "6px" }}>{seller.address}</div>
-              <div style={{ fontSize: "9.5px", color: "#64748b" }}>
-                <span>Ph: {seller.phone}</span> • <span>Email: {seller.email}</span>
+                <div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: "#16A34A", letterSpacing: -0.5 }}>egnaro</span>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: "#374151", letterSpacing: -0.5 }}>MART</span>
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "#9CA3AF", fontWeight: 500, marginTop: -2, letterSpacing: "0.04em" }}>
+                    Powering Better Living.
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact row */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 10 }}>
+                {[
+                  { icon: "🌐", val: "egnaromart.com" },
+                  { icon: "✉️", val: "egnaromart@gmail.com" },
+                  { icon: "📞", val: "9442581506" },
+                ].map(({ icon, val }) => (
+                  <span key={val} style={{ fontSize: 10.5, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}>
+                    <span>{icon}</span>{val}
+                  </span>
+                ))}
+              </div>
+              <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 4 }}>
+                No: 2A, Venkatesh Nagar, Sarkarsamakulam, Kovilpalayam, Coimbatore – 641107 TN
               </div>
             </div>
 
-            {/* BUYER DETAILS BOX */}
-            <div
-              style={{
-                flex: 1,
-                border: "1px solid #fed7aa",
-                backgroundColor: "rgba(255, 247, 237, 0.5)",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                boxSizing: "border-box",
-              }}
-            >
-              <div
-                style={{
-                  paddingBottom: "6px",
-                  marginBottom: "6px",
-                  borderBottom: "1px solid #fed7aa",
-                }}
-              >
-                <span style={{ fontSize: "9px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.5px", color: "#9a3412" }}>
-                  Buyer Shipping & Billing Details
-                </span>
+            {/* Invoice label */}
+            <div style={{ textAlign: "right" }}>
+              <div style={{
+                background: "linear-gradient(135deg, #FFF7ED, #FEF2F2)",
+                border: "1px solid #FED7AA", borderRadius: 10, padding: "12px 20px", marginBottom: 10,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#9A3412", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>
+                  Tax Invoice
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#E8500A", letterSpacing: -0.5 }}>
+                  {data.invoiceNumber}
+                </div>
               </div>
-              <div style={{ fontSize: "12px", fontWeight: 900, color: "#0f172a", marginBottom: "4px" }}>
-                {order.customer_name || "Valued Buyer"}
-              </div>
-              <div style={{ fontSize: "10px", color: "#334155", lineHeight: "1.3", marginBottom: "6px" }}>
-                {order.address || "Delivery Address Provided at Checkout"}
-              </div>
-              <div style={{ fontSize: "9.5px", color: "#64748b" }}>
-                {order.phone && <div>Ph: {order.phone}</div>}
-                {order.email && <div>Email: {order.email}</div>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
+                <StatusPill label={data.paymentStatus} type={paymentColor as any} />
+                <StatusPill label={data.orderStatus} type={orderColor as any} />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* SECTION C: PRODUCTS ORDERED TABLE */}
-          <div
-            style={{
-              border: "1px solid #cbd5e1",
-              borderRadius: "10px",
-              overflow: "hidden",
-              boxSizing: "border-box",
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10.5px", tableLayout: "fixed" }}>
+        {/* ── INVOICE META BAND ───────────────────────────────────────────────── */}
+        <div style={{
+          background: "#F9FAFB", borderBottom: "1px solid #F3F4F6",
+          padding: "12px 36px", display: "flex", gap: 0,
+        }}>
+          {[
+            { label: "Order ID",        value: data.orderId },
+            { label: "Invoice Date",    value: data.invoiceDate },
+            { label: "Due Date",        value: data.dueDate },
+            { label: "Payment Method",  value: data.paymentMethod },
+          ].map(({ label, value }, i) => (
+            <div key={label} style={{
+              flex: 1, paddingLeft: i === 0 ? 0 : 20,
+              borderLeft: i === 0 ? "none" : "1px solid #E5E7EB",
+            }}>
+              <div style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>
+                {label}
+              </div>
+              <div style={{ fontSize: 11.5, color: "#111827", fontWeight: 600 }}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── SELLER / BUYER ──────────────────────────────────────────────────── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, padding: "16px 36px" }}>
+
+          <SectionCard title="Sold By — Seller Details" accent="#16A34A">
+            <InfoRow label="Name"    value={data.seller.name} />
+            <InfoRow label="Company" value={data.seller.company} />
+            <InfoRow label="GSTIN"   value={data.seller.gst} />
+            <InfoRow label="Address" value={data.seller.address} />
+            <InfoRow label="Email"   value={data.seller.email} />
+            <InfoRow label="Phone"   value={data.seller.phone} />
+          </SectionCard>
+
+          <SectionCard title="Bill To — Buyer Details" accent="#3B82F6">
+            <InfoRow label="Name"    value={data.buyer.name} />
+            <InfoRow label="Address" value={data.buyer.address} />
+            <InfoRow label="Phone"   value={data.buyer.phone} />
+            <InfoRow label="Email"   value={data.buyer.email} />
+          </SectionCard>
+        </div>
+
+        {/* ── PRODUCTS TABLE ──────────────────────────────────────────────────── */}
+        <div style={{ padding: "0 36px 16px" }}>
+          <div style={{
+            border: "1px solid #F3F4F6", borderRadius: 12, overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}>
+            {/* Table header */}
+            <div style={{
+              background: "#111827", padding: "11px 16px",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <div style={{ width: 3, height: 14, background: "#E8500A", borderRadius: 2 }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#F9FAFB", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Order Items
+              </span>
+            </div>
+
+            <table>
               <thead>
-                <tr style={{ backgroundColor: "#0f172a", color: "#ffffff", fontSize: "8.5px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  <th style={{ padding: "8px 10px", textAlign: "center", width: "5%" }}>#</th>
-                  <th style={{ padding: "8px 10px", textAlign: "left", width: "45%" }}>Product Description</th>
-                  <th style={{ padding: "8px 10px", textAlign: "center", width: "8%" }}>Qty</th>
-                  <th style={{ padding: "8px 10px", textAlign: "right", width: "14%" }}>Unit Price</th>
-                  <th style={{ padding: "8px 10px", textAlign: "right", width: "13%" }}>Shipping</th>
-                  <th style={{ padding: "8px 10px", textAlign: "right", width: "15%" }}>Total</th>
+                <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #F3F4F6" }}>
+                  {["#", "Product", "SKU", "Qty", "Unit Price", "Shipping", "Discount", "Total"].map((h, i) => (
+                    <th key={h} style={{
+                      padding: "9px 12px", fontSize: 10, fontWeight: 700,
+                      color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.06em",
+                      textAlign: i >= 3 ? "right" : i === 0 ? "center" : "left",
+                      whiteSpace: "nowrap",
+                    }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => {
-                  const qty = item.quantity || item.qty || 1;
-                  const unitPrice = Number(item.price) || 0;
-                  const lineTotal = unitPrice * qty;
-
+                {data.products.map((p, i) => {
+                  const { total } = calcRow(p);
                   return (
-                    <tr
-                      key={idx}
-                      style={{
-                        backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
-                        borderBottom: "1px solid #e2e8f0",
-                      }}
-                    >
-                      <td style={{ padding: "8px 10px", textAlign: "center", fontFamily: "monospace", fontWeight: 700, color: "#94a3b8" }}>
-                        {idx + 1}
+                    <tr key={`${p.sku}-${i}`} style={{
+                      borderBottom: i < data.products.length - 1 ? "1px solid #F9FAFB" : "none",
+                      background: i % 2 === 0 ? "#FFFFFF" : "#FAFAFA",
+                    }}>
+                      <td style={{ padding: "11px 12px", textAlign: "center" }}>
+                        <span style={{
+                          width: 20, height: 20, borderRadius: "50%",
+                          background: "#FFF7ED", color: "#E8500A",
+                          fontSize: 10, fontWeight: 700, display: "inline-flex",
+                          alignItems: "center", justifyContent: "center",
+                        }}>{i + 1}</span>
                       </td>
-                      <td style={{ padding: "8px 10px" }}>
-                        <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "11px" }}>
-                          {item.name || item.title || "Product Item"}
-                        </div>
-                        {item.seller_name && (
-                          <div style={{ fontSize: "8.5px", color: "#94a3b8", marginTop: "2px" }}>
-                            Seller: <span style={{ fontWeight: 600, color: "#475569" }}>{item.seller_name}</span>
-                          </div>
-                        )}
+                      <td style={{ padding: "11px 12px" }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 600, color: "#111827", marginBottom: 2 }}>{p.name}</div>
                       </td>
-                      <td style={{ padding: "8px 10px", textAlign: "center", fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>
-                        {qty}
+                      <td style={{ padding: "11px 12px" }}>
+                        <span style={{
+                          fontSize: 10, color: "#6B7280", background: "#F3F4F6",
+                          padding: "2px 7px", borderRadius: 4, fontFamily: "monospace", whiteSpace: "nowrap",
+                        }}>{p.sku}</span>
                       </td>
-                      <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace" }}>
-                        {inr(unitPrice)}
+                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#374151" }}>{p.qty}</td>
+                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#374151", whiteSpace: "nowrap" }}>{fmt(p.unitPrice)}</td>
+                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#374151", whiteSpace: "nowrap" }}>
+                        {p.shipping > 0 ? fmt(p.shipping) : <span style={{ color: "#10B981", fontSize: 10, fontWeight: 600 }}>FREE</span>}
                       </td>
-                      <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: "#64748b" }}>
-                        {shippingNum === 0 ? "FREE" : inr(shippingNum / Math.max(1, items.length))}
+                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, color: p.discount > 0 ? "#10B981" : "#9CA3AF", whiteSpace: "nowrap" }}>
+                        {p.discount > 0 ? `−${fmt(p.discount)}` : "—"}
                       </td>
-                      <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", fontWeight: 800, color: "#0f172a" }}>
-                        {inr(lineTotal)}
+                      <td style={{ padding: "11px 12px", textAlign: "right" }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#111827", whiteSpace: "nowrap" }}>{fmt(total)}</span>
                       </td>
                     </tr>
                   );
@@ -372,77 +482,154 @@ export function InvoiceTemplate({ order }: OrderInvoiceProps) {
           </div>
         </div>
 
-        {/* BOTTOM CONTENT WRAPPER (SUMMARY & DECLARATION) */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "24px" }}>
-            
-            {/* DECLARATION & TERMS */}
-            <div style={{ flex: 1, fontSize: "9px", color: "#64748b", display: "flex", flexDirection: "column", gap: "4px" }}>
-              <div style={{ fontWeight: 800, color: "#1e293b", textTransform: "uppercase", fontSize: "9.5px", letterSpacing: "0.5px" }}>
-                Declaration & Terms:
-              </div>
-              <div style={{ lineHeight: "1.3" }}>
-                This is a computer-generated tax invoice issued by Egnaro Mart Marketplace under the Information Technology Act.
-              </div>
-              <div style={{ lineHeight: "1.3" }}>
-                Goods once sold are covered under Egnaro Mart Marketplace Protection policy. Manufacturer warranties apply.
-              </div>
+        {/* ── FINANCIAL SUMMARY ───────────────────────────────────────────────── */}
+        <div style={{ padding: "0 36px 16px", display: "flex", justifyContent: "flex-end" }}>
+          <div style={{
+            width: 300, background: "#FFFFFF", border: "1px solid #F3F4F6",
+            borderRadius: 12, overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}>
+            {/* Header */}
+            <div style={{
+              background: "#F9FAFB", padding: "10px 16px", borderBottom: "1px solid #F3F4F6",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <div style={{ width: 3, height: 14, background: "#E8500A", borderRadius: 2 }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Payment Summary
+              </span>
             </div>
 
-            {/* FINANCIAL SUMMARY BOX */}
-            <div
-              style={{
-                width: "240px",
-                border: "1px solid #cbd5e1",
-                backgroundColor: "#f8fafc",
-                borderRadius: "10px",
-                padding: "10px 14px",
-                fontSize: "11px",
-                boxSizing: "border-box",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
-                <span>Subtotal</span>
-                <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{inr(subtotalNum)}</span>
+            <div style={{ padding: "12px 16px" }}>
+              {[
+                { label: "Subtotal",          value: fmt(summary.subtotal),  color: "#374151", bold: false },
+                { label: "Shipping Charges",  value: fmt(summary.shipping),  color: "#374151", bold: false },
+                { label: "Total Discount",    value: `−${fmt(summary.discount)}`, color: "#10B981", bold: false },
+              ].map(({ label, value, color, bold }) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color: "#6B7280" }}>{label}</span>
+                  <span style={{ fontSize: 11, color, fontWeight: bold ? 700 : 500 }}>{value}</span>
+                </div>
+              ))}
+
+              <div style={{ height: 1, background: "#F3F4F6", margin: "10px 0" }} />
+
+              {/* Grand total */}
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                background: "linear-gradient(135deg, #FFF7ED, #FEF2F2)",
+                border: "1px solid #FED7AA", borderRadius: 8, padding: "10px 12px",
+              }}>
+                <div>
+                  <div style={{ fontSize: 10, color: "#9A3412", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Grand Total</div>
+                  <div style={{ fontSize: 9.5, color: "#C2410C", marginTop: 1 }}>Inclusive of all taxes</div>
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#E8500A" }}>{fmt(summary.grand)}</div>
               </div>
-              {discountNum > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#047857", fontWeight: 600 }}>
-                  <span>Discount</span>
-                  <span style={{ fontFamily: "monospace" }}>-{inr(discountNum)}</span>
+
+              {/* Paid stamp */}
+              {data.paymentStatus === "Paid" && (
+                <div style={{
+                  marginTop: 10, textAlign: "center", padding: "7px",
+                  background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 8,
+                }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#065F46" }}>✓ Payment Received — Thank You!</span>
                 </div>
               )}
-              <div style={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
-                <span>Shipping Charges</span>
-                <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>
-                  {shippingNum === 0 ? "FREE" : inr(shippingNum)}
-                </span>
-              </div>
-              <div
-                style={{
-                  borderTop: "2px solid #0f172a",
-                  paddingTop: "6px",
-                  marginTop: "2px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  fontWeight: 900,
-                  color: "#0f172a",
-                }}
-              >
-                <span>Grand Total</span>
-                <span style={{ fontFamily: "monospace", fontSize: "14px", color: "#c2410c" }}>{inr(totalNum)}</span>
-              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── TERMS & DISCLAIMER ──────────────────────────────────────────────── */}
+        <div style={{ padding: "0 36px 16px" }}>
+          <div style={{
+            background: "#F9FAFB", border: "1px solid #F3F4F6", borderRadius: 10, padding: "12px 16px",
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7 }}>
+              Terms & Conditions
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 24px" }}>
+              {[
+                "This is a computer-generated invoice and does not require a physical signature.",
+                "Goods once sold will only be taken back per the platform's return & refund policy.",
+                "For disputes or queries, contact support within 7 days of delivery.",
+                "All prices are inclusive of applicable GST as per Indian tax regulations.",
+                "Egnaro Mart acts as a marketplace facilitator and is not directly liable for product quality.",
+                "The seller is solely responsible for product authenticity, warranty, and after-sales support.",
+              ].map((term) => (
+                <div key={term} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                  <span style={{ color: "#E8500A", fontSize: 9, marginTop: 2, flexShrink: 0 }}>▸</span>
+                  <span style={{ fontSize: 9.5, color: "#6B7280", lineHeight: 1.5 }}>{term}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── FOOTER ─────────────────────────────────────────────────────────── */}
+        <div style={{ marginTop: "auto" }}>
+          {/* Support band */}
+          <div style={{
+            padding: "10px 36px", borderTop: "1px solid #F3F4F6", borderBottom: "1px solid #F3F4F6",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            background: "#FAFAFA",
+          }}>
+            <span style={{ fontSize: 10, color: "#6B7280" }}>
+              Support: <strong style={{ color: "#111827" }}>egnaromart@gmail.com</strong>
+            </span>
+            <span style={{ fontSize: 10, color: "#6B7280" }}>
+              Phone: <strong style={{ color: "#111827" }}>9442581506</strong>
+            </span>
+            <span style={{ fontSize: 10, color: "#6B7280" }}>
+              Web: <strong style={{ color: "#E8500A" }}>egnaromart.com</strong>
+            </span>
+          </div>
+
+          {/* Trust badges */}
+          <div style={{ padding: "12px 36px", background: "#FFFFFF" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 0, borderTop: "1px solid #F3F4F6", paddingTop: 12 }}>
+              {[
+                { icon: "✔", label: "Verified Sellers",    color: "#16A34A" },
+                { icon: "★", label: "Genuine Products",    color: "#F59E0B" },
+                { icon: "🚚", label: "Fast & Reliable Delivery", color: "#E8500A" },
+                { icon: "🔒", label: "Secure Payments",    color: "#3B82F6" },
+                { icon: "🎧", label: "Dedicated Support",  color: "#8B5CF6" },
+              ].map(({ icon, label, color }, i) => (
+                <div key={label} style={{
+                  flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                  padding: "0 12px",
+                  borderLeft: i > 0 ? "1px solid #F3F4F6" : "none",
+                }}>
+                  <span style={{ fontSize: 16, color }}>{icon}</span>
+                  <span style={{ fontSize: 9, color: "#6B7280", fontWeight: 500, textAlign: "center", lineHeight: 1.3 }}>{label}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div style={{ textAlign: "center", fontSize: "9px", color: "#94a3b8", fontFamily: "monospace", marginTop: "16px" }}>
-            Thank you for shopping on Egnaro Mart — India's Premium B2B & Retail Marketplace!
+          {/* Bottom color bar */}
+          <div style={{ display: "flex", height: 6 }}>
+            <div style={{ flex: 1, background: "#16A34A" }} />
+            <div style={{ flex: 1, background: "#F59E0B" }} />
+            <div style={{ flex: 1, background: "#E8500A" }} />
           </div>
         </div>
+
       </div>
-    </div>
+      {/* end invoice-page */}
+    </>
   );
+};
+
+export type OrderInvoiceProps = {
+  order?: any;
+  data?: InvoiceData;
+};
+
+export function InvoiceTemplate({ order, data }: OrderInvoiceProps) {
+  const resolvedData = data || mapOrderToInvoiceData(order);
+  return <EgnaroMartInvoice data={resolvedData} />;
 }
+
+export default EgnaroMartInvoice;
+export type { InvoiceData, Product };
