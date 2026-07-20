@@ -1,4 +1,5 @@
 import React from "react";
+import invoiceLogo from "@/assets/invoice-logo.png";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -294,52 +295,39 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = sam
         <div style={{ height: 5, background: "linear-gradient(90deg, #E8500A 0%, #F59E0B 50%, #16A34A 100%)" }} />
 
         {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-        <div style={{ padding: "28px 36px 22px", borderBottom: "1px solid #F3F4F6" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ padding: "24px 36px 20px", borderBottom: "1px solid #F3F4F6" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 
-            {/* Logo + Tagline */}
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                {/* Brand mark — orange circle with leaf */}
-                <div style={{
-                  width: 44, height: 44, borderRadius: "50%",
-                  background: "radial-gradient(circle at 35% 32%, #FFD6A3 0%, #FFB347 18%, #FF8A00 45%, #E8500A 100%)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 3px 10px rgba(232,80,10,0.3)",
-                  position: "relative", flexShrink: 0,
-                }}>
-                  <div style={{
-                    position: "absolute", top: -3, left: "50%",
-                    width: 12, height: 8, borderRadius: "50%",
-                    background: "linear-gradient(135deg, #86EFAC, #16A34A)",
-                    transform: "translateX(-50%) rotate(-12deg)",
-                  }} />
-                  <span style={{ fontSize: 18, color: "white", fontWeight: 800, letterSpacing: -1, marginTop: 4 }}>e</span>
-                </div>
-                <div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-                    <span style={{ fontSize: 22, fontWeight: 800, color: "#16A34A", letterSpacing: -0.5 }}>egnaro</span>
-                    <span style={{ fontSize: 22, fontWeight: 800, color: "#374151", letterSpacing: -0.5 }}>MART</span>
-                  </div>
-                  <div style={{ fontSize: 10.5, color: "#9CA3AF", fontWeight: 500, marginTop: -2, letterSpacing: "0.04em" }}>
-                    Powering Better Living.
-                  </div>
-                </div>
+            {/* Logo + Contact Info */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <img
+                  src={invoiceLogo}
+                  alt="Egnaro Mart Logo"
+                  style={{
+                    height: "54px",
+                    width: "auto",
+                    maxHeight: "60px",
+                    maxWidth: "260px",
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
               </div>
 
               {/* Contact row */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 10 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 4 }}>
                 {[
                   { icon: "🌐", val: "egnaromart.com" },
                   { icon: "✉️", val: "egnaromart@gmail.com" },
-                  { icon: "📞", val: "9442581506" },
+                  { icon: "📞", val: "+91 9442581506" },
                 ].map(({ icon, val }) => (
-                  <span key={val} style={{ fontSize: 10.5, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}>
+                  <span key={val} style={{ fontSize: 10.5, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
                     <span>{icon}</span>{val}
                   </span>
                 ))}
               </div>
-              <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 4 }}>
+              <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 2 }}>
                 No: 2A, Venkatesh Nagar, Sarkarsamakulam, Kovilpalayam, Coimbatore – 641107 TN
               </div>
             </div>
@@ -516,7 +504,7 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = sam
 
               {/* Grand total */}
               <div style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
+                display: "flex", justifyContent: "space-between", items: "center",
                 background: "linear-gradient(135deg, #FFF7ED, #FEF2F2)",
                 border: "1px solid #FED7AA", borderRadius: 8, padding: "10px 12px",
               }}>
@@ -578,7 +566,7 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = sam
               Support: <strong style={{ color: "#111827" }}>egnaromart@gmail.com</strong>
             </span>
             <span style={{ fontSize: 10, color: "#6B7280" }}>
-              Phone: <strong style={{ color: "#111827" }}>9442581506</strong>
+              Phone: <strong style={{ color: "#111827" }}>+91 9442581506</strong>
             </span>
             <span style={{ fontSize: 10, color: "#6B7280" }}>
               Web: <strong style={{ color: "#E8500A" }}>egnaromart.com</strong>
