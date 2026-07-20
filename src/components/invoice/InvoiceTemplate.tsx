@@ -36,42 +36,37 @@ interface InvoiceData {
   products: Product[];
 }
 
-// ─── Sample Data ──────────────────────────────────────────────────────────────
-const sampleInvoiceData: InvoiceData = {
-  invoiceNumber: "INV-2026-00842",
-  orderId: "EM-ORD-20260703-5591",
-  invoiceDate: "03 July 2026",
-  dueDate: "03 July 2026",
-  paymentMethod: "UPI — GPay",
-  paymentStatus: "Paid",
-  orderStatus: "Delivered",
+// ─── Default Empty Production Data ────────────────────────────────────────────
+const defaultEmptyInvoiceData: InvoiceData = {
+  invoiceNumber: "INV-0000",
+  orderId: "N/A",
+  invoiceDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+  dueDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+  paymentMethod: "COD",
+  paymentStatus: "Pending",
+  orderStatus: "Processing",
   seller: {
-    name: "Rajesh Kumar",
-    company: "Ansel Power Systems Pvt. Ltd.",
-    gst: "33AABCA1234F1ZX",
-    address: "No: 2A, Venkatesh Nagar, Sarkarsamakulam, Kovilpalayam, Coimbatore – 641107, Tamil Nadu",
-    email: "seller@anselpower.com",
-    phone: "+91 98765 43210",
+    name: "Egnaro Mart Seller",
+    company: "Egnaro Mart Marketplace",
+    gst: "N/A",
+    address: "No: 2A, Venkatesh Nagar, Kovilpalayam, Coimbatore – 641107, Tamil Nadu",
+    email: "egnaromart@gmail.com",
+    phone: "+91 9442581506",
   },
   buyer: {
-    name: "Arjun Mehta",
-    address: "12B, Brigade Gateway, Rajajinagar, Bengaluru – 560010, Karnataka",
-    phone: "+91 98400 12345",
-    email: "arjun.mehta@email.com",
+    name: "Valued Customer",
+    address: "Delivery Address Provided at Checkout",
+    phone: "N/A",
+    email: "N/A",
   },
-  products: [
-    { name: "Industrial Motor Pump 2HP — Single Phase", sku: "EM-MP-2HP-SP", qty: 1, unitPrice: 8499, shipping: 199, discount: 500 },
-    { name: "Heavy Duty Extension Cable 25M — 6A", sku: "EM-EC-25M-6A", qty: 2, unitPrice: 1249, shipping: 0, discount: 100 },
-    { name: "Circuit Breaker MCB 32A — Double Pole", sku: "EM-CB-32A-DP", qty: 3, unitPrice: 649, shipping: 0, discount: 0 },
-    { name: "LED Flood Light 50W — Warm White IP65", sku: "EM-FL-50W-WW", qty: 1, unitPrice: 1899, shipping: 99, discount: 200 },
-  ],
+  products: [],
 };
 
 // ─── Database Order Mapper ──────────────────────────────────────────────────
 export function mapOrderToInvoiceData(order: any): InvoiceData {
-  if (!order) return sampleInvoiceData;
+  if (!order) return defaultEmptyInvoiceData;
 
-  const rawOrderId = order.order_id || String(order.id || "2026");
+  const rawOrderId = order.order_id || String(order.id || "0000");
   const invoiceNumber = `INV-${rawOrderId.replace(/^ORD-/, "").replace(/^EM-ORD-/, "")}`;
   
   const invoiceDate = order.created_at
@@ -242,7 +237,7 @@ const SectionCard: React.FC<{ title: string; children: React.ReactNode; accent?:
 );
 
 // ─── Main Invoice Component ───────────────────────────────────────────────────
-export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = sampleInvoiceData }) => {
+export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = defaultEmptyInvoiceData }) => {
   const summary = calcSummary(data.products);
 
   const paymentColor = data.paymentStatus === "Paid" ? "green" : data.paymentStatus === "Pending" ? "amber" : "red";
@@ -504,7 +499,7 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = sam
 
               {/* Grand total */}
               <div style={{
-                display: "flex", justifyContent: "space-between", items: "center",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
                 background: "linear-gradient(135deg, #FFF7ED, #FEF2F2)",
                 border: "1px solid #FED7AA", borderRadius: 8, padding: "10px 12px",
               }}>
