@@ -1,8 +1,12 @@
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { X, Download, Eye, FileText } from "lucide-react";
 import { InvoiceTemplate, type OrderInvoiceProps } from "./InvoiceTemplate";
 import { generateAndDownloadPDF } from "@/lib/invoice-generator";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type InvoiceModalProps = OrderInvoiceProps & {
   isOpen: boolean;
@@ -11,33 +15,6 @@ type InvoiceModalProps = OrderInvoiceProps & {
 
 export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
   const [downloading, setDownloading] = useState(false);
-
-  // 1. Clean Body Overflow & Event Listener Management
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    const originalPointerEvents = document.body.style.pointerEvents;
-
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    // CLEANUP ON UNMOUNT OR MODAL CLOSE
-    return () => {
-      document.body.style.overflow = originalOverflow || "";
-      document.body.style.pointerEvents = originalPointerEvents || "";
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
 
   const orderId = order?.order_id || String(order?.id || "Order");
 
@@ -50,31 +27,22 @@ export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
     }
   };
 
-  const modalContent = (
-    <div
-      tabIndex={-1}
-      aria-modal="true"
-      role="dialog"
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-3 sm:p-6 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      {/* MODAL WINDOW */}
-      <div className="relative flex flex-col w-full max-w-4xl h-[92vh] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto">
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-4xl h-[92vh] flex flex-col p-0 gap-0 bg-slate-900 border-slate-800 overflow-hidden [&>button]:hidden">
         {/* MODAL HEADER */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/80">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/80 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <DialogTitle className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <span>Tax Invoice Preview</span>
                 <span className="text-xs font-mono font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
                   #{orderId}
                 </span>
-              </h3>
+              </DialogTitle>
               <p className="text-[11px] text-slate-400">
                 Official Egnaro Mart Letterhead Tax Invoice
               </p>
@@ -106,11 +74,9 @@ export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
             <InvoiceTemplate order={order} />
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-
-  return createPortal(modalContent, document.body);
 }
 
 export function InvoicePreviewButton({ order }: { order: any }) {

@@ -78,8 +78,7 @@ export async function generateAndDownloadPDF(
         backgroundColor: "#ffffff",
         scrollX: 0,
         scrollY: 0,
-        windowWidth: 794,
-        windowHeight: 1123,
+        // Removed windowWidth and windowHeight to prevent html2canvas from mutating global viewport dimensions
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
@@ -108,6 +107,12 @@ export async function generateAndDownloadPDF(
 
     // Restore body pointer events and overflow
     document.body.style.pointerEvents = "";
+    
+    // Explicitly restore any viewport mutations made by html2canvas
+    document.documentElement.style.width = "";
+    document.documentElement.style.height = "";
+    document.body.style.width = "";
+    document.body.style.height = "";
   }
 }
 

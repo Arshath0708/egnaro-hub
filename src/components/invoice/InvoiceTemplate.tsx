@@ -245,17 +245,15 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
 
   return (
     <>
-      {/* ── Global Print Styles ── */}
+      {/* ── Scoped Print Styles ── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
+        .invoice-page, .invoice-page * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: #F1F5F9;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
         }
 
         .invoice-page {
@@ -266,6 +264,8 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
           border-radius: 0;
           overflow: hidden;
           box-shadow: none;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         @media print {
@@ -280,7 +280,7 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
           .no-print { display: none !important; }
         }
 
-        table { border-collapse: collapse; width: 100%; }
+        .invoice-page table { border-collapse: collapse; width: 100%; }
       `}</style>
 
       {/* ══ INVOICE PAGE ══════════════════════════════════════════════════════ */}
