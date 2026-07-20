@@ -18,6 +18,7 @@ import {
   Clock3,
   Lock,
   LogIn,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { clearUserSession } from "@/lib/session";
@@ -31,6 +32,8 @@ import { sanitizeInput } from "@/lib/validation";
 import { queryKeys } from "@/lib/query-keys";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { handleImageError } from "@/lib/utils";
+import { InvoiceTemplate } from "@/components/invoice/InvoiceTemplate";
+import { downloadInvoicePDF } from "@/lib/invoice-generator";
 
 const STEPS: {
   id: OrderStatus;
@@ -528,14 +531,29 @@ const OrderDetails = memo(function OrderDetails({
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-background p-3 sm:p-4">
-            <div className="text-[10px] sm:text-xs text-muted-foreground">
-              Total Invoice Amount
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-lg border border-border bg-background p-3 sm:p-4 text-right">
+              <div className="text-[10px] sm:text-xs text-muted-foreground">
+                Total Invoice Amount
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-primary">
+                {inr(order.total || 0)}
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-primary">
-              {inr(order.total || 0)}
-            </div>
+
+            <button
+              onClick={() => downloadInvoicePDF(order.order_id || String(order.id))}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-primary-foreground hover:bg-primary-hover transition-all cursor-pointer shadow-md shadow-primary/20"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download Invoice (PDF)</span>
+            </button>
           </div>
+        </div>
+
+        {/* Hidden Printable Invoice for PDF Download */}
+        <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
+          <InvoiceTemplate order={order} />
         </div>
       </div>
 

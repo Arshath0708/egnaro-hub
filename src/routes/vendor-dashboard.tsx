@@ -30,9 +30,12 @@ import {
   Calendar,
   MessageSquare,
   ShieldAlert,
+  Download,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/Shell";
+import { InvoiceTemplate } from "@/components/invoice/InvoiceTemplate";
+import { downloadInvoicePDF } from "@/lib/invoice-generator";
 import { ViewProductModal } from "@/modals/ViewProductModal";
 import { UpdateProductModal } from "@/modals/UpdateProductModal";
 import { DeleteProductModal } from "@/modals/DeleteProductModal";
@@ -1212,6 +1215,14 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => downloadInvoicePDF(order.order_id || String(order.id), `printable-invoice-vendor-${order.id}`)}
+                  className="inline-flex items-center gap-1 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-cyan-300 hover:bg-cyan-500/20 transition cursor-pointer"
+                >
+                  <Download className="h-3 w-3" />
+                  <span>Download Invoice</span>
+                </button>
                 {order.label_url && (
                   <a
                     href={order.label_url}
@@ -1263,12 +1274,28 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
               
               <button
                 type="button"
+                onClick={() => downloadInvoicePDF(order.order_id || String(order.id), `printable-invoice-vendor-${order.id}`)}
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <Download className="h-4 w-4 text-cyan-400" />
+                <span>Invoice PDF</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => onManageOrder(order)}
                 className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:scale-105 shadow-lg shadow-cyan-500/20 cursor-pointer select-none"
               >
                 {order.awb_code ? "View Logistics" : "Ship Package"}
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Hidden Printable Invoice node */}
+        <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
+          <div id={`printable-invoice-vendor-${order.id}`}>
+            <InvoiceTemplate order={order} />
           </div>
         </div>
       </div>

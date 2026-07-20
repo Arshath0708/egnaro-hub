@@ -14,7 +14,7 @@ const API = import.meta.env.VITE_API_URL || "/api";
 type Step = "login" | "forgot-email" | "forgot-otp" | "forgot-newpw";
 
 export default function Login() {
-  useDocumentMetadata("Customer Login", "Log in to your Egnaro Mart account to track your orders, view vendor profiles, and manage saved shipping addresses.");
+  useDocumentMetadata("Buyer Login", "Log in to your Egnaro Mart buyer account to track your orders, view vendor profiles, and manage saved shipping addresses.");
 
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState<Step>(

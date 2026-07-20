@@ -1,9 +1,9 @@
 <?php
 
 $servername = "localhost";
-$username = "root";
-$password = "root";
-$dbname = "egnaromart";
+$username = "pnxyadoh_egnaro_admin";
+$password = "Kvikw,~BTpLN";
+$dbname = "pnxyadoh_egnaro_backend";
 define('SHIPROCKET_EMAIL','egnaroapi@gmail.com');
 define('SHIPROCKET_PASSWORD','UR$J&&^D0DhDQAfmr#iwPMgW4xih3V^o');
 define("SHIPROCKET_WEBHOOK_TOKEN","EGNARO_2026_9kF4Lx8PwQ2MnV7RsJc6TaY1HzUd53Be");

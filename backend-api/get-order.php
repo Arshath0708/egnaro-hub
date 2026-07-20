@@ -25,30 +25,78 @@ if (!function_exists('getallheaders')) {
     }
 }
 
-// ── HELPER: parse items JSON and enrich with product image ──
+// ── HELPER: parse items JSON and enrich with product image & seller info ──
 function enrichItems($conn, $items_json) {
     $items = json_decode($items_json, true);
     if (!is_array($items)) return [];
 
     foreach ($items as &$item) {
-        if (empty($item['image']) && !empty($item['product_id'])) {
+        if (!empty($item['product_id'])) {
             $pid  = intval($item['product_id']);
-            $stmt = $conn->prepare("SELECT image FROM products WHERE id = ? LIMIT 1");
+            $stmt = $conn->prepare("SELECT p.image, p.vendor_id, v.vendor_name, v.company_name, v.gst, v.phone as seller_phone, v.email as seller_email, v.address as seller_address, v.city as seller_city, v.state as seller_state, v.town as seller_town FROM products p LEFT JOIN vendors v ON p.vendor_id = v.id WHERE p.id = ? LIMIT 1");
             $stmt->bind_param("i", $pid);
             $stmt->execute();
             $row = $stmt->get_result()->fetch_assoc();
-            $item['image'] = $row['image'] ?? '';
+            if ($row) {
+                if (empty($item['image'])) $item['image'] = $row['image'] ?? '';
+                $item['vendor_id'] = $row['vendor_id'] ? intval($row['vendor_id']) : null;
+                $item['seller_name'] = $row['vendor_name'] ?: "Egnaro Mart";
+                $item['company_name'] = $row['company_name'] ?: "Egnaro Mart Marketplace";
+                $item['gst'] = $row['gst'] ?: null;
+                $item['seller_phone'] = $row['seller_phone'] ?: "+91 9442581506";
+                $item['seller_email'] = $row['seller_email'] ?: "egnaromart@gmail.com";
+                $seller_addr_parts = array_filter([$row['seller_address'], $row['seller_town'], $row['seller_city'], $row['seller_state']]);
+                $item['seller_address'] = !empty($seller_addr_parts) ? implode(", ", $seller_addr_parts) : "2A, Venkatesh Nagar, Kovilpalayam, Coimbatore, Tamil Nadu - 641107";
+            }
+            $stmt->close();
         }
     }
     return $items;
 }
 
-// ── HELPER: format single order and attach shipments ──
+// ── HELPER: format single order and attach shipments & seller ──
 function formatOrder($conn, $order) {
     $order['id']      = intval($order['id'] ?? 0);
-    $order['total']   = floatval($order['total']);
+    $order['total']   = floatval($order['total'] ?? 0);
+    $order['subtotal'] = floatval($order['subtotal'] ?? 0);
+    $order['discount'] = floatval($order['discount'] ?? 0);
+    $order['shipping_charges'] = floatval($order['shipping_charges'] ?? 0);
     $order['user_id'] = intval($order['user_id'] ?? 0);
     $order['items']   = enrichItems($conn, $order['items'] ?? '[]');
+
+    // Attach top-level seller details
+    $first_item = !empty($order['items']) ? $order['items'][0] : null;
+    $order_vendor_id = !empty($order['vendor_id']) ? intval($order['vendor_id']) : ($first_item ? ($first_item['vendor_id'] ?? null) : null);
+    
+    if ($order_vendor_id) {
+        $v_stmt = $conn->prepare("SELECT vendor_name, company_name, gst, phone, email, address, town, city, state FROM vendors WHERE id = ? LIMIT 1");
+        $v_stmt->bind_param("i", $order_vendor_id);
+        $v_stmt->execute();
+        $v_row = $v_stmt->get_result()->fetch_assoc();
+        $v_stmt->close();
+        if ($v_row) {
+            $addr_parts = array_filter([$v_row['address'], $v_row['town'], $v_row['city'], $v_row['state']]);
+            $order['seller'] = [
+                'name' => $v_row['vendor_name'] ?: "Egnaro Mart",
+                'company_name' => $v_row['company_name'] ?: "Egnaro Mart Marketplace",
+                'gst' => $v_row['gst'] ?: null,
+                'phone' => $v_row['phone'] ?: "+91 9442581506",
+                'email' => $v_row['email'] ?: "egnaromart@gmail.com",
+                'address' => !empty($addr_parts) ? implode(", ", $addr_parts) : "2A, Venkatesh Nagar, Kovilpalayam, Coimbatore, Tamil Nadu - 641107"
+            ];
+        }
+    }
+    
+    if (empty($order['seller'])) {
+        $order['seller'] = [
+            'name' => $first_item['seller_name'] ?? "Egnaro Mart",
+            'company_name' => $first_item['company_name'] ?? "Egnaro Mart Marketplace",
+            'gst' => $first_item['gst'] ?? null,
+            'phone' => $first_item['seller_phone'] ?? "+91 9442581506",
+            'email' => $first_item['seller_email'] ?? "egnaromart@gmail.com",
+            'address' => $first_item['seller_address'] ?? "2A, Venkatesh Nagar, Kovilpalayam, Coimbatore, Tamil Nadu - 641107"
+        ];
+    }
     
     // Fetch split shipments for this order if ID exists
     if ($order['id'] > 0) {

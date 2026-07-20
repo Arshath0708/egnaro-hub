@@ -183,7 +183,7 @@ export default function VendorRegister() {
       setNewPw("");
       setConfirmPw("");
     }
-  }, [resetStep, hasFetchedStatus]);
+  }, [resetStep, hasFetchedStatus, forgotMode]);
 
   async function handleRequestReset(e: React.FormEvent) {
     e.preventDefault();
@@ -389,7 +389,7 @@ export default function VendorRegister() {
       <div className="mx-auto max-w-2xl px-4 py-14">
         <div className="mb-8 text-center">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
-            {mode === "register" ? "Become a Vendor" : forgotMode ? "Reset Password" : "Vendor Login"}
+            {mode === "register" ? "Become a Seller" : forgotMode ? "Reset Password" : "Seller Login"}
           </h1>
           <p className="mt-2 text-gray-400">Join India's marketplace for electronics &amp; industrial goods.</p>
         </div>
@@ -408,7 +408,7 @@ export default function VendorRegister() {
                 onClick={() => setMode("login")}
                 className={`flex-1 rounded-lg py-2.5 text-sm font-semibold ${mode === "login" ? "gradient-primary text-white" : "bg-slate-800 text-gray-300"}`}
               >
-                Login
+                Seller Login
               </button>
             </div>
           )}

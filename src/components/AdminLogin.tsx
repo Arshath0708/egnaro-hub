@@ -317,7 +317,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
       const data = await res.json();
       if (data.success) {
         loginAdmin(data.admin);
-        toast.success(`Welcome ${data.admin.name}`);
+        toast.success(`Welcome`);
       } else {
         toast.error(data.message || "Invalid credentials");
       }

@@ -885,7 +885,7 @@ export default function MyAccount() {
                             className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-white/5 bg-white/5 text-xs text-slate-500 outline-none"
                           />
                         </div>
-                        <span className="block text-[9px] text-slate-600 mt-2">* User login email identifier cannot be altered for security purposes.</span>
+                        <span className="block text-[9px] text-slate-600 mt-2">* Buyer login email identifier cannot be altered for security purposes.</span>
                       </div>
 
                       <button
