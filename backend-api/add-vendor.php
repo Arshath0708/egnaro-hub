@@ -37,27 +37,31 @@ if (
             exit;
         }
 
+        // GST is optional — store NULL when not provided
+        $gst = !empty($data->gst) ? trim($data->gst) : null;
+
         // Insert new vendor application in pending state
-        $query = "INSERT INTO vendors 
-            (vendor_name, company_name, phone, email, password, address, state, city, town, status, created_at) 
-            VALUES 
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
-            
+        $query = "INSERT INTO vendors
+            (vendor_name, company_name, gst, phone, email, password, address, state, city, town, status, created_at)
+            VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
+
         $stmt = $conn->prepare($query);
-        
+
         // Secure password hashing
         $hashed_password = password_hash($data->password, PASSWORD_BCRYPT);
-        
+
         $stmt->bind_param(
-            "sssssssss", 
-            $data->vendor_name, 
-            $data->company_name, 
-            $data->phone, 
-            $data->email, 
-            $hashed_password, 
-            $data->address, 
-            $data->state, 
-            $data->city, 
+            "ssssssssss",
+            $data->vendor_name,
+            $data->company_name,
+            $gst,
+            $data->phone,
+            $data->email,
+            $hashed_password,
+            $data->address,
+            $data->state,
+            $data->city,
             $data->town
         );
         

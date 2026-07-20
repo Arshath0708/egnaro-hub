@@ -14,6 +14,7 @@ const API = import.meta.env.VITE_API_URL || "/api";
 type RegisterForm = {
   vendor_name: string;
   company_name: string;
+  gst: string;
   phone: string;
   email: string;
   password: string;
@@ -28,7 +29,7 @@ type RegisterForm = {
 type LoginForm = { email: string; password: string };
 
 const EMPTY_REGISTER: RegisterForm = {
-  vendor_name: "", company_name: "", phone: "", email: "",
+  vendor_name: "", company_name: "", gst: "", phone: "", email: "",
   password: "", address: "", state: "", city: "", town: "", bank_name: "", account_number: "", ifsc_code: "",
 };
 const EMPTY_LOGIN: LoginForm = { email: "", password: "" };
@@ -303,6 +304,7 @@ export default function VendorRegister() {
         ...form,
         vendor_name: cleanVendorName,
         company_name: cleanCompanyName,
+        gst: sanitizeInput(form.gst).trim(),
         email: cleanEmail,
         address: cleanAddress,
         state: finalState,
@@ -452,6 +454,11 @@ export default function VendorRegister() {
                   <label className="mb-1 block text-xs font-medium text-gray-400">IFSC Code</label>
                   <input required placeholder="e.g. HDFC0001234" className={inp}
                     value={form.ifsc_code} onChange={(e) => setRegField("ifsc_code", e.target.value)} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">GST Number (Optional)</label>
+                  <input placeholder="Business GST (If applicable)" maxLength={15} className={inp}
+                    value={form.gst} onChange={(e) => setRegField("gst", e.target.value.toUpperCase())} />
                 </div>
               </div>
               <div>

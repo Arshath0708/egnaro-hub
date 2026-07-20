@@ -94,6 +94,15 @@ export function Footer() {
                 </a>
               </li>
               <li className="flex items-start gap-2">
+                <Phone className="h-4 w-4 mt-0.5 text-primary" />
+                <a
+                  href="tel:+918825632992"
+                  className="hover:text-slate-100 transition-colors"
+                >
+                  +91 8825632992
+                </a>
+              </li>
+              <li className="flex items-start gap-2">
                 <Mail className="h-4 w-4 mt-0.5 text-primary" />
                 <a
                   href="mailto:egnaromart@gmail.com"

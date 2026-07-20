@@ -1188,6 +1188,10 @@ function AdminPanel({
                         </TableHead>
 
                         <TableHead className="text-gray-400 py-4.5 font-bold tracking-wider">
+                          GST
+                        </TableHead>
+
+                        <TableHead className="text-gray-400 py-4.5 font-bold tracking-wider">
                           Status
                         </TableHead>
 
@@ -1201,7 +1205,7 @@ function AdminPanel({
                       {filteredVendors.filter((v) => Number(v.approved) === 1).length === 0 ? (
                         <TableRow className="border-white/5 hover:bg-transparent">
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="py-16 text-center text-gray-500 font-semibold"
                           >
                             No approved vendors found matching search criteria
@@ -1239,6 +1243,16 @@ function AdminPanel({
                                     📞 {vendor.phone}
                                   </span>
                                 </div>
+                              </TableCell>
+
+                              <TableCell>
+                                {vendor.gst ? (
+                                  <span className="font-mono text-xs text-gray-300 font-semibold">
+                                    {vendor.gst}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-600 font-semibold">—</span>
+                                )}
                               </TableCell>
 
                               <TableCell>
