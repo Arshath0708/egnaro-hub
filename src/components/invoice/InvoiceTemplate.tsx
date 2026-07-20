@@ -83,169 +83,285 @@ export function InvoiceTemplate({ order }: OrderInvoiceProps) {
 
   return (
     <div
-      id="printable-invoice"
-      className="printable-container relative box-border overflow-hidden bg-white text-slate-900 font-sans"
+      className="printable-invoice-page"
       style={{
+        position: "relative",
         width: "794px",
         height: "1123px",
-        backgroundImage: `url(${letterheadImg})`,
-        backgroundSize: "100% 100%",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        backgroundColor: "#ffffff",
         color: "#0f172a",
-        fontFamily: "Inter, Arial, Helvetica, sans-serif",
+        fontFamily: "'Inter', Arial, Helvetica, sans-serif",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        margin: "0 auto",
       }}
     >
-      {/* INNER CONTENT CONTAINER POSITIONED EXACTLY BETWEEN LETTERHEAD HEADER & FOOTER */}
-      <div
-        className="flex flex-col justify-between box-border"
+      {/* 1. OFFICIAL LETTERHEAD BACKGROUND IMAGE */}
+      <img
+        src={letterheadImg}
+        alt="Egnaro Mart Letterhead"
         style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "794px",
+          height: "1123px",
+          objectFit: "fill",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
+      {/* 2. INNER CONTENT OVERLAY CONTAINER */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          width: "794px",
+          height: "1123px",
+          boxSizing: "border-box",
+          paddingTop: "215px",
+          paddingBottom: "140px",
           paddingLeft: "44px",
           paddingRight: "44px",
-          paddingTop: "215px",
-          paddingBottom: "135px",
-          height: "100%",
-          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
         }}
       >
-        {/* TOP CONTENT AREA */}
-        <div className="space-y-4">
-          {/* 1. INVOICE TITLE & METADATA BAR */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 shadow-sm">
-            <div className="flex justify-between items-center pb-2 mb-2 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 inline-block" />
-                <h2 className="text-xs font-black tracking-widest text-slate-900 uppercase">
+        {/* TOP CONTENT WRAPPER */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          
+          {/* SECTION A: TAX INVOICE METADATA BAR */}
+          <div
+            style={{
+              border: "1px solid #cbd5e1",
+              backgroundColor: "rgba(248, 250, 252, 0.95)",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: "8px",
+                marginBottom: "8px",
+                borderBottom: "1px solid #e2e8f0",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    backgroundColor: "#047857",
+                    display: "inline-block",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 900,
+                    letterSpacing: "1px",
+                    color: "#0f172a",
+                    textTransform: "uppercase",
+                  }}
+                >
                   Tax Invoice / Bill of Supply
-                </h2>
+                </span>
               </div>
-              <div className="text-right">
-                <span className="text-[9px] font-bold text-slate-400 uppercase block">Invoice No.</span>
-                <span className="text-xs font-mono font-black text-emerald-700">{invoiceNo}</span>
+              <div style={{ textAlign: "right" }}>
+                <span style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>
+                  Invoice No.
+                </span>
+                <span style={{ fontSize: "12px", fontFamily: "monospace", fontWeight: 900, color: "#047857" }}>
+                  {invoiceNo}
+                </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-5 gap-2 text-[10px] text-slate-700">
-              <div>
-                <span className="text-slate-400 font-bold uppercase text-[8px] block">Order ID</span>
-                <span className="font-mono font-bold text-slate-900">{orderId}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-bold uppercase text-[8px] block">Date</span>
-                <span className="font-semibold text-slate-900">{createdDate}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-bold uppercase text-[8px] block">Payment Mode</span>
-                <span className="font-bold text-slate-900 uppercase">{order.payment_method || "COD"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-bold uppercase text-[8px] block">Payment Status</span>
-                <span
-                  className={`font-black uppercase text-[9px] px-1.5 py-0.5 rounded inline-block ${
-                    order.payment_status === "paid"
-                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                      : "bg-amber-100 text-amber-800 border border-amber-300"
-                  }`}
-                >
-                  {order.payment_status || (order.payment_method === "cod" ? "Pending" : "Paid")}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 font-bold uppercase text-[8px] block">Order Status</span>
-                <span className="font-bold text-slate-900 uppercase">{order.status || "Confirmed"}</span>
-              </div>
-            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: "20%" }}>
+                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Order ID</span>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>{orderId}</span>
+                  </td>
+                  <td style={{ width: "20%" }}>
+                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Date</span>
+                    <span style={{ fontWeight: 600, color: "#0f172a" }}>{createdDate}</span>
+                  </td>
+                  <td style={{ width: "20%" }}>
+                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Payment Mode</span>
+                    <span style={{ fontWeight: 700, color: "#0f172a", textTransform: "uppercase" }}>{order.payment_method || "COD"}</span>
+                  </td>
+                  <td style={{ width: "20%" }}>
+                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Payment Status</span>
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        display: "inline-block",
+                        backgroundColor: order.payment_status === "paid" ? "#d1fae5" : "#fef3c7",
+                        color: order.payment_status === "paid" ? "#065f46" : "#92400e",
+                        border: order.payment_status === "paid" ? "1px solid #6ee7b7" : "1px solid #fcd34d",
+                      }}
+                    >
+                      {order.payment_status || (order.payment_method === "cod" ? "Pending" : "Paid")}
+                    </span>
+                  </td>
+                  <td style={{ width: "20%" }}>
+                    <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", display: "block" }}>Order Status</span>
+                    <span style={{ fontWeight: 700, color: "#0f172a", textTransform: "uppercase" }}>{order.status || "Confirmed"}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          {/* 2. SELLER & BUYER INFORMATION BOXES */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* SELLER BOX */}
-            <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-3.5 space-y-1">
-              <div className="flex justify-between items-center border-b border-emerald-200/60 pb-1 mb-1.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-800">
+          {/* SECTION B: SELLER & BUYER INFORMATION BOXES */}
+          <div style={{ display: "flex", gap: "16px", width: "100%" }}>
+            
+            {/* SELLER DETAILS BOX */}
+            <div
+              style={{
+                flex: 1,
+                border: "1px solid #a7f3d0",
+                backgroundColor: "rgba(236, 253, 245, 0.5)",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingBottom: "6px",
+                  marginBottom: "6px",
+                  borderBottom: "1px solid #a7f3d0",
+                }}
+              >
+                <span style={{ fontSize: "9px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.5px", color: "#065f46" }}>
                   Seller / Supplier Details
                 </span>
-                <span className="text-[8px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                <span style={{ fontSize: "8px", fontWeight: 700, padding: "2px 6px", backgroundColor: "#d1fae5", color: "#065f46", borderRadius: "3px" }}>
                   Verified Seller
                 </span>
               </div>
-              <p className="font-black text-xs text-slate-900">{seller.name}</p>
-              <p className="text-[10.5px] font-bold text-slate-700">{seller.company_name}</p>
+              <div style={{ fontSize: "12px", fontWeight: 900, color: "#0f172a", marginBottom: "2px" }}>{seller.name}</div>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>{seller.company_name}</div>
               {seller.gst && (
-                <p className="text-[10px] font-mono font-bold text-orange-700">
+                <div style={{ fontSize: "10px", fontFamily: "monospace", fontWeight: 800, color: "#c2410c", marginBottom: "4px" }}>
                   GSTIN: {seller.gst}
-                </p>
+                </div>
               )}
-              <p className="text-[10px] text-slate-600 leading-tight pt-0.5">{seller.address}</p>
-              <div className="text-[9.5px] text-slate-500 pt-1 flex flex-wrap gap-x-2">
-                <span>Ph: {seller.phone}</span>
-                <span>•</span>
-                <span>Email: {seller.email}</span>
+              <div style={{ fontSize: "10px", color: "#475569", lineHeight: "1.3", marginBottom: "6px" }}>{seller.address}</div>
+              <div style={{ fontSize: "9.5px", color: "#64748b" }}>
+                <span>Ph: {seller.phone}</span> • <span>Email: {seller.email}</span>
               </div>
             </div>
 
-            {/* BUYER BOX */}
-            <div className="rounded-xl border border-orange-200/80 bg-orange-50/30 p-3.5 space-y-1">
-              <div className="border-b border-orange-200/60 pb-1 mb-1.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-orange-800">
+            {/* BUYER DETAILS BOX */}
+            <div
+              style={{
+                flex: 1,
+                border: "1px solid #fed7aa",
+                backgroundColor: "rgba(255, 247, 237, 0.5)",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  paddingBottom: "6px",
+                  marginBottom: "6px",
+                  borderBottom: "1px solid #fed7aa",
+                }}
+              >
+                <span style={{ fontSize: "9px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.5px", color: "#9a3412" }}>
                   Buyer Shipping & Billing Details
                 </span>
               </div>
-              <p className="font-black text-xs text-slate-900">
+              <div style={{ fontSize: "12px", fontWeight: 900, color: "#0f172a", marginBottom: "4px" }}>
                 {order.customer_name || "Valued Buyer"}
-              </p>
-              <p className="text-[10px] text-slate-700 leading-tight pt-0.5">
+              </div>
+              <div style={{ fontSize: "10px", color: "#334155", lineHeight: "1.3", marginBottom: "6px" }}>
                 {order.address || "Delivery Address Provided at Checkout"}
-              </p>
-              <div className="text-[9.5px] text-slate-500 pt-1 space-y-0.5">
-                {order.phone && <p>Ph: {order.phone}</p>}
-                {order.email && <p>Email: {order.email}</p>}
+              </div>
+              <div style={{ fontSize: "9.5px", color: "#64748b" }}>
+                {order.phone && <div>Ph: {order.phone}</div>}
+                {order.email && <div>Email: {order.email}</div>}
               </div>
             </div>
           </div>
 
-          {/* 3. PRODUCTS ORDERED TABLE */}
-          <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full text-left border-collapse text-[10.5px]">
+          {/* SECTION C: PRODUCTS ORDERED TABLE */}
+          <div
+            style={{
+              border: "1px solid #cbd5e1",
+              borderRadius: "10px",
+              overflow: "hidden",
+              boxSizing: "border-box",
+            }}
+          >
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10.5px", tableLayout: "fixed" }}>
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[8.5px] font-bold tracking-wider">
-                  <th className="py-2 px-3 text-center w-[5%]">#</th>
-                  <th className="py-2 px-3 w-[45%]">Product Description</th>
-                  <th className="py-2 px-3 text-center w-[8%]">Qty</th>
-                  <th className="py-2 px-3 text-right w-[14%]">Unit Price</th>
-                  <th className="py-2 px-3 text-right w-[13%]">Shipping</th>
-                  <th className="py-2 px-3 text-right w-[15%]">Line Total</th>
+                <tr style={{ backgroundColor: "#0f172a", color: "#ffffff", fontSize: "8.5px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <th style={{ padding: "8px 10px", textAlign: "center", width: "5%" }}>#</th>
+                  <th style={{ padding: "8px 10px", textAlign: "left", width: "45%" }}>Product Description</th>
+                  <th style={{ padding: "8px 10px", textAlign: "center", width: "8%" }}>Qty</th>
+                  <th style={{ padding: "8px 10px", textAlign: "right", width: "14%" }}>Unit Price</th>
+                  <th style={{ padding: "8px 10px", textAlign: "right", width: "13%" }}>Shipping</th>
+                  <th style={{ padding: "8px 10px", textAlign: "right", width: "15%" }}>Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 bg-white text-slate-800">
+              <tbody>
                 {items.map((item, idx) => {
                   const qty = item.quantity || item.qty || 1;
                   const unitPrice = Number(item.price) || 0;
                   const lineTotal = unitPrice * qty;
 
                   return (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
-                      <td className="py-2 px-3 text-center font-mono font-bold text-slate-400">
+                    <tr
+                      key={idx}
+                      style={{
+                        backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
+                        borderBottom: "1px solid #e2e8f0",
+                      }}
+                    >
+                      <td style={{ padding: "8px 10px", textAlign: "center", fontFamily: "monospace", fontWeight: 700, color: "#94a3b8" }}>
                         {idx + 1}
                       </td>
-                      <td className="py-2 px-3">
-                        <p className="font-bold text-slate-900 text-[11px]">
+                      <td style={{ padding: "8px 10px" }}>
+                        <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "11px" }}>
                           {item.name || item.title || "Product Item"}
-                        </p>
+                        </div>
                         {item.seller_name && (
-                          <p className="text-[8.5px] text-slate-400">
-                            Seller: <span className="font-semibold text-slate-600">{item.seller_name}</span>
-                          </p>
+                          <div style={{ fontSize: "8.5px", color: "#94a3b8", marginTop: "2px" }}>
+                            Seller: <span style={{ fontWeight: 600, color: "#475569" }}>{item.seller_name}</span>
+                          </div>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-center font-mono font-bold text-slate-900">
+                      <td style={{ padding: "8px 10px", textAlign: "center", fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>
                         {qty}
                       </td>
-                      <td className="py-2 px-3 text-right font-mono">{inr(unitPrice)}</td>
-                      <td className="py-2 px-3 text-right font-mono text-slate-500">
+                      <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace" }}>
+                        {inr(unitPrice)}
+                      </td>
+                      <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", color: "#64748b" }}>
                         {shippingNum === 0 ? "FREE" : inr(shippingNum / Math.max(1, items.length))}
                       </td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
+                      <td style={{ padding: "8px 10px", textAlign: "right", fontFamily: "monospace", fontWeight: 800, color: "#0f172a" }}>
                         {inr(lineTotal)}
                       </td>
                     </tr>
@@ -256,50 +372,75 @@ export function InvoiceTemplate({ order }: OrderInvoiceProps) {
           </div>
         </div>
 
-        {/* BOTTOM CONTENT AREA (FINANCIAL SUMMARY & DECLARATION) */}
+        {/* BOTTOM CONTENT WRAPPER (SUMMARY & DECLARATION) */}
         <div>
-          <div className="flex justify-between items-end gap-6 pt-2">
-            {/* TERMS & DECLARATION */}
-            <div className="flex-1 space-y-1 text-[9px] text-slate-500">
-              <p className="font-bold text-slate-800 uppercase tracking-wider text-[9.5px]">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "24px" }}>
+            
+            {/* DECLARATION & TERMS */}
+            <div style={{ flex: 1, fontSize: "9px", color: "#64748b", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ fontWeight: 800, color: "#1e293b", textTransform: "uppercase", fontSize: "9.5px", letterSpacing: "0.5px" }}>
                 Declaration & Terms:
-              </p>
-              <p className="leading-tight">
+              </div>
+              <div style={{ lineHeight: "1.3" }}>
                 This is a computer-generated tax invoice issued by Egnaro Mart Marketplace under the Information Technology Act.
-              </p>
-              <p className="leading-tight">
+              </div>
+              <div style={{ lineHeight: "1.3" }}>
                 Goods once sold are covered under Egnaro Mart Marketplace Protection policy. Manufacturer warranties apply.
-              </p>
+              </div>
             </div>
 
             {/* FINANCIAL SUMMARY BOX */}
-            <div className="w-60 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] space-y-1.5 shadow-sm">
-              <div className="flex justify-between text-slate-600">
+            <div
+              style={{
+                width: "240px",
+                border: "1px solid #cbd5e1",
+                backgroundColor: "#f8fafc",
+                borderRadius: "10px",
+                padding: "10px 14px",
+                fontSize: "11px",
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
                 <span>Subtotal</span>
-                <span className="font-mono font-semibold">{inr(subtotalNum)}</span>
+                <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{inr(subtotalNum)}</span>
               </div>
               {discountNum > 0 && (
-                <div className="flex justify-between text-emerald-700 font-medium">
+                <div style={{ display: "flex", justifyContent: "space-between", color: "#047857", fontWeight: 600 }}>
                   <span>Discount</span>
-                  <span className="font-mono">-{inr(discountNum)}</span>
+                  <span style={{ fontFamily: "monospace" }}>-{inr(discountNum)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-slate-600">
+              <div style={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
                 <span>Shipping Charges</span>
-                <span className="font-mono font-semibold text-slate-900">
+                <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>
                   {shippingNum === 0 ? "FREE" : inr(shippingNum)}
                 </span>
               </div>
-              <div className="border-t-2 border-slate-900 pt-1.5 flex justify-between items-baseline font-black text-slate-900 text-xs">
+              <div
+                style={{
+                  borderTop: "2px solid #0f172a",
+                  paddingTop: "6px",
+                  marginTop: "2px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  fontWeight: 900,
+                  color: "#0f172a",
+                }}
+              >
                 <span>Grand Total</span>
-                <span className="font-mono text-sm text-orange-600">{inr(totalNum)}</span>
+                <span style={{ fontFamily: "monospace", fontSize: "14px", color: "#c2410c" }}>{inr(totalNum)}</span>
               </div>
             </div>
           </div>
 
-          <p className="text-center text-[9px] text-slate-400 font-mono mt-4">
+          <div style={{ textAlign: "center", fontSize: "9px", color: "#94a3b8", fontFamily: "monospace", marginTop: "16px" }}>
             Thank you for shopping on Egnaro Mart — India's Premium B2B & Retail Marketplace!
-          </p>
+          </div>
         </div>
       </div>
     </div>

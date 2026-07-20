@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { X, Download, Eye, FileText, Printer } from "lucide-react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { X, Download, Eye, FileText } from "lucide-react";
 import { InvoiceTemplate, type OrderInvoiceProps } from "./InvoiceTemplate";
-import { downloadInvoicePDF } from "@/lib/invoice-generator";
+import { generateAndDownloadPDF } from "@/lib/invoice-generator";
 
 type InvoiceModalProps = OrderInvoiceProps & {
   isOpen: boolean;
@@ -11,6 +12,31 @@ type InvoiceModalProps = OrderInvoiceProps & {
 export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
   const [downloading, setDownloading] = useState(false);
 
+  // 1. Clean Body Overflow & Event Listener Management
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPointerEvents = document.body.style.pointerEvents;
+
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // CLEANUP ON UNMOUNT OR MODAL CLOSE
+    return () => {
+      document.body.style.overflow = originalOverflow || "";
+      document.body.style.pointerEvents = originalPointerEvents || "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const orderId = order?.order_id || String(order?.id || "Order");
@@ -18,16 +44,24 @@ export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      await downloadInvoicePDF(orderId, `modal-printable-invoice-${orderId}`);
+      await generateAndDownloadPDF(order);
     } finally {
       setDownloading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-3 sm:p-6 backdrop-blur-md animate-in fade-in duration-200">
+  const modalContent = (
+    <div
+      tabIndex={-1}
+      aria-modal="true"
+      role="dialog"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-3 sm:p-6 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       {/* MODAL WINDOW */}
-      <div className="relative flex flex-col w-full max-w-4xl h-[92vh] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative flex flex-col w-full max-w-4xl h-[92vh] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto">
         {/* MODAL HEADER */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/80">
           <div className="flex items-center gap-3">
@@ -69,38 +103,49 @@ export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
         {/* MODAL SCROLLABLE INVOICE BODY */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-950/60 flex justify-center items-start">
           <div className="bg-white rounded-lg shadow-2xl overflow-hidden max-w-full">
-            <div id={`modal-printable-invoice-${orderId}`}>
-              <InvoiceTemplate order={order} />
-            </div>
+            <InvoiceTemplate order={order} />
           </div>
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 export function InvoicePreviewButton({ order }: { order: any }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const orderId = order?.order_id || String(order?.id || "Order");
+  const handleDirectDownload = async () => {
+    setDownloading(true);
+    try {
+      await generateAndDownloadPDF(order);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <>
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3.5 py-2 text-xs font-bold transition-all cursor-pointer shadow-sm"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-sm"
         >
           <Eye className="h-4 w-4 text-orange-400" />
           <span>View Invoice</span>
         </button>
 
         <button
-          onClick={() => downloadInvoicePDF(orderId, `modal-printable-invoice-${orderId}`)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2 text-xs font-bold transition-all cursor-pointer shadow-md shadow-orange-600/20"
+          type="button"
+          onClick={handleDirectDownload}
+          disabled={downloading}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-md shadow-orange-600/20 disabled:opacity-50"
         >
           <Download className="h-4 w-4" />
-          <span>Download PDF</span>
+          <span>{downloading ? "PDF..." : "Download PDF"}</span>
         </button>
       </div>
 
