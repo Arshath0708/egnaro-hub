@@ -32,8 +32,7 @@ import { sanitizeInput } from "@/lib/validation";
 import { queryKeys } from "@/lib/query-keys";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { handleImageError } from "@/lib/utils";
-import { InvoiceTemplate } from "@/components/invoice/InvoiceTemplate";
-import { downloadInvoicePDF } from "@/lib/invoice-generator";
+import { InvoicePreviewButton } from "@/components/invoice/InvoiceModal";
 
 const STEPS: {
   id: OrderStatus;
@@ -541,19 +540,8 @@ const OrderDetails = memo(function OrderDetails({
               </div>
             </div>
 
-            <button
-              onClick={() => downloadInvoicePDF(order.order_id || String(order.id))}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-primary-foreground hover:bg-primary-hover transition-all cursor-pointer shadow-md shadow-primary/20"
-            >
-              <Download className="h-4 w-4" />
-              <span>Download Invoice (PDF)</span>
-            </button>
+            <InvoicePreviewButton order={order} />
           </div>
-        </div>
-
-        {/* Hidden Printable Invoice for PDF Download */}
-        <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
-          <InvoiceTemplate order={order} />
         </div>
       </div>
 

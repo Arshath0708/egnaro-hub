@@ -27,8 +27,7 @@ import { handleImageError } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth-store";
 import { PAYMENT_CONFIG } from "@/config/payment";
-import { InvoiceTemplate } from "@/components/invoice/InvoiceTemplate";
-import { downloadInvoicePDF } from "@/lib/invoice-generator";
+import { InvoicePreviewButton } from "@/components/invoice/InvoiceModal";
 
 type OrderItem = {
   id: number;
@@ -557,20 +556,24 @@ export default function OrderSuccessPage() {
           </div>
         </motion.div>
 
-        {/* 6. ACTION BUTTONS - pinned above footer */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.35 }}
           className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-6 pt-6 border-t border-white/5"
         >
-          <button
-            onClick={() => downloadInvoicePDF(orderId)}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FF6B00] hover:bg-[#e05e00] hover:shadow-glow text-white font-display font-bold text-sm tracking-wider uppercase h-[52px] px-8 rounded-xl transition-all cursor-pointer select-none"
-          >
-            <Download className="h-4.5 w-4.5" />
-            Download Invoice (PDF)
-          </button>
+          <InvoicePreviewButton
+            order={
+              order || {
+                id: Number(orderId),
+                order_id: orderId,
+                total: 0,
+                status: "Placed",
+                payment_method: "COD",
+                items: [],
+              }
+            }
+          />
           <Link
             to={`/track-order?id=${orderId}`}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-white/10 text-slate-200 font-display font-bold text-sm tracking-wider uppercase h-[52px] px-8 rounded-xl transition-all cursor-pointer select-none"
@@ -586,22 +589,6 @@ export default function OrderSuccessPage() {
             Continue Shopping
           </Link>
         </motion.div>
-
-        {/* Hidden Printable Invoice DOM node for PDF Exporter */}
-        <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
-          <InvoiceTemplate
-            order={
-              order || {
-                id: Number(orderId),
-                order_id: orderId,
-                total: 0,
-                status: "Placed",
-                payment_method: "COD",
-                items: [],
-              }
-            }
-          />
-        </div>
       </div>
     </Shell>
   );
