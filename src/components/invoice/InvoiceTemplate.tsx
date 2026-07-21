@@ -9,6 +9,12 @@ interface Product {
   unitPrice: number;
   shipping: number;
   discount: number;
+  gst_percentage: number;
+  hsn_code: string;
+  taxable_value: number;
+  cgst_amount: number;
+  sgst_amount: number;
+  igst_amount: number;
 }
 
 interface InvoiceData {
@@ -30,10 +36,15 @@ interface InvoiceData {
   buyer: {
     name: string;
     address: string;
+    city: string;
+    state: string;
+    pincode: string;
     phone: string;
     email: string;
   };
   products: Product[];
+  total_taxable_amount: number;
+  total_tax: number;
 }
 
 // ─── Default Empty Production Data ────────────────────────────────────────────
@@ -56,21 +67,29 @@ const defaultEmptyInvoiceData: InvoiceData = {
   buyer: {
     name: "Valued Customer",
     address: "Delivery Address Provided at Checkout",
+    city: "",
+    state: "",
+    pincode: "",
     phone: "N/A",
     email: "N/A",
   },
   products: [],
+  total_taxable_amount: 0,
+  total_tax: 0,
 };
 
 // ─── Database Order Mapper ──────────────────────────────────────────────────
 export function mapOrderToInvoiceData(order: any): InvoiceData {
   if (!order) return defaultEmptyInvoiceData;
 
-  const rawOrderId = order.order_id || String(order.id || "0000");
+  // Defensive: handle wrapped API responses like { success: true, order: { ... } }
+  const actualOrder = order.order || order;
+
+  const rawOrderId = actualOrder.order_id || String(actualOrder.id || "0000");
   const invoiceNumber = `INV-${rawOrderId.replace(/^ORD-/, "").replace(/^EM-ORD-/, "")}`;
   
-  const invoiceDate = order.created_at
-    ? new Date(order.created_at).toLocaleDateString("en-IN", {
+  const invoiceDate = actualOrder.created_at
+    ? new Date(actualOrder.created_at).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -81,15 +100,17 @@ export function mapOrderToInvoiceData(order: any): InvoiceData {
         year: "numeric",
       });
 
-  const rawItems = Array.isArray(order.items)
-    ? order.items
-    : typeof order.items === "string"
-    ? JSON.parse(order.items || "[]")
+  const rawItems = Array.isArray(actualOrder.items)
+    ? actualOrder.items
+    : typeof actualOrder.items === "string"
+    ? JSON.parse(actualOrder.items || "[]")
+    : Array.isArray(actualOrder.order_items)
+    ? actualOrder.order_items
     : [];
 
   const firstItem = rawItems[0] || {};
 
-  const sellerObj = order.seller || {};
+  const sellerObj = actualOrder.seller || {};
   const seller = {
     name: sellerObj.name || sellerObj.vendor_name || firstItem.seller_name || "Egnaro Mart Seller",
     company: sellerObj.company_name || sellerObj.company || firstItem.company_name || "Egnaro Mart Marketplace",
@@ -100,28 +121,79 @@ export function mapOrderToInvoiceData(order: any): InvoiceData {
   };
 
   const buyer = {
-    name: order.customer_name || order.customer?.fullName || "Valued Buyer",
-    address: order.address || order.customer?.address || "Delivery Address Provided at Checkout",
-    phone: order.phone || order.customer?.phone || "N/A",
-    email: order.email || order.customer?.email || "N/A",
+    name: actualOrder.customer_name || actualOrder.customer?.fullName || "Valued Buyer",
+    address: actualOrder.billing_address || actualOrder.address || actualOrder.customer?.address || "Delivery Address Provided at Checkout",
+    city: actualOrder.billing_city || actualOrder.city || "",
+    state: actualOrder.billing_state || actualOrder.state || "",
+    pincode: actualOrder.billing_pincode || actualOrder.pincode || "",
+    phone: actualOrder.phone || actualOrder.customer?.phone || "N/A",
+    email: actualOrder.email || actualOrder.customer?.email || "N/A",
   };
 
-  const shippingChargesTotal = Number(order.shipping_charges || 0);
-  const discountTotal = Number(order.discount || 0);
+  const isIntraState = (() => {
+    const sAddr = (seller.address || "").toLowerCase();
+    const bState = (buyer.state || buyer.address || "").toLowerCase();
+    if (bState.includes("tamil nadu") || bState.includes("tn") || sAddr.includes("tamil nadu") || sAddr.includes("coimbatore")) {
+      return true;
+    }
+    const cleanB = bState.replace(/[^a-z]/g, "");
+    const cleanS = sAddr.replace(/[^a-z]/g, "");
+    return cleanB.length > 3 && cleanS.includes(cleanB);
+  })();
+
+  const shippingChargesTotal = Number(actualOrder.shipping_charges || 0);
+  const discountTotal = Number(actualOrder.discount || 0);
 
   const products: Product[] = rawItems.map((item: any, idx: number) => {
     const qty = Number(item.quantity || item.qty || 1);
-    const unitPrice = Number(item.price || 0);
+    const unitPrice = Number(item.unit_price ?? item.unitPrice ?? item.price ?? 0);
     const shipping = item.shipping !== undefined ? Number(item.shipping) : (idx === 0 ? shippingChargesTotal : 0);
     const discount = item.discount !== undefined ? Number(item.discount) : (idx === 0 ? discountTotal : 0);
 
+    const gst_percentage = Number(item.gst_percentage ?? item.gstPercentage ?? item.gst_percent ?? item.gstPercent ?? 0);
+    const hsn_code = item.hsn_code || item.hsnCode || item.hsn || "N/A";
+
+    let taxable_value = Number(item.taxable_value ?? item.taxableValue ?? 0);
+    if (!taxable_value && unitPrice > 0) {
+      const lineTotal = unitPrice * qty;
+      taxable_value = gst_percentage > 0 ? lineTotal / (1 + gst_percentage / 100) : lineTotal;
+    }
+
+    let cgst_amount = Number(item.cgst_amount ?? item.cgstAmount ?? 0);
+    let sgst_amount = Number(item.sgst_amount ?? item.sgstAmount ?? 0);
+    let igst_amount = Number(item.igst_amount ?? item.igstAmount ?? 0);
+
+    if (gst_percentage > 0 && !cgst_amount && !sgst_amount && !igst_amount) {
+      const gstAmount = (unitPrice * qty) - taxable_value;
+      if (isIntraState) {
+        cgst_amount = gstAmount / 2;
+        sgst_amount = gstAmount / 2;
+      } else {
+        igst_amount = gstAmount;
+      }
+    } else if (isIntraState && !cgst_amount && !sgst_amount && igst_amount > 0) {
+      cgst_amount = igst_amount / 2;
+      sgst_amount = igst_amount / 2;
+      igst_amount = 0;
+    } else if (!isIntraState && !igst_amount && (cgst_amount > 0 || sgst_amount > 0)) {
+      igst_amount = cgst_amount + sgst_amount;
+      cgst_amount = 0;
+      sgst_amount = 0;
+    }
+
     return {
-      name: item.name || item.title || "Product Item",
+      name: item.name || item.product_name || item.title || "Product Item",
       sku: item.sku || (item.product_id ? `EM-PROD-${item.product_id}` : `EM-ITEM-${idx + 1}`),
       qty,
       unitPrice,
       shipping,
       discount,
+      gst_percentage,
+      hsn_code,
+      taxable_value,
+      cgst_amount,
+      sgst_amount,
+      igst_amount,
     };
   });
 
@@ -130,21 +202,27 @@ export function mapOrderToInvoiceData(order: any): InvoiceData {
       name: "Egnaro Mart Order Purchase",
       sku: `EM-ORD-${rawOrderId}`,
       qty: 1,
-      unitPrice: Number(order.subtotal || order.total || 0),
+      unitPrice: Number(actualOrder.subtotal || actualOrder.total || 0),
       shipping: shippingChargesTotal,
       discount: discountTotal,
+      gst_percentage: 0,
+      hsn_code: "N/A",
+      taxable_value: Number(actualOrder.subtotal || actualOrder.total || 0),
+      cgst_amount: 0,
+      sgst_amount: 0,
+      igst_amount: 0,
     });
   }
 
-  const rawPaymentStatus = (order.payment_status || "").toLowerCase();
+  const rawPaymentStatus = (actualOrder.payment_status || "").toLowerCase();
   const paymentStatus: "Paid" | "Pending" | "Failed" =
-    rawPaymentStatus === "paid" || order.payment_method === "upi" || order.payment_method === "online"
+    rawPaymentStatus === "paid" || actualOrder.payment_method === "upi" || actualOrder.payment_method === "online"
       ? "Paid"
       : rawPaymentStatus === "failed"
       ? "Failed"
       : "Pending";
 
-  const rawOrderStatus = (order.status || "").toLowerCase();
+  const rawOrderStatus = (actualOrder.status || "").toLowerCase();
   const orderStatus: "Delivered" | "Processing" | "Shipped" | "Cancelled" =
     rawOrderStatus === "delivered"
       ? "Delivered"
@@ -154,17 +232,29 @@ export function mapOrderToInvoiceData(order: any): InvoiceData {
       ? "Shipped"
       : "Processing";
 
+  let total_taxable_amount = Number(actualOrder.total_taxable_amount ?? actualOrder.totalTaxableAmount ?? 0);
+  let total_tax = Number(actualOrder.total_tax ?? actualOrder.totalTax ?? 0);
+
+  if (!total_taxable_amount && products.length > 0) {
+    total_taxable_amount = products.reduce((acc, p) => acc + p.taxable_value, 0);
+  }
+  if (!total_tax && products.length > 0) {
+    total_tax = products.reduce((acc, p) => acc + p.cgst_amount + p.sgst_amount + p.igst_amount, 0);
+  }
+
   return {
     invoiceNumber,
     orderId: rawOrderId,
     invoiceDate,
     dueDate: invoiceDate,
-    paymentMethod: (order.payment_method || "COD").toUpperCase(),
+    paymentMethod: (actualOrder.payment_method || "COD").toUpperCase(),
     paymentStatus,
     orderStatus,
     seller,
     buyer,
     products,
+    total_taxable_amount,
+    total_tax,
   };
 }
 
@@ -386,6 +476,9 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
           <SectionCard title="Bill To — Buyer Details" accent="#3B82F6">
             <InfoRow label="Name"    value={data.buyer.name} />
             <InfoRow label="Address" value={data.buyer.address} />
+            {(data.buyer.city || data.buyer.state) && (
+              <InfoRow label="City & State" value={`${data.buyer.city || ""} ${data.buyer.state ? `, ${data.buyer.state}` : ""} ${data.buyer.pincode ? `- ${data.buyer.pincode}` : ""}`} />
+            )}
             <InfoRow label="Phone"   value={data.buyer.phone} />
             <InfoRow label="Email"   value={data.buyer.email} />
           </SectionCard>
@@ -411,10 +504,10 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
             <table>
               <thead>
                 <tr style={{ background: "#F9FAFB", borderBottom: "1px solid #F3F4F6" }}>
-                  {["#", "Product", "SKU", "Qty", "Unit Price", "Shipping", "Discount", "Total"].map((h, i) => (
+                  {["#", "Product", "HSN", "Qty", "Price", "Taxable", "CGST", "SGST", "IGST", "Total"].map((h, i) => (
                     <th key={h} style={{
-                      padding: "9px 12px", fontSize: 10, fontWeight: 700,
-                      color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.06em",
+                      padding: "9px 8px", fontSize: 9, fontWeight: 700,
+                      color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.04em",
                       textAlign: i >= 3 ? "right" : i === 0 ? "center" : "left",
                       whiteSpace: "nowrap",
                     }}>{h}</th>
@@ -429,7 +522,7 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
                       borderBottom: i < data.products.length - 1 ? "1px solid #F9FAFB" : "none",
                       background: i % 2 === 0 ? "#FFFFFF" : "#FAFAFA",
                     }}>
-                      <td style={{ padding: "11px 12px", textAlign: "center" }}>
+                      <td style={{ padding: "11px 8px", textAlign: "center" }}>
                         <span style={{
                           width: 20, height: 20, borderRadius: "50%",
                           background: "#FFF7ED", color: "#E8500A",
@@ -437,25 +530,19 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
                           alignItems: "center", justifyContent: "center",
                         }}>{i + 1}</span>
                       </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <div style={{ fontSize: 11.5, fontWeight: 600, color: "#111827", marginBottom: 2 }}>{p.name}</div>
+                      <td style={{ padding: "11px 8px" }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#111827", marginBottom: 2 }}>{p.name}</div>
+                        <div style={{ fontSize: 9, color: "#6B7280" }}>SKU: {p.sku}</div>
                       </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <span style={{
-                          fontSize: 10, color: "#6B7280", background: "#F3F4F6",
-                          padding: "2px 7px", borderRadius: 4, fontFamily: "monospace", whiteSpace: "nowrap",
-                        }}>{p.sku}</span>
-                      </td>
-                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "#374151" }}>{p.qty}</td>
-                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#374151", whiteSpace: "nowrap" }}>{fmt(p.unitPrice)}</td>
-                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#374151", whiteSpace: "nowrap" }}>
-                        {p.shipping > 0 ? fmt(p.shipping) : <span style={{ color: "#10B981", fontSize: 10, fontWeight: 600 }}>FREE</span>}
-                      </td>
-                      <td style={{ padding: "11px 12px", textAlign: "right", fontSize: 12, color: p.discount > 0 ? "#10B981" : "#9CA3AF", whiteSpace: "nowrap" }}>
-                        {p.discount > 0 ? `−${fmt(p.discount)}` : "—"}
-                      </td>
-                      <td style={{ padding: "11px 12px", textAlign: "right" }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#111827", whiteSpace: "nowrap" }}>{fmt(total)}</span>
+                      <td style={{ padding: "11px 8px", textAlign: "left", fontSize: 10, color: "#374151", whiteSpace: "nowrap" }}>{p.hsn_code}</td>
+                      <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 10, fontWeight: 600, color: "#374151" }}>{p.qty}</td>
+                      <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 10, color: "#374151", whiteSpace: "nowrap" }}>{fmt(p.unitPrice)}</td>
+                      <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 10, color: "#374151", whiteSpace: "nowrap" }}>{fmt(p.taxable_value)}</td>
+                      <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 10, color: "#374151", whiteSpace: "nowrap" }}>{p.cgst_amount > 0 ? fmt(p.cgst_amount) : "-"}</td>
+                      <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 10, color: "#374151", whiteSpace: "nowrap" }}>{p.sgst_amount > 0 ? fmt(p.sgst_amount) : "-"}</td>
+                      <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 10, color: "#374151", whiteSpace: "nowrap" }}>{p.igst_amount > 0 ? fmt(p.igst_amount) : "-"}</td>
+                      <td style={{ padding: "11px 8px", textAlign: "right" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#111827", whiteSpace: "nowrap" }}>{fmt(total)}</span>
                       </td>
                     </tr>
                   );
@@ -485,7 +572,8 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
 
             <div style={{ padding: "12px 16px" }}>
               {[
-                { label: "Subtotal",          value: fmt(summary.subtotal),  color: "#374151", bold: false },
+                { label: "Total Taxable Amount", value: fmt(data.total_taxable_amount), color: "#374151", bold: false },
+                { label: "Total GST Amount",  value: fmt(data.total_tax), color: "#374151", bold: false },
                 { label: "Shipping Charges",  value: fmt(summary.shipping),  color: "#374151", bold: false },
                 { label: "Total Discount",    value: `−${fmt(summary.discount)}`, color: "#10B981", bold: false },
               ].map(({ label, value, color, bold }) => (

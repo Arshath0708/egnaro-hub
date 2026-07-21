@@ -183,6 +183,8 @@ export type ProductForm = {
   created_by_id: string;
   approved?: number;
   status?: string;
+  gst_percentage?: string | number;
+  hsn_code?: string;
 };
 
 export async function addProduct(form: ProductForm) {

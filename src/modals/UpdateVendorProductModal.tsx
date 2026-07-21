@@ -4,6 +4,7 @@ import { X, Sparkles, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { adminUpdateProduct } from "@/services/api";
 import { sanitizeInput } from "@/lib/validation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QUERY_KEYS } from "@/lib/query-keys";
 
 export function UpdateVendorProductModal({
@@ -20,6 +21,8 @@ export function UpdateVendorProductModal({
     price: product.price || "",
     stock_quantity: product.stock_quantity || "",
     role: "admin", // Ensure role is passed as admin to use admin endpoints if needed
+    gst_percentage: product.gst_percentage || "0",
+    hsn_code: product.hsn_code || "",
   });
 
   const mutation = useMutation({
@@ -100,6 +103,34 @@ export function UpdateVendorProductModal({
                   placeholder="100"
                   className={inputClass}
                 />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-300">GST %</label>
+                    <Select
+                      value={String(form.gst_percentage)}
+                      onValueChange={(val) => setForm((p) => ({ ...p, gst_percentage: val }))}
+                    >
+                      <SelectTrigger className="w-full h-14 rounded-2xl border border-white/10 bg-white/5 px-5 text-base text-white outline-none focus:border-cyan-400">
+                        <SelectValue placeholder="Select GST" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0% (None)</SelectItem>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="12">12%</SelectItem>
+                        <SelectItem value="18">18%</SelectItem>
+                        <SelectItem value="28">28%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <InputField
+                    label="HSN Code"
+                    value={form.hsn_code || ""}
+                    onChange={(v) => setForm((p) => ({ ...p, hsn_code: v }))}
+                    placeholder="Enter HSN Code"
+                    className={inputClass}
+                  />
+                </div>
               </div>
 
               {/* RIGHT PREVIEW */}

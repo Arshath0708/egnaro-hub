@@ -50,6 +50,8 @@ export function AddProductModal({
     created_by_id: createdById || vendorId || "",
     approved: createdByType === "admin" ? 1 : 0,
     status: createdByType === "admin" ? "approved" : "pending",
+    gst_percentage: "0",
+    hsn_code: "",
   });
 
   // Set default category when categories list finishes loading
@@ -364,6 +366,34 @@ export function AddProductModal({
                   placeholder="100"
                   className={inputClass}
                 />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-300">GST %</label>
+                    <Select
+                      value={String(form.gst_percentage)}
+                      onValueChange={(val) => setForm((p) => ({ ...p, gst_percentage: val }))}
+                    >
+                      <SelectTrigger className="w-full h-14 rounded-2xl border border-white/10 bg-white/5 px-5 text-base text-white outline-none focus:border-cyan-400">
+                        <SelectValue placeholder="Select GST" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0% (None)</SelectItem>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="12">12%</SelectItem>
+                        <SelectItem value="18">18%</SelectItem>
+                        <SelectItem value="28">28%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <InputField
+                    label="HSN Code"
+                    value={form.hsn_code || ""}
+                    onChange={(v) => setForm((p) => ({ ...p, hsn_code: v }))}
+                    placeholder="Enter HSN Code"
+                    className={inputClass}
+                  />
+                </div>
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-300">Product Description</label>
