@@ -17,7 +17,15 @@ import type { CartItem } from "@/types";
 
 interface CartState {
   items: CartItem[];
-  add:    (productId: string, quantity?: number) => void;
+  mismatchDetails: {
+    productId: string;
+    quantity: number;
+    vendorId: number;
+    name: string;
+  } | null;
+  add: (productId: string, quantity?: number, vendorId?: number, name?: string) => boolean;
+  confirmAdd: () => void;
+  clearMismatch: () => void;
   remove: (productId: string) => void;
   setQty: (productId: string, qty: number) => void;
   clear:  () => void;
@@ -27,21 +35,60 @@ export const useCart = create<CartState>()(
   persist(
     (set) => ({
       items: [],
+      mismatchDetails: null,
 
-      add: (productId, quantity = 1) =>
+      add: (productId, quantity = 1, vendorId, name = "") => {
+        let added = true;
         set((s) => {
+          // Identify if the cart already has a product from a different seller
+          const firstVendorItem = s.items.find((i) => i.vendorId !== undefined && i.vendorId !== 0);
+          const currentSellerId = firstVendorItem ? firstVendorItem.vendorId : null;
+
+          if (
+            currentSellerId !== null &&
+            vendorId !== undefined &&
+            vendorId !== 0 &&
+            currentSellerId !== vendorId
+          ) {
+            // Mismatch detected! Save to mismatchDetails and open confirmation modal
+            added = false;
+            return {
+              mismatchDetails: {
+                productId,
+                quantity,
+                vendorId,
+                name,
+              },
+            };
+          }
+
+          // Otherwise, normal add logic
           const ex = s.items.find((i) => i.productId === productId);
           if (ex) {
             return {
               items: s.items.map((i) =>
                 i.productId === productId
-                  ? { ...i, quantity: i.quantity + quantity }
+                  ? { ...i, quantity: i.quantity + quantity, vendorId: vendorId ?? i.vendorId }
                   : i
               ),
             };
           }
-          return { items: [...s.items, { productId, quantity }] };
+          return { items: [...s.items, { productId, quantity, vendorId }] };
+        });
+        return added;
+      },
+
+      confirmAdd: () =>
+        set((s) => {
+          if (!s.mismatchDetails) return {};
+          const { productId, quantity, vendorId } = s.mismatchDetails;
+          return {
+            items: [{ productId, quantity, vendorId }],
+            mismatchDetails: null,
+          };
         }),
+
+      clearMismatch: () => set({ mismatchDetails: null }),
 
       remove: (productId) =>
         set((s) => ({ items: s.items.filter((i) => i.productId !== productId) })),
@@ -56,7 +103,7 @@ export const useCart = create<CartState>()(
                 ),
         })),
 
-      clear: () => set({ items: [] }),
+      clear: () => set({ items: [], mismatchDetails: null }),
     }),
     { name: "egnaro:cart" }
   )

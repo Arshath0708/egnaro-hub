@@ -17,12 +17,14 @@ export const ProductCard = memo(function ProductCard({
   function handleAdd(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    add(product.id.toString(), 1);
+    const added = add(product.id.toString(), 1, Number(product.vendor_id || 0), product.name);
 
-    toast.success("Added to cart", {
-      description: product.name,
-      icon: <ShoppingCart className="h-4 w-4" />,
-    });
+    if (added) {
+      toast.success("Added to cart", {
+        description: product.name,
+        icon: <ShoppingCart className="h-4 w-4" />,
+      });
+    }
   }
 
   const rating = Number(product.average_rating || 0);

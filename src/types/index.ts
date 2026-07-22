@@ -55,6 +55,7 @@ export interface Vendor {
 export interface CartItem {
   productId: string;
   quantity: number;
+  vendorId?: number;
 }
 
 export type OrderStatus =

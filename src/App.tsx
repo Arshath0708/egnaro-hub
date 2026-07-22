@@ -24,6 +24,7 @@ const MyAccount = lazy(() => import("./routes/my-account"));
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { BackToTop } from "@/components/layout/BackToTop";
 import { SplashScreen } from "@/components/layout/SplashScreen";
+import { CartMismatchDialog } from "@/components/CartMismatchDialog";
 
 function PageLoader() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
       <SplashScreen />
       <ScrollToTop />
       <BackToTop />
+      <CartMismatchDialog />
       <Toaster
         position="top-right"
         theme="dark"

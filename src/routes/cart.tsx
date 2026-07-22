@@ -262,8 +262,10 @@ export default function CartPage() {
                               toast.error(`Only ${stock} units of ${p.name} are available in stock.`);
                               return;
                             }
-                            useCart.getState().add(p.id, 1);
-                            toast.success(`${p.name} added to cart!`);
+                            const added = useCart.getState().add(p.id.toString(), 1, Number(p.vendor_id || 0), p.name);
+                            if (added) {
+                              toast.success(`${p.name} added to cart!`);
+                            }
                           }}
                           className="mt-3.5 w-full py-2 bg-white/5 hover:bg-primary text-slate-300 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1"
                         >

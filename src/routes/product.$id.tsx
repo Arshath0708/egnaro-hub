@@ -439,11 +439,13 @@ export default function ProductDetail() {
                 {/* ADD TO CART */}
                 <button
                   onClick={() => {
-                    add(product.id.toString(), qty);
+                    const added = add(product.id.toString(), qty, Number(product.vendor_id || 0), product.name);
 
-                    toast.success("Added to cart 🛒", {
-                      description: product.name,
-                    });
+                    if (added) {
+                      toast.success("Added to cart 🛒", {
+                        description: product.name,
+                      });
+                    }
                   }}
                   disabled={Number(product.stock_quantity ?? product.stock ?? 0) <= 0}
                   className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-4 font-bold text-foreground transition hover:bg-white/10 hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none"
@@ -457,8 +459,10 @@ export default function ProductDetail() {
                 {/* BUY NOW */}
                 <button
                   onClick={() => {
-                    add(product.id.toString(), qty);
-                    nav("/checkout");
+                    const added = add(product.id.toString(), qty, Number(product.vendor_id || 0), product.name);
+                    if (added) {
+                      nav("/checkout");
+                    }
                   }}
                   disabled={Number(product.stock_quantity ?? product.stock ?? 0) <= 0}
                   className="flex-1 rounded-2xl gradient-primary py-4 font-bold text-primary-foreground shadow-glow transition hover:scale-[1.02] shimmer disabled:opacity-50 disabled:pointer-events-none"
