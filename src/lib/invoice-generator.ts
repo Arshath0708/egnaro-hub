@@ -11,44 +11,52 @@ import { InvoiceTemplate } from "@/components/invoice/InvoiceTemplate";
  */
 export async function generateAndDownloadPDF(
   order: any,
-  fileNameOverride?: string
+  fileNameOverride?: string,
+  element?: HTMLElement
 ): Promise<void> {
   const orderId = order?.order_id || String(order?.id || "Order");
   const cleanOrderId = orderId.replace(/[^a-zA-Z0-9-]/g, "_");
   const filename = fileNameOverride || `Invoice-${cleanOrderId}.pdf`;
 
-  // 1. Create isolated offscreen container (outside viewport, zero pointer interference)
-  const container = document.createElement("div");
-  container.id = `pdf-export-container-${Date.now()}`;
-  container.style.position = "absolute";
-  container.style.left = "-99999px";
-  container.style.top = "0px";
-  container.style.width = "794px";
-  container.style.height = "1123px";
-  container.style.overflow = "hidden";
-  container.style.zIndex = "-99999";
-  container.style.pointerEvents = "none";
-  container.style.backgroundColor = "#ffffff";
-
-  document.body.appendChild(container);
-
+  let sourceElement: HTMLElement;
+  let container: HTMLDivElement | null = null;
   let root: any = null;
 
-  try {
-    // 2. Render InvoiceTemplate into container using React.createElement
+  if (element) {
+    sourceElement = element;
+  } else {
+    // Create isolated container at exact top-left (0,0) of the viewport, behind the page content
+    container = document.createElement("div");
+    container.id = `pdf-export-container-${Date.now()}`;
+    container.style.position = "fixed";
+    container.style.left = "0px";
+    container.style.top = "0px";
+    container.style.width = "794px";
+    container.style.height = "1123px";
+    container.style.overflow = "hidden";
+    container.style.zIndex = "-99999";
+    container.style.pointerEvents = "none";
+    container.style.backgroundColor = "#ffffff";
+
+    document.body.appendChild(container);
+
+    // Render InvoiceTemplate into container
     root = createRoot(container);
     await new Promise<void>((resolve) => {
       root.render(React.createElement(InvoiceTemplate, { order }));
-      setTimeout(resolve, 50);
+      setTimeout(resolve, 80);
     });
+    sourceElement = container;
+  }
 
-    // 3. Wait for document fonts to be ready
+  try {
+    // Wait for document fonts to be ready
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
     }
 
-    // 4. Wait for images to fully decode
-    const images = Array.from(container.querySelectorAll("img"));
+    // Wait for images inside the source element to fully decode
+    const images = Array.from(sourceElement.querySelectorAll("img"));
     await Promise.all(
       images.map(
         (img) =>
@@ -66,7 +74,7 @@ export async function generateAndDownloadPDF(
     // Short paint delay for browser rendering engine
     await new Promise((r) => setTimeout(r, 120));
 
-    // 5. Run html2pdf with A4 options and const orientation
+    // Run html2pdf with A4 options
     const opt = {
       margin: 0,
       filename: filename,
@@ -76,39 +84,39 @@ export async function generateAndDownloadPDF(
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
-        scrollX: 0,
-        scrollY: 0,
-        // Removed windowWidth and windowHeight to prevent html2canvas from mutating global viewport dimensions
+        // If we are capturing an on-screen preview element (which may be scrolled),
+        // we omit manual scrollX/scrollY overrides so html2canvas automatically aligns to the element's client rect.
+        // If we are capturing our temporary fixed (0, 0) container, we set scrollX/Y to 0.
+        ...(container ? { scrollX: 0, scrollY: 0 } : {}),
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
 
-    await html2pdf().set(opt).from(container).save();
+    await html2pdf().set(opt).from(sourceElement).save();
   } catch (err) {
     console.error("PDF generation failed:", err);
     window.print();
   } finally {
-    // 6. STRICT CLEANUP: Unmount React root & remove DOM nodes
-    if (root) {
-      try {
-        root.unmount();
-      } catch {
-        // ignore unmount errors
+    // Clean up temporary container if it was created
+    if (container) {
+      if (root) {
+        try {
+          root.unmount();
+        } catch {
+          // ignore unmount errors
+        }
       }
-    }
-
-    if (document.body.contains(container)) {
-      container.remove();
+      if (document.body.contains(container)) {
+        container.remove();
+      }
     }
 
     // Clean up any stray html2canvas containers or iframe layers
     document.querySelectorAll(".html2canvas-container").forEach((el) => el.remove());
     document.querySelectorAll("iframe[id*='html2canvas']").forEach((el) => el.remove());
 
-    // Restore body pointer events and overflow
+    // Restore body styles and viewport mutations if any
     document.body.style.pointerEvents = "";
-    
-    // Explicitly restore any viewport mutations made by html2canvas
     document.documentElement.style.width = "";
     document.documentElement.style.height = "";
     document.body.style.width = "";

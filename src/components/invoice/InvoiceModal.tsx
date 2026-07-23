@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { X, Download, Eye, FileText } from "lucide-react";
 import { InvoiceTemplate, type OrderInvoiceProps } from "./InvoiceTemplate";
 import { generateAndDownloadPDF } from "@/lib/invoice-generator";
@@ -15,13 +15,14 @@ type InvoiceModalProps = OrderInvoiceProps & {
 
 export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
   const [downloading, setDownloading] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   const orderId = order?.order_id || String(order?.id || "Order");
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      await generateAndDownloadPDF(order);
+      await generateAndDownloadPDF(order, undefined, invoiceRef.current || undefined);
     } finally {
       setDownloading(false);
     }
@@ -70,7 +71,7 @@ export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
 
         {/* MODAL SCROLLABLE INVOICE BODY */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-950/60 flex justify-center items-start">
-          <div className="bg-white rounded-lg shadow-2xl overflow-hidden max-w-full">
+          <div ref={invoiceRef} className="bg-white rounded-lg shadow-2xl overflow-hidden max-w-full">
             <InvoiceTemplate order={order} />
           </div>
         </div>
