@@ -1,13 +1,14 @@
-import html2pdf from "html2pdf.js";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { InvoiceTemplate } from "@/components/invoice/InvoiceTemplate";
 
 /**
- * Enterprise PDF Generator for Egnaro Mart Invoices.
- * Renders an isolated, pixel-perfect A4 canvas (794px x 1123px),
- * waits for font & image decoding, exports to A4 PDF,
- * and performs strict DOM/pointer-events cleanup.
+ * Enterprise PDF Generator for Egnaro Mart Invoices using html2canvas & jsPDF directly.
+ * Clones the pre-rendered preview element (or dynamically mounts a temporary target)
+ * into a fixed viewport wrapper at (0, 0) with a low z-index, captures the canvas region,
+ * maps it to exactly one A4 sheet, and executes strict DOM & memory cleanup.
  */
 export async function generateAndDownloadPDF(
   order: any,
@@ -18,45 +19,56 @@ export async function generateAndDownloadPDF(
   const cleanOrderId = orderId.replace(/[^a-zA-Z0-9-]/g, "_");
   const filename = fileNameOverride || `Invoice-${cleanOrderId}.pdf`;
 
-  let sourceElement: HTMLElement;
-  let container: HTMLDivElement | null = null;
+  // Create isolated wrapper container at exact (0, 0) of viewport, behind the page layout
+  const wrapper = document.createElement("div");
+  wrapper.id = `pdf-export-wrapper-${Date.now()}`;
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "0px";
+  wrapper.style.top = "0px";
+  wrapper.style.width = "794px";
+  wrapper.style.height = "1123px";
+  wrapper.style.overflow = "hidden";
+  wrapper.style.zIndex = "-999999";
+  wrapper.style.pointerEvents = "none";
+  wrapper.style.backgroundColor = "#ffffff";
+  document.body.appendChild(wrapper);
+
   let root: any = null;
-
-  if (element) {
-    sourceElement = element;
-  } else {
-    // Create isolated container at exact top-left (0,0) of the viewport, behind the page content
-    container = document.createElement("div");
-    container.id = `pdf-export-container-${Date.now()}`;
-    container.style.position = "fixed";
-    container.style.left = "0px";
-    container.style.top = "0px";
-    container.style.width = "794px";
-    container.style.height = "1123px";
-    container.style.overflow = "hidden";
-    container.style.zIndex = "-99999";
-    container.style.pointerEvents = "none";
-    container.style.backgroundColor = "#ffffff";
-
-    document.body.appendChild(container);
-
-    // Render InvoiceTemplate into container
-    root = createRoot(container);
-    await new Promise<void>((resolve) => {
-      root.render(React.createElement(InvoiceTemplate, { order }));
-      setTimeout(resolve, 80);
-    });
-    sourceElement = container;
-  }
+  let targetNode: HTMLElement;
 
   try {
+    if (element) {
+      // Direct clone of the on-screen preview element (maintaining pixel-perfect styles)
+      targetNode = element.cloneNode(true) as HTMLElement;
+      targetNode.style.position = "relative";
+      targetNode.style.left = "0px";
+      targetNode.style.top = "0px";
+      targetNode.style.margin = "0px";
+      targetNode.style.transform = "none";
+      targetNode.style.boxShadow = "none";
+      wrapper.appendChild(targetNode);
+    } else {
+      // If direct download from order details card, render InvoiceTemplate dynamically
+      const renderContainer = document.createElement("div");
+      renderContainer.style.width = "794px";
+      renderContainer.style.minHeight = "1123px";
+      wrapper.appendChild(renderContainer);
+
+      root = createRoot(renderContainer);
+      root.render(React.createElement(InvoiceTemplate, { order }));
+
+      // Wait for React to finish rendering
+      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      targetNode = renderContainer;
+    }
+
     // Wait for document fonts to be ready
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
     }
 
-    // Wait for images inside the source element to fully decode
-    const images = Array.from(sourceElement.querySelectorAll("img"));
+    // Wait for images to fully decode
+    const images = Array.from(wrapper.querySelectorAll("img"));
     await Promise.all(
       images.map(
         (img) =>
@@ -71,56 +83,56 @@ export async function generateAndDownloadPDF(
       )
     );
 
-    // Short paint delay for browser rendering engine
+    // Let the browser paint
     await new Promise((r) => setTimeout(r, 120));
 
-    // Run html2pdf with A4 options
-    const opt = {
-      margin: 0,
-      filename: filename,
-      image: { type: "jpeg" as const, quality: 1.0 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        // If we are capturing an on-screen preview element (which may be scrolled),
-        // we omit manual scrollX/scrollY overrides so html2canvas automatically aligns to the element's client rect.
-        // If we are capturing our temporary fixed (0, 0) container, we set scrollX/Y to 0.
-        ...(container ? { scrollX: 0, scrollY: 0 } : {}),
-      },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
-    };
+    // Capture canvas at standard width/height matching A4 aspect ratio
+    const canvas = await html2canvas(wrapper, {
+      scale: 2, // High resolution print scale
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0,
+      width: 794,
+      height: 1123,
+    });
 
-    await html2pdf().set(opt).from(sourceElement).save();
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    // 210mm x 297mm (exactly maps canvas image to one A4 page)
+    pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, "FAST");
+    pdf.save(filename);
+
+    // Free canvas graphics memory immediately
+    canvas.width = 0;
+    canvas.height = 0;
+
   } catch (err) {
     console.error("PDF generation failed:", err);
-    window.print();
+    alert("PDF generation failed. Please try again.");
   } finally {
-    // Clean up temporary container if it was created
-    if (container) {
-      if (root) {
-        try {
-          root.unmount();
-        } catch {
-          // ignore unmount errors
-        }
-      }
-      if (document.body.contains(container)) {
-        container.remove();
+    // Unmount and clean up React root if created
+    if (root) {
+      try {
+        root.unmount();
+      } catch {
+        // ignore unmount errors
       }
     }
 
-    // Clean up any stray html2canvas containers or iframe layers
-    document.querySelectorAll(".html2canvas-container").forEach((el) => el.remove());
-    document.querySelectorAll("iframe[id*='html2canvas']").forEach((el) => el.remove());
+    // Strict DOM Cleanup: remove temporary wrapper and all cloned nodes
+    if (document.body.contains(wrapper)) {
+      wrapper.remove();
+    }
 
-    // Restore body styles and viewport mutations if any
-    document.body.style.pointerEvents = "";
-    document.documentElement.style.width = "";
-    document.documentElement.style.height = "";
-    document.body.style.width = "";
-    document.body.style.height = "";
+    // Remove any leftover html2canvas containers
+    document.querySelectorAll(".html2canvas-container").forEach((el) => el.remove());
   }
 }
 
