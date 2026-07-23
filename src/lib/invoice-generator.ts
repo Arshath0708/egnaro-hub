@@ -19,24 +19,26 @@ export async function generateAndDownloadPDF(
   const cleanOrderId = orderId.replace(/[^a-zA-Z0-9-]/g, "_");
   const filename = fileNameOverride || `Invoice-${cleanOrderId}.pdf`;
 
-  // Create isolated wrapper container at exact (0, 0) of viewport, behind the page layout
-  const wrapper = document.createElement("div");
-  wrapper.id = `pdf-export-wrapper-${Date.now()}`;
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "0px";
-  wrapper.style.top = "0px";
-  wrapper.style.width = "794px";
-  wrapper.style.height = "1123px";
-  wrapper.style.overflow = "hidden";
-  wrapper.style.zIndex = "-999999";
-  wrapper.style.pointerEvents = "none";
-  wrapper.style.backgroundColor = "#ffffff";
-  document.body.appendChild(wrapper);
-
+  let wrapper: HTMLDivElement | null = null;
   let root: any = null;
-  let targetNode: HTMLElement;
 
   try {
+    // Create isolated wrapper container at exact (0, 0) of viewport, behind the page layout
+    wrapper = document.createElement("div");
+    wrapper.id = `pdf-export-wrapper-${Date.now()}`;
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "0px";
+    wrapper.style.top = "0px";
+    wrapper.style.width = "794px";
+    wrapper.style.height = "1123px";
+    wrapper.style.overflow = "hidden";
+    wrapper.style.zIndex = "-999999";
+    wrapper.style.pointerEvents = "none";
+    wrapper.style.backgroundColor = "#ffffff";
+    document.body.appendChild(wrapper);
+
+    let targetNode: HTMLElement;
+
     if (element) {
       // Direct clone of the on-screen preview element (maintaining pixel-perfect styles)
       targetNode = element.cloneNode(true) as HTMLElement;
@@ -96,6 +98,16 @@ export async function generateAndDownloadPDF(
       scrollY: 0,
       width: 794,
       height: 1123,
+      onclone: (clonedDoc) => {
+        // Strip out every stylesheet and style tag EXCEPT the scoped styles for the invoice.
+        // This prevents html2canvas from parsing stylesheets containing unsupported color functions like "oklch" (which Tailwind v4 uses).
+        const styles = Array.from(clonedDoc.querySelectorAll("style, link[rel='stylesheet']"));
+        styles.forEach((el) => {
+          if (el.id !== "invoice-scoped-styles") {
+            el.remove();
+          }
+        });
+      }
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
@@ -127,12 +139,21 @@ export async function generateAndDownloadPDF(
     }
 
     // Strict DOM Cleanup: remove temporary wrapper and all cloned nodes
-    if (document.body.contains(wrapper)) {
+    if (wrapper && document.body.contains(wrapper)) {
       wrapper.remove();
     }
 
     // Remove any leftover html2canvas containers
     document.querySelectorAll(".html2canvas-container").forEach((el) => el.remove());
+
+    // Explicitly restore document/body styles and viewport parameters to prevent freezing
+    document.body.style.pointerEvents = "";
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.width = "";
+    document.documentElement.style.height = "";
+    document.body.style.width = "";
+    document.body.style.height = "";
   }
 }
 
