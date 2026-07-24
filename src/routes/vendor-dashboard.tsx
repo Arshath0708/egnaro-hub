@@ -1165,6 +1165,11 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
               <p className="text-sm font-bold text-white">{order.customer_name}</p>
               <p className="text-xs text-gray-300">📞 {order.phone}</p>
               {order.email && <p className="text-xs text-gray-400 break-all">✉️ {order.email}</p>}
+              {order.buyer_gst && (
+                <p className="text-xs text-emerald-400 font-bold mt-1">
+                  🏢 GSTIN: {order.buyer_gst}
+                </p>
+              )}
               <div className="mt-2 pt-2 border-t border-white/5">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 block mb-1">Shipping Address</span>
                 <p className="text-xs text-gray-400 leading-relaxed max-w-xs">{order.delivery_address || order.address}</p>
@@ -1215,14 +1220,7 @@ const VendorOrderRow = memo(({ order, onManageOrder }: { order: any; onManageOrd
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => generateAndDownloadPDF(order)}
-                  className="inline-flex items-center gap-1 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-cyan-300 hover:bg-cyan-500/20 transition cursor-pointer"
-                >
-                  <Download className="h-3 w-3" />
-                  <span>Download Invoice</span>
-                </button>
+                <InvoicePreviewButton order={order} />
                 {order.label_url && (
                   <a
                     href={order.label_url}
@@ -1642,7 +1640,7 @@ function ViewSupportRequestModal({
 
           {request.admin_note && (
             <div className="space-y-1 pt-2 border-t border-white/5">
-              <span className="text-xs font-bold text-red-400 uppercase tracking-wider block">Admin Response / Note</span>
+              <span className="text-xs font-bold text-red-400 uppercase tracking-wider block">Egnaro Response / Note</span>
               <div className="rounded-2xl border border-red-500/10 bg-red-500/5 p-4 text-sm text-red-200 whitespace-pre-line leading-relaxed">
                 {request.admin_note}
               </div>

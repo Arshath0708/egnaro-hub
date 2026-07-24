@@ -291,7 +291,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
           </button>
         </div>
 
-        <PrimaryButton loading={mutation.isPending} label="Sign In to Portal" loadingLabel="Authenticating..." />
+        <PrimaryButton loading={mutation.isPending} label="Buyer Login" loadingLabel="Authenticating..." />
         </fieldset>
       </form>
 

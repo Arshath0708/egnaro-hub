@@ -48,6 +48,7 @@ interface InvoiceData {
     shipping_pincode: string;
     phone: string;
     email: string;
+    buyer_gst?: string | null;
   };
   products: Product[];
   total_taxable_amount: number;
@@ -90,6 +91,7 @@ const defaultEmptyInvoiceData: InvoiceData = {
     shipping_pincode: "",
     phone: "N/A",
     email: "N/A",
+    buyer_gst: null,
   },
   products: [],
   total_taxable_amount: 0,
@@ -113,19 +115,33 @@ function getStateCode(stateName: string): string {
   if (cleanState.includes("rajasthan") || cleanState.includes("rj")) return "08";
   if (cleanState.includes("uttar pradesh") || cleanState.includes("up")) return "09";
   if (cleanState.includes("bihar") || cleanState.includes("br")) return "10";
+  if (cleanState.includes("sikkim") || cleanState.includes("sk")) return "11";
+  if (cleanState.includes("arunachal") || cleanState.includes("ar")) return "12";
+  if (cleanState.includes("nagaland") || cleanState.includes("nl")) return "13";
+  if (cleanState.includes("manipur") || cleanState.includes("mn")) return "14";
+  if (cleanState.includes("mizoram") || cleanState.includes("mz")) return "15";
+  if (cleanState.includes("tripura") || cleanState.includes("tr")) return "16";
+  if (cleanState.includes("meghalaya") || cleanState.includes("ml")) return "17";
+  if (cleanState.includes("assam") || cleanState.includes("as")) return "18";
   if (cleanState.includes("west bengal") || cleanState.includes("wb")) return "19";
-  if (cleanState.includes("odisha") || cleanState.includes("or")) return "21";
+  if (cleanState.includes("jharkhand") || cleanState.includes("jh")) return "20";
+  if (cleanState.includes("odisha") || cleanState.includes("or") || cleanState.includes("orissa")) return "21";
+  if (cleanState.includes("chhattisgarh") || cleanState.includes("cg")) return "22";
   if (cleanState.includes("madhya pradesh") || cleanState.includes("mp")) return "23";
   if (cleanState.includes("gujarat") || cleanState.includes("gj")) return "24";
+  if (cleanState.includes("daman") || cleanState.includes("diu")) return "25";
+  if (cleanState.includes("dadra") || cleanState.includes("haveli")) return "26";
   if (cleanState.includes("maharashtra") || cleanState.includes("mh")) return "27";
+  if (cleanState.includes("andhra pradesh") || cleanState.includes("ap")) return "37"; // default to new AP
   if (cleanState.includes("karnataka") || cleanState.includes("ka")) return "29";
   if (cleanState.includes("goa") || cleanState.includes("ga")) return "30";
+  if (cleanState.includes("lakshadweep") || cleanState.includes("ld")) return "31";
   if (cleanState.includes("kerala") || cleanState.includes("kl")) return "32";
   if (cleanState.includes("tamil nadu") || cleanState.includes("tamilnadu") || cleanState.includes("tn")) return "33";
   if (cleanState.includes("puducherry") || cleanState.includes("py")) return "34";
   if (cleanState.includes("telangana") || cleanState.includes("ts")) return "36";
-  if (cleanState.includes("andhra pradesh") || cleanState.includes("ap")) return "37";
-  return "N/A";
+  if (cleanState.includes("ladakh") || cleanState.includes("la")) return "38";
+  return "33"; // Default to 33 (Tamil Nadu) if unresolvable to prevent N/A state codes
 }
 
 function resolveStateCode(gstin: string, stateName: string): string {
@@ -147,6 +163,60 @@ function getPanFromGst(gstin: string): string {
   return "N/A";
 }
 
+// ─── State Extractor Helper ─────────────────────────────────────────────────
+function extractState(address: string, city: string, existingState: string): string {
+  if (existingState && existingState.trim().toLowerCase() !== "n/a" && existingState.trim() !== "") {
+    return existingState.trim();
+  }
+  const addr = (address + " " + city).toLowerCase();
+  if (addr.includes("tamil nadu") || addr.includes("tamilnadu") || addr.includes("chennai") || addr.includes("coimbatore")) {
+    return "Tamil Nadu";
+  }
+  if (addr.includes("karnataka") || addr.includes("bangalore") || addr.includes("bengaluru")) {
+    return "Karnataka";
+  }
+  if (addr.includes("kerala") || addr.includes("kochi") || addr.includes("trivandrum")) {
+    return "Kerala";
+  }
+  if (addr.includes("maharashtra") || addr.includes("mumbai") || addr.includes("pune")) {
+    return "Maharashtra";
+  }
+  if (addr.includes("delhi") || addr.includes("new delhi")) {
+    return "Delhi";
+  }
+  if (addr.includes("karnataka") || addr.includes("bangalore")) {
+    return "Karnataka";
+  }
+  return "Tamil Nadu"; // Default fallback
+}
+
+// ─── Clean Address Formatter ────────────────────────────────────────────────
+function formatCleanAddress(address: string, city: string, state: string, pincode: string): string {
+  if (!address || address.trim() === "") return "Address Details Provided at Checkout";
+  
+  const cleanAddr = address.trim();
+  const addrLower = cleanAddr.toLowerCase();
+  let parts = [cleanAddr];
+  
+  if (city && city.trim() !== "" && !addrLower.includes(city.trim().toLowerCase())) {
+    parts.push(city.trim());
+  }
+  
+  if (state && state.trim() !== "" && !addrLower.includes(state.trim().toLowerCase())) {
+    const cleanStateStr = state.trim();
+    // Prevent appending state if it is already present in part of the address list
+    if (!parts.some(p => p.toLowerCase().includes(cleanStateStr.toLowerCase()))) {
+      parts.push(cleanStateStr);
+    }
+  }
+  
+  if (pincode && pincode.trim() !== "" && !addrLower.includes(pincode.trim())) {
+    parts.push(pincode.trim());
+  }
+  
+  return parts.join(", ");
+}
+
 // ─── Number To Words Converter (Indian Numbering System) ─────────────────────
 export function numberToWords(num: number): string {
   const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", 
@@ -154,7 +224,7 @@ export function numberToWords(num: number): string {
   const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
 
   function convertInteger(n: number): string {
-    if (n === 0) return "Zero";
+    if (n === 0) return "";
     let words = "";
 
     if (Math.floor(n / 10000000) > 0) {
@@ -192,22 +262,22 @@ export function numberToWords(num: number): string {
     return words.trim();
   }
 
-  const rounded = Math.round(num * 100) / 100;
-  const parts = String(rounded).split(".");
+  const parts = Number(num).toFixed(2).split(".");
   const integerPart = Number(parts[0]);
-  const decimalPart = parts[1] || "";
+  const decimalPart = Number(parts[1] || "0");
 
-  let result = convertInteger(integerPart);
+  let result = convertInteger(integerPart).trim();
+  if (!result) result = "Zero";
+  result += " Rupees";
 
-  if (decimalPart && Number(decimalPart) > 0) {
-    result += " Point";
-    for (let i = 0; i < decimalPart.length; i++) {
-      const digit = Number(decimalPart[i]);
-      result += " " + (digit === 0 ? "Zero" : ones[digit]);
+  if (decimalPart > 0) {
+    const paiseText = convertInteger(decimalPart).trim();
+    if (paiseText) {
+      result += " and " + paiseText + " Paise";
     }
   }
 
-  return result.trim() + " only";
+  return result.trim() + " Only";
 }
 
 // ─── Database Order Mapper ──────────────────────────────────────────────────
@@ -241,35 +311,60 @@ export function mapOrderToInvoiceData(order: any): InvoiceData {
   const firstItem = rawItems[0] || {};
   const sellerObj = actualOrder.seller || {};
   
+  const sellerState = extractState(
+    sellerObj.address || firstItem.seller_address || "",
+    sellerObj.city || firstItem.seller_city || "",
+    sellerObj.state || firstItem.seller_state || ""
+  );
+
+  const rawSellerAddress = sellerObj.address || firstItem.seller_address || "2A, Venkatesh Nagar, Kovilpalayam";
+  const sellerCity = sellerObj.city || firstItem.seller_city || "Coimbatore";
+  const sellerPincode = sellerObj.pincode || firstItem.seller_pincode || "641107";
+
   const seller = {
     name: sellerObj.name || sellerObj.vendor_name || firstItem.seller_name || "Egnaro Mart Seller",
     company: sellerObj.company_name || sellerObj.company || firstItem.company_name || "Egnaro Mart Marketplace",
     gst: sellerObj.gst || firstItem.gst || "N/A",
-    address: sellerObj.address || firstItem.seller_address || "No: 2A, Venkatesh Nagar, Kovilpalayam",
-    city: sellerObj.city || firstItem.seller_city || "Coimbatore",
-    state: sellerObj.state || firstItem.seller_state || "Tamil Nadu",
-    pincode: sellerObj.pincode || firstItem.seller_pincode || "641107",
+    address: formatCleanAddress(rawSellerAddress, sellerCity, sellerState, sellerPincode),
+    city: sellerCity,
+    state: sellerState,
+    pincode: sellerPincode,
     email: sellerObj.email || firstItem.seller_email || "egnaromart@gmail.com",
     phone: sellerObj.phone || firstItem.seller_phone || "+91 9442581506",
   };
 
+  const rawShippingAddress = actualOrder.address || actualOrder.delivery_address || actualOrder.customer?.address || "Shipping Address Provided at Checkout";
+  const shippingCity = actualOrder.city || "";
+  const rawShippingState = actualOrder.state || "";
+  const shippingPincode = actualOrder.pincode || "";
+
+  const shippingState = extractState(rawShippingAddress, shippingCity, rawShippingState);
+
+  const rawBillingAddress = actualOrder.billing_address || actualOrder.address || actualOrder.delivery_address || actualOrder.customer?.address || "Billing Address Provided at Checkout";
+  const billingCity = actualOrder.billing_city || actualOrder.city || "";
+  const rawBillingState = actualOrder.billing_state || actualOrder.state || "";
+  const billingPincode = actualOrder.billing_pincode || actualOrder.pincode || "";
+
+  const billingState = extractState(rawBillingAddress, billingCity, rawBillingState);
+
   const buyer = {
     name: actualOrder.customer_name || actualOrder.customer?.fullName || "Valued Buyer",
-    billing_address: actualOrder.billing_address || actualOrder.address || actualOrder.customer?.address || "Billing Address Provided at Checkout",
-    billing_city: actualOrder.billing_city || actualOrder.city || "",
-    billing_state: actualOrder.billing_state || actualOrder.state || "",
-    billing_pincode: actualOrder.billing_pincode || actualOrder.pincode || "",
-    shipping_address: actualOrder.address || actualOrder.customer?.address || "Shipping Address Provided at Checkout",
-    shipping_city: actualOrder.city || "",
-    shipping_state: actualOrder.state || "",
-    shipping_pincode: actualOrder.pincode || "",
+    billing_address: formatCleanAddress(rawBillingAddress, billingCity, billingState, billingPincode),
+    billing_city: billingCity,
+    billing_state: billingState,
+    billing_pincode: billingPincode,
+    shipping_address: formatCleanAddress(rawShippingAddress, shippingCity, shippingState, shippingPincode),
+    shipping_city: shippingCity,
+    shipping_state: shippingState,
+    shipping_pincode: shippingPincode,
     phone: actualOrder.phone || actualOrder.customer?.phone || "N/A",
     email: actualOrder.email || actualOrder.customer?.email || "N/A",
+    buyer_gst: actualOrder.buyer_gst || actualOrder.customer?.gst_number || null,
   };
 
   const isIntraState = (() => {
     const sState = (seller.state || "").toLowerCase();
-    const bState = (buyer.shipping_state || buyer.shipping_address || "").toLowerCase();
+    const bState = (buyer.shipping_state || "").toLowerCase();
     if (bState.includes("tamil nadu") || bState.includes("tn") || sState.includes("tamil nadu")) {
       return true;
     }
@@ -557,7 +652,7 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
             </h3>
             <p style={{ fontSize: 11, fontWeight: 700, color: "#0f172a", margin: "0 0 2px 0" }}>{data.seller.name}</p>
             <p style={{ fontSize: 10, fontWeight: 500, color: "#334155", margin: "0 0 6px 0" }}>{data.seller.company}</p>
-            <p style={{ fontSize: 10, color: "#334155", margin: "0 0 10px 0", lineHeight: 1.4 }}>{data.seller.address}, {data.seller.city}, {data.seller.state} - {data.seller.pincode}</p>
+            <p style={{ fontSize: 10, color: "#334155", margin: "0 0 10px 0", lineHeight: 1.4 }}>{data.seller.address}</p>
             
             <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "3px 0", fontSize: 10, borderTop: "1px dashed #cbd5e1", paddingTop: 8 }}>
               <span style={{ color: "#64748b" }}>PAN No:</span>
@@ -590,13 +685,11 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
               <p style={{ fontSize: 10, fontWeight: 700, color: "#0f172a", margin: "0 0 2px 0" }}>{data.buyer.name}</p>
               <p style={{ fontSize: 10, color: "#334155", margin: "0 0 4px 0", lineHeight: 1.3 }}>
                 {data.buyer.billing_address}
-                {data.buyer.billing_city && `, ${data.buyer.billing_city}`}
-                {data.buyer.billing_state && `, ${data.buyer.billing_state}`}
-                {data.buyer.billing_pincode && ` - ${data.buyer.billing_pincode}`}
               </p>
-              <div style={{ display: "flex", gap: 15, fontSize: 9.5, color: "#475569" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 15px", fontSize: 9.5, color: "#475569", borderTop: "1px dashed #e2e8f0", paddingTop: 4, marginTop: 4 }}>
                 <span>Phone: {data.buyer.phone}</span>
                 <span>State Code: {billingStateCode}</span>
+                <span>GSTIN: <strong style={{ color: "#0f172a" }}>{data.buyer.buyer_gst || "N/A"}</strong></span>
               </div>
             </div>
 
@@ -608,15 +701,13 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
               <p style={{ fontSize: 10, fontWeight: 700, color: "#0f172a", margin: "0 0 2px 0" }}>{data.buyer.name}</p>
               <p style={{ fontSize: 10, color: "#334155", margin: "0 0 4px 0", lineHeight: 1.3 }}>
                 {data.buyer.shipping_address}
-                {data.buyer.shipping_city && `, ${data.buyer.shipping_city}`}
-                {data.buyer.shipping_state && `, ${data.buyer.shipping_state}`}
-                {data.buyer.shipping_pincode && ` - ${data.buyer.shipping_pincode}`}
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 10px", fontSize: 9.5, color: "#475569", borderTop: "1px dashed #e2e8f0", paddingTop: 4, marginTop: 4 }}>
                 <span>State Code: {shippingStateCode}</span>
                 <span>Place of Supply: {data.buyer.shipping_state || "N/A"}</span>
                 <span>Place of Delivery: {data.buyer.shipping_state || "N/A"}</span>
                 <span>Phone: {data.buyer.phone}</span>
+                <span style={{ gridColumn: "span 2" }}>GSTIN: <strong style={{ color: "#0f172a" }}>{data.buyer.buyer_gst || "N/A"}</strong></span>
               </div>
             </div>
           </div>
@@ -763,26 +854,53 @@ export const EgnaroMartInvoice: React.FC<{ data?: InvoiceData }> = ({ data = def
 
           <div style={{ textAlign: "right", fontSize: 10 }}>
             <span style={{ fontWeight: 700, color: "#334155" }}>For {data.seller.company}:</span>
-            <div style={{ height: 35, width: 140, borderBottom: "1px solid #94a3b8", margin: "5px 0 2px auto", position: "relative" }}>
-              {/* Optional Signature image placeholder */}
+            <div style={{ 
+              height: 40, 
+              width: 160, 
+              border: "1px dashed #cbd5e1", 
+              borderRadius: 6,
+              margin: "5px 0 3px auto", 
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#f8fafc",
+              fontSize: 8,
+              color: "#475569",
+              fontStyle: "italic",
+              lineHeight: 1.2
+            }}>
+              <span>Digitally Generated Invoice</span>
+              <span style={{ fontSize: 7, fontWeight: 500, color: "#64748b" }}>No Signature Required</span>
             </div>
             <span style={{ fontSize: 9, color: "#64748b" }}>Authorized Signatory</span>
           </div>
         </div>
 
         {/* ── FOOTER & DISCLAIMER ── */}
-        <div style={{ marginTop: "auto", borderTop: "1px solid #cbd5e1", paddingTop: 10, fontSize: 8.5, color: "#64748b", lineHeight: 1.4 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 15 }}>
+        <div style={{ 
+          marginTop: "auto", 
+          borderTop: "1px solid #cbd5e1", 
+          paddingTop: 12, 
+          fontSize: 8, 
+          color: "#64748b", 
+          lineHeight: 1.4 
+        }}>
+          <p style={{ margin: "0 0 8px 0", fontSize: 7.5, color: "#94a3b8", fontStyle: "italic", textAlign: "center" }}>
+            * Egnaro Mart is a registered online marketplace facilitator. Product liability and statutory GST compliance lies solely with the registered merchant seller listed above.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1.3fr 0.7fr", gap: 15 }}>
             <div>
-              <span style={{ fontWeight: 700, color: "#475569" }}>Terms & Conditions:</span>
-              <ul style={{ margin: "2px 0 0 0", paddingLeft: 12, listStyleType: "square" }}>
-                <li>This is a computer-generated document and does not require a physical signature.</li>
-                <li>Queries regarding invoice calculations must be raised within 7 working days.</li>
+              <span style={{ fontWeight: 700, color: "#475569" }}>Important Instructions:</span>
+              <ul style={{ margin: "2px 0 0 0", paddingLeft: 12, listStyleType: "square", color: "#64748b" }}>
+                <li>All disputes are subject to the jurisdiction of the seller's registered business state.</li>
+                <li>Ensure the outer packaging is intact upon delivery before signing the acknowledgment.</li>
               </ul>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ margin: 0 }}>Egnaro Mart Support: <strong>egnaromart@gmail.com</strong></p>
-              <p style={{ margin: 0 }}>Support Phone: <strong>+91 9442581506</strong></p>
+            <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 2 }}>
+              <span>Egnaro Mart: <strong>egnaromart.com</strong></span>
+              <span>Support Email: <strong>egnaromart@gmail.com</strong></span>
+              <span>Phone helpline: <strong>+91 9442581506</strong></span>
             </div>
           </div>
         </div>

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X, Building2, User, Mail, Phone, MapPin, CheckCircle, Clock, XCircle, CreditCard, Landmark, Hash, Package, IndianRupee, ShoppingCart, ShieldAlert, Loader2, Pause, Play } from "lucide-react";
-import { getVendorById, updateBankDetails } from "@/services/api";
+import { getVendorById, updateBankDetails, updateVendorGst } from "@/services/api";
 import { toast } from "sonner";
-import { sanitizeInput } from "@/lib/validation";
+import { sanitizeInput, getGstErrorMessage } from "@/lib/validation";
 
 /* ================= LAYERED ICON CONTAINER ================= */
 function LayeredIconContainer({
@@ -48,6 +48,10 @@ export function ViewVendorModal({
     ifsc_code: "",
   });
   const [submittingBank, setSubmittingBank] = useState(false);
+
+  const [isEditingGst, setIsEditingGst] = useState(false);
+  const [gstFormValue, setGstFormValue] = useState("");
+  const [submittingGst, setSubmittingGst] = useState(false);
 
   useEffect(() => {
     async function fetchVendor() {
@@ -104,6 +108,34 @@ export function ViewVendorModal({
       toast.error(err.message || "Failed to submit bank update request");
     } finally {
       setSubmittingBank(false);
+      setLoading(false);
+    }
+  };
+
+  const handleGstSave = async () => {
+    const error = getGstErrorMessage(gstFormValue);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    try {
+      setSubmittingGst(true);
+      const res = await updateVendorGst(Number(vendor.id), gstFormValue.trim().toUpperCase());
+      if (res.success) {
+        toast.success("GST number updated successfully!");
+        setIsEditingGst(false);
+        setLoading(true);
+        const updated = await getVendorById(vendor.id);
+        if (updated.success && updated.vendor) {
+          setData(updated.vendor);
+        }
+      } else {
+        toast.error(res.message || "Failed to update GST number");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update GST number");
+    } finally {
+      setSubmittingGst(false);
       setLoading(false);
     }
   };
@@ -187,6 +219,77 @@ export function ViewVendorModal({
                         value={`${details.town ? details.town + ", " : ""}${details.city ? details.city + ", " : ""}${details.state || ""}`} 
                       />
                     )}
+
+                    {/* GST Number Field */}
+                    <div className="flex gap-3 text-gray-300">
+                      <div className="mt-1 flex-shrink-0 text-violet-400">
+                        <Building2 className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[9px] font-bold uppercase tracking-widest text-gray-500">GST Number</div>
+                          {!isEditingGst && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGstFormValue(details.gst || "");
+                                setIsEditingGst(true);
+                              }}
+                              className="text-[10px] font-extrabold uppercase text-primary hover:text-primary-hover transition-colors cursor-pointer"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+                        {isEditingGst ? (
+                          <div className="mt-1.5 space-y-2">
+                            <input
+                              type="text"
+                              maxLength={15}
+                              value={gstFormValue}
+                              onChange={(e) => setGstFormValue(e.target.value.toUpperCase().replace(/\s/g, ""))}
+                              className="w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-xs text-white focus:border-primary outline-none"
+                              placeholder="15-character GSTIN"
+                              disabled={submittingGst}
+                            />
+                            {gstFormValue ? (
+                              (() => {
+                                const error = getGstErrorMessage(gstFormValue);
+                                return error ? (
+                                  <p className="text-[10px] text-rose-400 font-semibold">{error}</p>
+                                ) : (
+                                  <p className="text-[10px] text-emerald-400 font-semibold">✓ Valid GSTIN format</p>
+                                );
+                              })()
+                            ) : (
+                              <p className="text-[10px] text-gray-500 font-semibold">GSTIN is mandatory (exactly 15 characters).</p>
+                            )}
+                            <div className="flex gap-1.5 mt-2">
+                              <button
+                                type="button"
+                                disabled={submittingGst || !!getGstErrorMessage(gstFormValue) || gstFormValue.trim() === (details.gst || "")}
+                                onClick={handleGstSave}
+                                className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white hover:bg-primary-hover disabled:opacity-50 cursor-pointer shadow-md shadow-primary/10"
+                              >
+                                {submittingGst ? "Saving..." : "Save"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={submittingGst}
+                                onClick={() => setIsEditingGst(false)}
+                                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 hover:bg-white/10 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs mt-0.5 font-extrabold text-white font-mono">
+                            {details.gst || "Not Provided (Action Required)"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 

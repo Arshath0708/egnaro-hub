@@ -40,7 +40,9 @@ import { HomeContentModal } from "@/modals/HomeContentModal";
 import { ViewUserModal } from "@/modals/ViewUserModal";
 import { HaltVendorModal } from "@/modals/HaltVendorModal";
 import { DeleteVendorModal } from "@/modals/DeleteVendorModal";
+import { DeleteOrderModal } from "@/modals/DeleteOrderModal";
 import { LogisticsModal } from "@/components/vendor/LogisticsModal";
+import { InvoicePreviewButton } from "@/components/invoice/InvoiceModal";
 
 import { useAuth, selectIsAdmin } from "@/context/auth-store";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
@@ -104,13 +106,18 @@ type Order = {
   status: string;
   payment_reference?: string;
   items?: string | any[];
+  buyer_gst?: string;
+  email?: string;
+  delivery_address?: string;
+  vendor_name?: string;
+  company_name?: string;
 };
 
 const inputClass =
   "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-400 outline-none backdrop-blur-xl transition-all focus:border-primary";
 
 export default function AdminPage() {
-  useDocumentMetadata("Admin Console", "Manage products, orders, categories, locations, and vendors for Egnaro Mart.");
+  useDocumentMetadata("Egnaro Console", "Manage products, orders, categories, locations, and vendors for Egnaro Mart.");
 
   const isAdmin = useAuth(selectIsAdmin);
   const queryClient = useQueryClient();
@@ -211,6 +218,7 @@ function AdminPanel({
   const [supportStatusFilter, setSupportStatusFilter] = useState("all");
   const [supportTypeFilter, setSupportTypeFilter] = useState("all");
   const [manageOrder, setManageOrder] = useState<any | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<any | null>(null);
 
   // Standard active queries to ensure order, product, vendor, and user list counts are synchronized immediately on load
   const { data: productsData } = useQuery({
@@ -431,7 +439,7 @@ function AdminPanel({
               </span>
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-none">
-              Admin Panel
+              Egnaro Panel
             </h1>
             <p className="mt-2 text-xs md:text-sm font-semibold text-gray-400">
               Real-time operational dashboard & marketplace configuration
@@ -887,6 +895,7 @@ function AdminPanel({
                         key={o.id}
                         order={o}
                         onManageOrder={setManageOrder}
+                        onDeleteOrder={setOrderToDelete}
                       />
                     ))
                   )}
@@ -1850,6 +1859,14 @@ function AdminPanel({
           />,
           document.body
         )}
+
+        {orderToDelete && createPortal(
+          <DeleteOrderModal
+            order={orderToDelete}
+            onClose={() => setOrderToDelete(null)}
+          />,
+          document.body
+        )}
       </div>
     </Shell>
   );
@@ -2019,7 +2036,7 @@ const ORDER_STATUSES = [
 ];
 
 const OrderRow = memo(
-  ({ order, onManageOrder }: { order: any; onManageOrder: (order: any) => void }) => {
+  ({ order, onManageOrder, onDeleteOrder }: { order: any; onManageOrder: (order: any) => void; onDeleteOrder: (order: any) => void }) => {
     const queryClient = useQueryClient();
     const [status, setStatus] = useState(order.status || "pending");
     const [updating, setUpdating] = useState(false);
@@ -2105,6 +2122,11 @@ const OrderRow = memo(
                 <p className="text-sm font-extrabold text-white">{order.customer_name}</p>
                 <p className="text-xs text-gray-400">📞 {order.phone}</p>
                 {order.email && <p className="text-xs text-gray-400 break-all">✉️ {order.email}</p>}
+                {order.buyer_gst && (
+                  <p className="text-xs text-emerald-400 font-black mt-1">
+                    🏢 GSTIN: {order.buyer_gst}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 leading-relaxed max-w-xs mt-1.5 italic">📍 {order.delivery_address || order.address}</p>
               </div>
 
@@ -2126,7 +2148,7 @@ const OrderRow = memo(
                     </span>
                   </>
                 ) : (
-                  <p className="text-xs text-gray-500 italic">Egnaro Mart (Direct / Admin Warehouse)</p>
+                  <p className="text-xs text-gray-500 italic">Egnaro Mart (Direct / Egnaro Warehouse)</p>
                 )}
               </div>
 
@@ -2245,10 +2267,21 @@ const OrderRow = memo(
             <button
               type="button"
               onClick={() => onManageOrder(order)}
-              className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:scale-[1.02] shadow-lg shadow-cyan-500/20 cursor-pointer select-none mb-4"
+              className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:scale-[1.02] shadow-lg shadow-cyan-500/20 cursor-pointer select-none mb-3"
             >
               {order.awb_code ? "View Logistics" : "Ship Package"}
             </button>
+
+            <div className="mb-4 flex flex-col gap-2">
+              <InvoicePreviewButton order={order} />
+              <button
+                type="button"
+                onClick={() => onDeleteOrder(order)}
+                className="w-full rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/25 py-2.5 text-xs font-bold uppercase tracking-wider text-red-400 transition hover:scale-[1.01] cursor-pointer select-none"
+              >
+                Delete Order
+              </button>
+            </div>
 
             <p className="text-[10px] text-gray-500 italic text-center leading-relaxed">
               Logistics changes sync automatically via Shiprocket API webhook checkpoints.
@@ -2292,12 +2325,12 @@ function RevenueBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: 
             <div className="h-px bg-white/10 my-4" />
 
             <div className="flex justify-between rounded-2xl bg-cyan-500/10 p-4 border border-cyan-500/10">
-              <span className="text-cyan-400 font-semibold">Platform Net Revenue (Admin)</span>
+              <span className="text-cyan-400 font-semibold">Platform Net Revenue (Egnaro)</span>
               <span className="font-black text-cyan-400 text-lg">₹{details.platform_revenue?.toLocaleString('en-IN') || 0}</span>
             </div>
             <div className="pl-4 space-y-2">
               <div className="flex justify-between text-xs text-gray-500 font-semibold">
-                <span>└ Admin Product Sales (100%)</span>
+                <span>└ Egnaro Product Sales (100%)</span>
                 <span>₹{details.admin_owned_sales?.toLocaleString('en-IN') || 0}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-500 font-semibold">
@@ -2318,7 +2351,7 @@ function RevenueBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose: 
               <span className="font-bold text-white">₹{stats?.overall?.toLocaleString('en-IN') || 0}</span>
             </div>
             <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4 border border-cyan-500/10">
-              <span className="text-cyan-400">Egnaro Mart (Admin)</span>
+              <span className="text-cyan-400">Egnaro Mart (Egnaro)</span>
               <span className="font-bold text-cyan-400">₹{stats?.admin?.toLocaleString('en-IN') || 0}</span>
             </div>
             <div className="flex justify-between rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/10">
@@ -2395,7 +2428,7 @@ function ProductsBreakdownModal({ stats = {}, onClose }: { stats?: any; onClose:
             <span className="font-bold text-orange-400 text-lg">{stats?.by_vendor || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-cyan-500/10 p-4 border border-cyan-500/10">
-            <span className="text-cyan-400 font-semibold">By Admin</span>
+            <span className="text-cyan-400 font-semibold">By Egnaro</span>
             <span className="font-bold text-cyan-400 text-lg">{stats?.by_admin || 0}</span>
           </div>
           <div className="flex justify-between rounded-xl bg-green-500/10 p-4 border border-green-500/10">
@@ -2515,7 +2548,7 @@ function AdminSupportReviewModal({
 
           {isPending ? (
             <div className="space-y-3 pt-2">
-              <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider block font-bold">Admin Note / Response</span>
+              <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider block font-bold">Egnaro Note / Response</span>
               <textarea
                 placeholder="Provide a reason for approval/rejection or instructions for the vendor..."
                 value={adminNote}
@@ -2557,7 +2590,7 @@ function AdminSupportReviewModal({
               </div>
               {request.admin_note && (
                 <div className="space-y-1">
-                  <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider block">Admin Response Note</span>
+                  <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider block">Egnaro Response Note</span>
                   <div className="rounded-2xl border border-white/5 bg-slate-900/60 p-4 text-xs text-gray-300 leading-relaxed whitespace-pre-line">
                     {request.admin_note}
                   </div>

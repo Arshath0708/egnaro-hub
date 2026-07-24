@@ -62,6 +62,20 @@ function formatOrder($conn, $order) {
     $order['discount'] = floatval($order['discount'] ?? 0);
     $order['shipping_charges'] = floatval($order['shipping_charges'] ?? 0);
     $order['user_id'] = intval($order['user_id'] ?? 0);
+
+    // Dynamic fallback for legacy orders or testing: if buyer_gst is empty, fetch from users table
+    if (empty($order['buyer_gst']) && $order['user_id'] > 0) {
+        $u_stmt = $conn->prepare("SELECT gst_number FROM users WHERE id = ? LIMIT 1");
+        if ($u_stmt) {
+            $u_stmt->bind_param("i", $order['user_id']);
+            $u_stmt->execute();
+            $u_row = $u_stmt->get_result()->fetch_assoc();
+            $u_stmt->close();
+            if ($u_row && !empty($u_row['gst_number'])) {
+                $order['buyer_gst'] = strtoupper(trim($u_row['gst_number']));
+            }
+        }
+    }
     $order['items']   = enrichItems($conn, $order['items'] ?? '[]');
 
     // Attach top-level seller details
@@ -232,7 +246,7 @@ if (!$orderId && !$phone) {
     $stmt = $conn->prepare("
         SELECT id, order_id, customer_name, phone, address, total,
                payment_method, status, items, estimated_days, created_at, user_id,
-               tracking_number, courier_partner
+               tracking_number, courier_partner, buyer_gst
         FROM orders
         $where
         ORDER BY created_at DESC
@@ -367,7 +381,7 @@ if ($phone) {
     $stmt = $conn->prepare("
         SELECT id, order_id, customer_name, phone, address, total,
                payment_method, status, items, estimated_days, created_at,
-               tracking_number, courier_partner
+               tracking_number, courier_partner, buyer_gst
         FROM orders
         $where
         ORDER BY created_at DESC

@@ -6,6 +6,7 @@ interface UserData {
   name: string;
   email: string;
   phone?: string;
+  gst_number?: string;
 }
 
 interface AdminData {

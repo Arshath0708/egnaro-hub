@@ -264,6 +264,7 @@ export default function MyAccount() {
   // Forms states
   const [profileName, setProfileName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
+  const [profileGst, setProfileGst] = useState("");
 
   const [addressForm, setAddressForm] = useState<Address>({
     label: "Home",
@@ -310,17 +311,31 @@ export default function MyAccount() {
     if (userProfileData?.user) {
       setProfileName(userProfileData.user.fullName || userProfileData.user.name || "");
       setProfilePhone(userProfileData.user.phone || "");
+      setProfileGst(userProfileData.user.gst_number || "");
     }
   }, [userProfileData]);
 
   // Mutations
   const updateProfileMutation = useMutation({
-    mutationFn: (data: { fullName: string; phone: string }) =>
-      updateProfile(token!, data.fullName, data.phone),
+    mutationFn: (data: { fullName: string; phone: string; gst_number?: string }) =>
+      updateProfile(token!, data.fullName, data.phone, data.gst_number),
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Profile details updated successfully!");
         queryClient.invalidateQueries({ queryKey: queryKeys.userProfile(token!) });
+        
+        // Sync local auth store user session
+        const loginAction = useAuth.getState().login;
+        const currentToken = useAuth.getState().token;
+        if (loginAction && currentToken && res.user) {
+          loginAction(currentToken, {
+            id: res.user.id,
+            name: res.user.name || res.user.fullName || "",
+            email: userProfileData?.user?.email || res.user.email || "",
+            phone: res.user.phone,
+            gst_number: res.user.gst_number
+          });
+        }
       } else {
         toast.error(res.message || "Failed to update profile details.");
       }
@@ -392,7 +407,19 @@ export default function MyAccount() {
       toast.error("Valid 10-digit phone number required");
       return;
     }
-    updateProfileMutation.mutate({ fullName: cleanName, phone: profilePhone });
+    
+    let cleanGst = profileGst.trim().toUpperCase();
+    if (cleanGst !== "") {
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!gstRegex.test(cleanGst)) {
+        toast.error("Please enter a valid 15-character Indian GSTIN format");
+        return;
+      }
+    } else {
+      cleanGst = "";
+    }
+    
+    updateProfileMutation.mutate({ fullName: cleanName, phone: profilePhone, gst_number: cleanGst });
   }
 
   async function handleSaveAddress(e: React.FormEvent) {
@@ -886,6 +913,23 @@ export default function MyAccount() {
                           />
                         </div>
                         <span className="block text-[9px] text-slate-600 mt-2">* Buyer login email identifier cannot be altered for security purposes.</span>
+                      </div>
+
+                      {/* Business Details Section */}
+                      <h4 className="text-sm font-bold text-white uppercase tracking-wider mt-6 mb-4 border-b border-white/5 pb-3">Business Details (Optional B2B)</h4>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Buyer GSTIN</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="33ABCDE1234F1Z5"
+                            maxLength={15}
+                            value={profileGst}
+                            onChange={(e) => setProfileGst(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                            className="w-full px-4 py-3.5 rounded-2xl border border-white/10 bg-slate-950/60 text-xs text-white outline-none transition-colors focus:border-primary"
+                          />
+                        </div>
+                        <span className="block text-[9px] text-slate-600 mt-2">* Providing a valid GSTIN enables GST input tax credit for registered businesses.</span>
                       </div>
 
                       <button

@@ -7,7 +7,7 @@ import { useAuth, selectIsVendor } from "@/context/auth-store";
 import { useDocumentMetadata } from "@/hooks/useDocumentMetadata";
 import { toast } from "sonner";
 import { LocationSelect } from "@/components/LocationSelect";
-import { validateName, validateEmail, validatePhone, validatePassword, sanitizeInput } from "@/lib/validation";
+import { validateName, validateEmail, validatePhone, validatePassword, sanitizeInput, getGstErrorMessage } from "@/lib/validation";
 
 const API = import.meta.env.VITE_API_URL || "/api";
 
@@ -197,7 +197,7 @@ export default function VendorRegister() {
       const data = await res.json();
       if (data.success) {
         localStorage.setItem("vendor_reset_email", resetEmail); // persist across reloads
-        toast.success("Reset request sent to admin");
+        toast.success("Reset request sent to Egnaro");
         setResetStep("waiting_admin_approval");
         startPolling(resetEmail);
       } else {
@@ -368,9 +368,9 @@ export default function VendorRegister() {
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
             <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-400" />
             <h1 className="text-2xl font-bold text-white">Application Submitted</h1>
-            <p className="mt-2 text-gray-400">Your account is awaiting admin approval.</p>
+            <p className="mt-2 text-gray-400">Your account is awaiting Egnaro approval.</p>
             <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-sm text-yellow-300">
-              You can login after admin approves your account.
+              You can login after Egnaro approves your account.
             </div>
             <button
               onClick={() => { setSubmitted(false); setMode("login"); }}
@@ -456,9 +456,21 @@ export default function VendorRegister() {
                     value={form.ifsc_code} onChange={(e) => setRegField("ifsc_code", e.target.value)} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-400">GST Number (Optional)</label>
-                  <input placeholder="Business GST (If applicable)" maxLength={15} className={inp}
-                    value={form.gst} onChange={(e) => setRegField("gst", e.target.value.toUpperCase())} />
+                  <label className="mb-1 block text-xs font-medium text-gray-400">GST Number</label>
+                  <input required placeholder="15-character GSTIN (e.g. 22AAAAA0000A1Z5)" maxLength={15} className={inp}
+                    value={form.gst} onChange={(e) => setRegField("gst", e.target.value.toUpperCase().replace(/\s/g, ""))} />
+                  {form.gst ? (
+                    (() => {
+                      const gstError = getGstErrorMessage(form.gst);
+                      return gstError ? (
+                        <p className="mt-1 text-[11px] font-medium text-rose-400">{gstError}</p>
+                      ) : (
+                        <p className="mt-1 text-[11px] font-medium text-emerald-400">✓ Valid GSTIN format</p>
+                      );
+                    })()
+                  ) : (
+                    <p className="mt-1 text-[11px] text-gray-500">GSTIN is mandatory (exactly 15 characters).</p>
+                  )}
                 </div>
               </div>
               <div>
@@ -556,7 +568,7 @@ export default function VendorRegister() {
                   )}
                 </div>
               </div>
-              <button disabled={loading}
+              <button disabled={loading || !!getGstErrorMessage(form.gst)}
                 className="w-full rounded-lg gradient-primary py-3 font-semibold text-white disabled:opacity-60">
                 {loading ? "Submitting..." : "Submit Application"}
               </button>
@@ -623,7 +635,7 @@ export default function VendorRegister() {
                       <Mail className="h-6 w-6 text-primary" />
                     </div>
                     <p className="text-sm text-gray-400">
-                      Enter your vendor email to request a password reset. The admin will review and approve your request.
+                      Enter your vendor email to request a password reset. Egnaro will review and approve your request.
                     </p>
                   </div>
                   <div>
@@ -648,11 +660,11 @@ export default function VendorRegister() {
                   </div>
                   <h3 className="text-xl font-bold text-white">Request Pending</h3>
                   <p className="text-sm text-gray-400">
-                    Your password reset request has been sent to the admin. This page will update automatically once approved.
+                    Your password reset request has been sent to Egnaro. This page will update automatically once approved.
                   </p>
                   <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-sm text-yellow-300 flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Waiting for admin approval...
+                    Waiting for Egnaro approval...
                   </div>
                 </div>
               )}
@@ -666,7 +678,7 @@ export default function VendorRegister() {
                       <KeyRound className="h-6 w-6 text-green-400" />
                     </div>
                     <div className="mb-4 rounded-lg border border-green-500/20 bg-green-500/10 p-2 text-sm text-green-300">
-                      ✓ Admin approved your reset request
+                      ✓ Egnaro approved your reset request
                     </div>
                     <p className="text-sm text-gray-400">Set your new password below.</p>
                   </div>
@@ -718,7 +730,7 @@ export default function VendorRegister() {
                   </div>
                   <h3 className="text-xl font-bold text-white">Almost There!</h3>
                   <p className="text-sm text-gray-400">
-                    Your new password has been saved. Waiting for the admin to reactivate your account. This page will refresh automatically.
+                    Your new password has been saved. Waiting for Egnaro to reactivate your account. This page will refresh automatically.
                   </p>
                   <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-sm text-blue-300 flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />

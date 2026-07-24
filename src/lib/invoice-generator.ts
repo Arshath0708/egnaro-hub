@@ -50,14 +50,58 @@ export async function generateAndDownloadPDF(
       targetNode.style.boxShadow = "none";
       wrapper.appendChild(targetNode);
     } else {
-      // If direct download from order details card, render InvoiceTemplate dynamically
+      // Direct download without modal preview - fetch full order details relationally
+      const resolvedOrderId = order?.parent_order_id || 
+                              (typeof order?.order_id === "string" && order.order_id.startsWith("ORD") ? order.order_id : null) || 
+                              (typeof order?.id === "string" && order.id.startsWith("ORD") ? order.id : null) ||
+                              order?.order_id || 
+                              String(order?.id || "");
+      
+      let token = null;
+      let vendorId = null;
+      let isAdmin = false;
+      try {
+        const storedAuth = localStorage.getItem("egnaro-auth");
+        if (storedAuth) {
+          const parsed = JSON.parse(storedAuth);
+          token = parsed?.state?.token || null;
+          vendorId = parsed?.state?.vendorId || null;
+          isAdmin = parsed?.state?.admin !== null;
+        }
+      } catch (e) {
+        console.error("Failed to parse auth state in PDF generator:", e);
+      }
+
+      let orderData = order;
+      try {
+        if (resolvedOrderId && resolvedOrderId !== "Order" && resolvedOrderId !== "0000") {
+          const API_BASE = import.meta.env.VITE_API_URL || "/api";
+          let url = `${API_BASE}/get-order.php?order_id=${resolvedOrderId}`;
+          if (isAdmin) {
+            url += "&role=admin";
+          } else if (vendorId) {
+            url += `&role=vendor&vendor_id=${vendorId}`;
+          } else if (token) {
+            url += `&token=${encodeURIComponent(token)}`;
+          }
+          
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.success && data.order) {
+            orderData = data.order;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch full order details for direct PDF download:", err);
+      }
+
       const renderContainer = document.createElement("div");
       renderContainer.style.width = "794px";
       renderContainer.style.minHeight = "1123px";
       wrapper.appendChild(renderContainer);
 
       root = createRoot(renderContainer);
-      root.render(React.createElement(InvoiceTemplate, { order }));
+      root.render(React.createElement(InvoiceTemplate, { order: orderData }));
 
       // Wait for React to finish rendering
       await new Promise<void>((resolve) => setTimeout(resolve, 200));

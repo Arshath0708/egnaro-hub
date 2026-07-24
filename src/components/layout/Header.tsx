@@ -280,15 +280,7 @@ export function Header() {
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-[#0e1420]/60 px-4 py-2.5 text-xs font-semibold text-[#64748b] hover:text-white transition-all cursor-pointer hover:border-white/15"
             >
               <Store className="h-3.5 w-3.5" />
-              <span>{isVendor ? "Seller Dashboard" : "Sell on Egnaro"}</span>
-            </Link>
-
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-[#0e1420]/60 px-4 py-2.5 text-xs font-semibold text-[#64748b] hover:text-white transition-all cursor-pointer hover:border-white/15"
-            >
-              <Shield className="h-3.5 w-3.5" />
-              <span>Admin</span>
+              <span>{isVendor ? "Seller Dashboard" : "Seller Login"}</span>
             </Link>
 
             {/* Profile Dropdown */}
@@ -645,7 +637,7 @@ export function Header() {
                 {/* 3.5 Seller / Admin Links Group */}
                 <div className="py-2">
                   <div className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#64748b] px-5 pt-2 pb-1">
-                    Seller & Admin
+                    Sellers
                   </div>
 
                   <div className="space-y-1">
@@ -661,25 +653,11 @@ export function Header() {
                     >
                       <div className="flex items-center gap-3.5">
                         <Store className="h-5 w-5 text-[#f59e0b] shrink-0" />
-                        <span className="text-[0.95rem] font-semibold font-sans">Sell on Egnaro</span>
+                        <span className="text-[0.95rem] font-semibold font-sans">Seller Login</span>
                       </div>
                       <span className="text-[0.6rem] font-bold tracking-widest text-[#f59e0b] bg-[#f59e0b]/[0.15] px-2 py-0.5 rounded-full uppercase">
                         Join
                       </span>
-                    </NavLink>
-
-                    <NavLink
-                      to="/admin"
-                      onClick={() => setOpen(false)}
-                      className={({ isActive }) =>
-                        `mx-3 flex h-[52px] items-center gap-3.5 px-[1.25rem] rounded-xl bg-[#f59e0b]/[0.04] transition-all duration-200 ${isActive
-                          ? "border-l-3 border-primary bg-primary/[0.07] text-[#f1f5f9]"
-                          : "text-slate-400 hover:bg-white/[0.05] hover:text-[#f1f5f9]"
-                        }`
-                      }
-                    >
-                      <Shield className="h-5 w-5 text-[#f59e0b] shrink-0" />
-                      <span className="text-[0.95rem] font-semibold font-sans">Admin Panel</span>
                     </NavLink>
                   </div>
                 </div>

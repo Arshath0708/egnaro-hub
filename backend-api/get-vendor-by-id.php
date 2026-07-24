@@ -11,8 +11,8 @@ if (!empty($_GET['id'])) {
     try {
         $id = (int)$_GET['id'];
         
-        // Fetch detailed profile fields (now including town)
-        $query = "SELECT id, vendor_name, company_name, phone, email, address, state, city, town, status, created_at FROM vendors WHERE id = ? LIMIT 1";
+        // Fetch detailed profile fields (now including town and gst)
+        $query = "SELECT id, vendor_name, company_name, gst, phone, email, address, state, city, town, status, created_at FROM vendors WHERE id = ? LIMIT 1";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -42,6 +42,7 @@ if (!empty($_GET['id'])) {
                         "id" => (int)$vendor['id'],
                         "vendor_name" => $vendor['vendor_name'],
                         "company_name" => $vendor['company_name'],
+                        "gst" => $vendor['gst'],
                         "phone" => $vendor['phone'],
                         "email" => $vendor['email'],
                         "address" => $vendor['address'],

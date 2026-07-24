@@ -51,10 +51,17 @@ export function preventInvalidNumberInput(e: React.KeyboardEvent<HTMLInputElemen
   }
 }
 
-/**
- * Strips basic HTML tags from user input to prevent simple XSS via textareas.
- */
 export function sanitizeInput(text: string): string {
   if (!text) return "";
   return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+export function getGstErrorMessage(gst: string): string | null {
+  const cleanGst = gst.trim();
+  if (cleanGst === "") return "GSTIN is mandatory.";
+  if (cleanGst.length !== 15) return "GSTIN must contain exactly 15 characters.";
+  const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/;
+  if (!gstRegex.test(cleanGst.toUpperCase())) return "Invalid GSTIN format. Please enter a valid GST number.";
+  return null;
+}
+

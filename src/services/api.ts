@@ -270,6 +270,13 @@ export async function addVendor(data: any) {
   });
 }
 
+export async function updateVendorGst(vendorId: number, gst: string) {
+  return await request("/update-vendor-gst.php", {
+    method: "POST",
+    body: JSON.stringify({ vendor_id: vendorId, gst }),
+  });
+}
+
 export async function updateBankDetails(data: {
   vendor_id: number;
   bank_name: string;
@@ -681,6 +688,7 @@ export async function registerCustomer(form: {
   email: string;
   phone: string;
   password: string;
+  gst_number?: string;
 }) {
   return await request("/register.php", {
     method: "POST",
@@ -704,11 +712,11 @@ export async function getUser(token: string) {
   });
 }
 
-export async function updateProfile(token: string, fullName: string, phone: string) {
+export async function updateProfile(token: string, fullName: string, phone: string, gst_number?: string) {
   return await request("/update-user.php", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ fullName, phone }),
+    body: JSON.stringify({ fullName, phone, gst_number }),
   });
 }
 
@@ -829,6 +837,13 @@ export async function addLocation(state: string, city: string, town: string) {
 
 export async function deleteLocation(id: number) {
   return await request("/delete-location.php", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function deleteOrder(id: number) {
+  return await request("/delete-order.php", {
     method: "POST",
     body: JSON.stringify({ id }),
   });

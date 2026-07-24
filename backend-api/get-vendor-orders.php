@@ -57,7 +57,7 @@ $total_rows = $count_stmt->get_result()->fetch_assoc()['total'];
 $count_stmt->close();
 
 // --- Fetch paginated orders ---
-$sql = "SELECT id, order_id, user_id, customer_name, phone, email, address, items, total, payment_method, status, estimated_days, created_at, tracking_number, courier_partner FROM orders $where ORDER BY created_at DESC LIMIT ? OFFSET ?";
+$sql = "SELECT id, order_id, user_id, customer_name, phone, email, address, items, total, payment_method, status, estimated_days, created_at, tracking_number, courier_partner, buyer_gst FROM orders $where ORDER BY created_at DESC LIMIT ? OFFSET ?";
 $params[] = $limit;
 $params[] = $offset;
 $types .= "ii";

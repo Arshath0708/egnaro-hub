@@ -56,7 +56,7 @@ export default function AdminLogin() {
           <div className="my-auto space-y-8 max-w-lg py-12 lg:py-0">
             <div className="space-y-4">
               <span className="text-[10px] font-bold uppercase tracking-widest text-primary block">
-                Administrative Operations Node
+                Egnaro Operations Node
               </span>
               <h2 className="text-2xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight font-display">
                 Marketplace Operations <br />
@@ -140,7 +140,7 @@ export default function AdminLogin() {
             {/* FLOATING TOP TRUST BADGE - Only visible on Mobile */}
             <div className="flex md:hidden items-center justify-center gap-2 mb-6 mx-auto w-fit rounded-full border border-white/5 bg-[#0e1420]/60 px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Secure Admin Gateway</span>
+              <span>Secure Egnaro Gateway</span>
             </div>
 
             {/* MOBILE COMPACT BRANDING HEADER - Only visible on Mobile */}
@@ -152,7 +152,7 @@ export default function AdminLogin() {
                 Egnaro Hub
               </h1>
               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">
-                Enterprise Admin Portal
+                Enterprise Egnaro Portal
               </p>
               <p className="text-xs text-slate-400 font-normal mt-3 leading-relaxed max-w-xs">
                 Secure Marketplace Operations Control
@@ -340,7 +340,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
             Access Gateway
           </h1>
           <p className="text-xs text-slate-400 font-medium">
-            Enterprise Administrative Portal
+            Enterprise Egnaro Portal
           </p>
         </div>
       </div>
@@ -437,7 +437,7 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
       <BackButton onClick={onBack} />
       <StepHeader 
         icon={<Mail className="h-5 w-5" />}
-        title="Reset Administrative Password" 
+        title="Reset Egnaro Password" 
         subtitle="Provide your registered administrator email to receive a 6-digit verification code." 
       />
 
@@ -445,7 +445,7 @@ function EmailStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
 
       <form onSubmit={handleSend} className="space-y-4">
         <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
-        <Field label="Admin Email Account">
+        <Field label="Egnaro Email Account">
           <div className="relative group">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             <input 
@@ -637,7 +637,7 @@ function NewPwStep({ onDone }: { onDone: () => void }) {
 
       <form onSubmit={handleReset} className="space-y-4">
         <fieldset disabled={loading} className="space-y-4 border-none p-0 m-0 min-w-0">
-        <Field label="New Administrative Passkey">
+        <Field label="New Egnaro Passkey">
           <div className="relative group">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-primary" />
             <input 

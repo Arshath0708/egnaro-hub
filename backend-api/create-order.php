@@ -132,10 +132,28 @@ try {
         $initial_status = 'Processing';
     }
 
+    // Fetch B2B GSTIN snapshot if available
+    $buyer_gst = null;
+    if ($user_id > 0) {
+        $stmt_user = $conn->prepare("SELECT gst_number FROM users WHERE id = ? LIMIT 1");
+        if ($stmt_user) {
+            $stmt_user->bind_param("i", $user_id);
+            $stmt_user->execute();
+            $user_row = $stmt_user->get_result()->fetch_assoc();
+            if ($user_row && !empty($user_row['gst_number'])) {
+                $buyer_gst = strtoupper(trim($user_row['gst_number']));
+            }
+            $stmt_user->close();
+        }
+    }
+    if (isset($data['buyer_gst']) && trim($data['buyer_gst']) !== '') {
+        $buyer_gst = strtoupper(trim($data['buyer_gst']));
+    }
+
     // Insert Parent Order Row
     $sql_order = "INSERT INTO orders 
-    (order_id, vendor_id, user_id, customer_name, phone, email, address, items, total, payment_method, status, estimated_days, subtotal, discount, shipping_charges, payment_status, payment_reference) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    (order_id, vendor_id, user_id, customer_name, phone, email, address, items, total, payment_method, status, estimated_days, subtotal, discount, shipping_charges, payment_status, payment_reference, buyer_gst) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt_order = $conn->prepare($sql_order);
     if (!$stmt_order) {
@@ -143,7 +161,7 @@ try {
     }
     
     $stmt_order->bind_param(
-        "siisssssdsssdddds", 
+        "siisssssdsssdddsss", 
         $orderId, 
         $first_item_vendor, 
         $user_id, 
@@ -160,7 +178,8 @@ try {
         $discount,
         $shipping_charges,
         $payment_status,
-        $payment_ref
+        $payment_ref,
+        $buyer_gst
     );
     
     if (!$stmt_order->execute()) {

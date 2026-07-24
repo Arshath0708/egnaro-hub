@@ -300,7 +300,8 @@ export default function CheckoutPage() {
             notes: cleanNotes,
             gst: form.gst,
             user_id: user?.id,
-            vendor_id: Number(vendorId)
+            vendor_id: Number(vendorId),
+            buyer_gst: userProfile?.gst_number || user?.gst_number || null
           }),
         }
       );

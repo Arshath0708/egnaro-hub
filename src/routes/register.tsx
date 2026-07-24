@@ -15,6 +15,7 @@ export default function Register() {
     email: "",
     phone: "",
     password: "",
+    gst_number: "",
   });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -116,6 +117,19 @@ export default function Register() {
                   return;
                 }
 
+                // Optional GSTIN verification
+                const rawGst = form.gst_number || "";
+                const cleanGst = rawGst.trim().toUpperCase();
+                if (cleanGst !== "") {
+                  const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+                  if (!gstRegex.test(cleanGst)) {
+                    setErrorMsg("Please enter a valid 15-character Indian GSTIN format (e.g. 33ABCDE1234F1Z5).");
+                    return;
+                  }
+                }
+
+                // Submit form with standardized GST
+                setForm(p => ({ ...p, gst_number: cleanGst }));
                 mutation.mutate();
               }}
               className="space-y-4"
@@ -215,6 +229,25 @@ export default function Register() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* GSTIN (Optional) Input */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  GSTIN (Optional B2B)
+                </label>
+                <input
+                  type="text"
+                  placeholder="33ABCDE1234F1Z5"
+                  maxLength={15}
+                  value={form.gst_number}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                    setForm((p) => ({ ...p, gst_number: val }));
+                    setErrorMsg(null);
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary/30 hover:border-white/15 font-medium"
+                />
               </div>
 
               {/* Password complexity indicator */}

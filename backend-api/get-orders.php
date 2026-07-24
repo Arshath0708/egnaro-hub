@@ -145,6 +145,7 @@ while ($row = $result->fetch_assoc()) {
         "created_at"     => $row['created_at'],
         "tracking_number" => $row['tracking_number'] ?? null,
         "courier_partner" => $row['courier_partner'] ?? null,
+        "buyer_gst"       => $row['buyer_gst'] ?? null,
 
         // Vendor attribution
         "vendor_id"      => $row['vendor_id'] ? intval($row['vendor_id']) : null,

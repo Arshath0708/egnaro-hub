@@ -37,8 +37,35 @@ if (
             exit;
         }
 
-        // GST is optional — store NULL when not provided
-        $gst = !empty($data->gst) ? trim($data->gst) : null;
+        // Validate GST number (Mandatory, 15 characters, uppercase, and valid Indian GSTIN regex)
+        $gst = isset($data->gst) ? strtoupper(trim($data->gst)) : '';
+
+        if (empty($gst)) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "GSTIN is mandatory."
+            ]);
+            exit;
+        }
+
+        if (strlen($gst) !== 15) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "GSTIN must contain exactly 15 characters."
+            ]);
+            exit;
+        }
+
+        if (!preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/', $gst)) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "Invalid GSTIN format. Please enter a valid GST number."
+            ]);
+            exit;
+        }
 
         // Insert new vendor application in pending state
         $query = "INSERT INTO vendors
