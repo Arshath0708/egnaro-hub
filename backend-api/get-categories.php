@@ -26,6 +26,20 @@ try {
             ];
         }
     }
+
+    // Fetch all sub-subcategories to map them to subcategories
+    $sub_subcategories = [];
+    $sub_sub_query = "SELECT id, subcategory_id, name FROM sub_subcategories ORDER BY name ASC";
+    $sub_sub_result = @$conn->query($sub_sub_query);
+    if ($sub_sub_result) {
+        while ($ss_row = $sub_sub_result->fetch_assoc()) {
+            $sub_subcategories[] = [
+                "id" => intval($ss_row['id']),
+                "subcategory_id" => intval($ss_row['subcategory_id']),
+                "name" => $ss_row['name']
+            ];
+        }
+    }
     
     $categories = [];
     while ($row = $result->fetch_assoc()) {
@@ -33,9 +47,19 @@ try {
         $cat_subs = [];
         foreach ($subcategories as $sub) {
             if ($sub['category_id'] === $cat_id) {
+                $sub_subs = [];
+                foreach ($sub_subcategories as $ssub) {
+                    if ($ssub['subcategory_id'] === $sub['id']) {
+                        $sub_subs[] = [
+                            "id" => $ssub['id'],
+                            "name" => $ssub['name']
+                        ];
+                    }
+                }
                 $cat_subs[] = [
                     "id" => $sub['id'],
-                    "name" => $sub['name']
+                    "name" => $sub['name'],
+                    "sub_subcategories" => $sub_subs
                 ];
             }
         }

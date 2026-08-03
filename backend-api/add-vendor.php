@@ -37,58 +37,53 @@ if (
             exit;
         }
 
-        // Validate GST number (Mandatory, 15 characters, uppercase, and valid Indian GSTIN regex)
+        // Validate GST number (Optional, 15 characters, uppercase, and valid Indian GSTIN regex if provided)
         $gst = isset($data->gst) ? strtoupper(trim($data->gst)) : '';
 
-        if (empty($gst)) {
-            http_response_code(400);
-            echo json_encode([
-                "success" => false,
-                "message" => "GSTIN is mandatory."
-            ]);
-            exit;
-        }
+        if (!empty($gst)) {
+            if (strlen($gst) !== 15) {
+                http_response_code(400);
+                echo json_encode([
+                    "success" => false,
+                    "message" => "GSTIN must contain exactly 15 characters."
+                ]);
+                exit;
+            }
 
-        if (strlen($gst) !== 15) {
-            http_response_code(400);
-            echo json_encode([
-                "success" => false,
-                "message" => "GSTIN must contain exactly 15 characters."
-            ]);
-            exit;
-        }
-
-        if (!preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/', $gst)) {
-            http_response_code(400);
-            echo json_encode([
-                "success" => false,
-                "message" => "Invalid GSTIN format. Please enter a valid GST number."
-            ]);
-            exit;
+            if (!preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/', $gst)) {
+                http_response_code(400);
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Invalid GSTIN format. Please enter a valid GST number."
+                ]);
+                exit;
+            }
+        } else {
+            $gst = "";
         }
 
         // Insert new vendor application in pending state
-        $query = "INSERT INTO vendors
-            (vendor_name, company_name, gst, phone, email, password, address, state, city, town, status, created_at)
-            VALUES
+        $query = "INSERT INTO vendors 
+            (vendor_name, company_name, gst, phone, email, password, address, state, city, town, status, created_at) 
+            VALUES 
             (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
-
+            
         $stmt = $conn->prepare($query);
-
+        
         // Secure password hashing
         $hashed_password = password_hash($data->password, PASSWORD_BCRYPT);
-
+        
         $stmt->bind_param(
-            "ssssssssss",
-            $data->vendor_name,
-            $data->company_name,
+            "ssssssssss", 
+            $data->vendor_name, 
+            $data->company_name, 
             $gst,
-            $data->phone,
-            $data->email,
-            $hashed_password,
-            $data->address,
-            $data->state,
-            $data->city,
+            $data->phone, 
+            $data->email, 
+            $hashed_password, 
+            $data->address, 
+            $data->state, 
+            $data->city, 
             $data->town
         );
         

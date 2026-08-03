@@ -35,9 +35,9 @@ if (file_exists(__DIR__ . '/.env')) {
 }
 
 if (!defined('RAZORPAY_KEY_ID')) {
-    define('RAZORPAY_KEY_ID', getenv('RAZORPAY_KEY_ID') ?: '');
+    define('RAZORPAY_KEY_ID', getenv('RAZORPAY_KEY_ID') ?: 'rzp_live_TEDR3PWl8ajjIC');
 }
 if (!defined('RAZORPAY_KEY_SECRET')) {
-    define('RAZORPAY_KEY_SECRET', getenv('RAZORPAY_KEY_SECRET') ?: '');
+    define('RAZORPAY_KEY_SECRET', getenv('RAZORPAY_KEY_SECRET') ?: 'vzpjzGXNRoC0r5P5vrlvWM5d');
 }
 ?>

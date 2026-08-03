@@ -57,10 +57,25 @@ if ($product_id > 0) {
             $params[] = !empty($data->subcategory_id) ? intval($data->subcategory_id) : null;
             $types .= "i";
         }
+        if (property_exists($data, 'sub_subcategory_id')) {
+            $updates[] = "sub_subcategory_id = ?";
+            $params[] = !empty($data->sub_subcategory_id) ? intval($data->sub_subcategory_id) : null;
+            $types .= "i";
+        }
         if (isset($data->stock_quantity)) {
             $updates[] = "stock_quantity = ?";
             $params[] = intval($data->stock_quantity);
             $types .= "i";
+        }
+        if (isset($data->gst_percentage)) {
+            $updates[] = "gst_percentage = ?";
+            $params[] = floatval($data->gst_percentage);
+            $types .= "d";
+        }
+        if (property_exists($data, 'hsn_code')) {
+            $updates[] = "hsn_code = ?";
+            $params[] = !empty($data->hsn_code) ? trim($data->hsn_code) : null;
+            $types .= "s";
         }
         if (isset($data->approved)) {
             $updates[] = "approved = ?";

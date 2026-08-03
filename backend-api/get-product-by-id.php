@@ -36,6 +36,9 @@ $stmt = $conn->prepare("
         
         -- Subcategory Metadata
         sb.name AS subcategory_name,
+        
+        -- Sub-subcategory Metadata
+        ssb.name AS sub_subcategory_name,
 
         -- Live rating from reviews table
         IFNULL(ROUND(AVG(r.rating), 1), 0) AS average_rating,
@@ -50,13 +53,16 @@ $stmt = $conn->prepare("
     LEFT JOIN subcategories sb
         ON p.subcategory_id = sb.id
 
+    LEFT JOIN sub_subcategories ssb
+        ON p.sub_subcategory_id = ssb.id
+
     LEFT JOIN reviews r
         ON p.id = r.product_id
 
     WHERE p.id = ?
 
     GROUP BY
-        p.id, v.id, sb.id
+        p.id, v.id, sb.id, ssb.id
     
     LIMIT 1
 ");
@@ -81,6 +87,10 @@ $product["average_rating"] = (float)$product["average_rating"];
 $product["total_reviews"]  = (int)$product["total_reviews"];
 $product["subcategory"]    = $product["subcategory_name"] ?? "";
 $product["subcategory_id"] = $product["subcategory_id"] ? (int)$product["subcategory_id"] : null;
+$product["sub_subcategory"]    = $product["sub_subcategory_name"] ?? "";
+$product["sub_subcategory_id"] = $product["sub_subcategory_id"] ? (int)$product["sub_subcategory_id"] : null;
+$product["gst_percentage"] = isset($product["gst_percentage"]) ? (float)$product["gst_percentage"] : 0.00;
+$product["hsn_code"]       = $product["hsn_code"] ?? null;
 
 // Fallbacks for Admin uploads
 $product["vendor_company"] = $product["vendor_company"] ?? "Egnaro Mart";

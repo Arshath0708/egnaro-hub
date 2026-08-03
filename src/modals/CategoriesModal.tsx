@@ -22,10 +22,19 @@ import {
   addSubcategory,
   updateSubcategory,
   deleteSubcategory,
+  addSubSubcategory,
+  updateSubSubcategory,
+  deleteSubSubcategory,
 } from "@/services/api";
 import { LocationSelect } from "@/components/LocationSelect";
 import { sanitizeInput } from "@/lib/validation";
 import { queryKeys, QUERY_KEYS } from "@/lib/query-keys";
+
+type Subcategory = {
+  id: number;
+  name: string;
+  sub_subcategories?: Array<{ id: number; name: string }>;
+};
 
 type Category = {
   id: number;
@@ -33,7 +42,7 @@ type Category = {
   state?: string;
   city?: string;
   town?: string;
-  subcategories?: Array<{ id: number; name: string }>;
+  subcategories?: Subcategory[];
 };
 
 type LocationItem = {
@@ -221,6 +230,11 @@ export function CategoriesModal({ onClose }: Props) {
   const [editingSubcatId, setEditingSubcatId] = useState<number | null>(null);
   const [editingSubcatName, setEditingSubcatName] = useState("");
 
+  const [expandedSubcategoryId, setExpandedSubcategoryId] = useState<number | null>(null);
+  const [editingSubSubcatId, setEditingSubSubcatId] = useState<number | null>(null);
+  const [editingSubSubcatName, setEditingSubSubcatName] = useState("");
+  const [newSubSubcatName, setNewSubSubcatName] = useState("");
+
   const addSubcatMutation = useMutation({
     mutationFn: ({ categoryId, name }: { categoryId: number; name: string }) =>
       addSubcategory(categoryId, name),
@@ -270,13 +284,65 @@ export function CategoriesModal({ onClose }: Props) {
     },
   });
 
+  const addSubSubcatMutation = useMutation({
+    mutationFn: ({ subcategoryId, name }: { subcategoryId: number; name: string }) =>
+      addSubSubcategory(subcategoryId, name),
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success("Sub-subcategory added successfully");
+        setNewSubSubcatName("");
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+      } else {
+        toast.error(res.message || "Failed to add sub-subcategory");
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add sub-subcategory");
+    },
+  });
+
+  const updateSubSubcatMutation = useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) =>
+      updateSubSubcategory(id, name),
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success("Sub-subcategory updated successfully");
+        setEditingSubSubcatId(null);
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+      } else {
+        toast.error(res.message || "Failed to update sub-subcategory");
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update sub-subcategory");
+    },
+  });
+
+  const deleteSubSubcatMutation = useMutation({
+    mutationFn: (id: number) => deleteSubSubcategory(id),
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success("Sub-subcategory deleted successfully");
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+      } else {
+        toast.error(res.message || "Failed to delete sub-subcategory");
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete sub-subcategory");
+    },
+  });
+
   const isPending =
     addMutation.isPending ||
     updateMutation.isPending ||
     deleteMutation.isPending ||
     addSubcatMutation.isPending ||
     updateSubcatMutation.isPending ||
-    deleteSubcatMutation.isPending;
+    deleteSubcatMutation.isPending ||
+    addSubSubcatMutation.isPending ||
+    updateSubSubcatMutation.isPending ||
+    deleteSubSubcatMutation.isPending;
 
   function handleAdd() {
     if (!newCategory.trim()) {
@@ -607,67 +673,189 @@ export function CategoriesModal({ onClose }: Props) {
                             No subcategories registered for this category yet.
                           </div>
                         ) : (
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            {cat.subcategories.map((sub) => (
-                              <div
-                                key={sub.id}
-                                className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] px-3.5 py-2"
-                              >
-                                {editingSubcatId === sub.id ? (
-                                  <div className="flex items-center gap-2 flex-1 mr-2">
-                                    <input
-                                      value={editingSubcatName}
-                                      onChange={(e) => setEditingSubcatName(sanitizeInput(e.target.value))}
-                                      className="flex-1 h-8 rounded-lg border border-white/10 bg-slate-950 px-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                                      autoFocus
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        if (editingSubcatName.trim()) {
-                                          updateSubcatMutation.mutate({ id: sub.id, name: editingSubcatName.trim() });
-                                        }
-                                      }}
-                                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-bold text-white uppercase"
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingSubcatId(null)}
-                                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-[10px] font-bold text-gray-400"
-                                    >
-                                      Cancel
-                                    </button>
+                          <div className="flex flex-col gap-3">
+                            {cat.subcategories.map((sub) => {
+                              const isSubExpanded = expandedSubcategoryId === sub.id;
+                              return (
+                                <div
+                                  key={sub.id}
+                                  className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden"
+                                >
+                                  {/* Subcategory Row */}
+                                  <div className="flex items-center justify-between px-3.5 py-2.5 bg-white/[0.02] border-b border-white/5">
+                                    {editingSubcatId === sub.id ? (
+                                      <div className="flex items-center gap-2 flex-1 mr-2">
+                                        <input
+                                          value={editingSubcatName}
+                                          onChange={(e) => setEditingSubcatName(sanitizeInput(e.target.value))}
+                                          className="flex-1 h-8 rounded-lg border border-white/10 bg-slate-950 px-2.5 text-xs text-white outline-none focus:border-cyan-400"
+                                          autoFocus
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            if (editingSubcatName.trim()) {
+                                              updateSubcatMutation.mutate({ id: sub.id, name: editingSubcatName.trim() });
+                                            }
+                                          }}
+                                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-bold text-white uppercase cursor-pointer"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingSubcatId(null)}
+                                          className="rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-[10px] font-bold text-gray-400 cursor-pointer"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <div
+                                          onClick={() => setExpandedSubcategoryId(isSubExpanded ? null : sub.id)}
+                                          className="flex items-center gap-2 flex-1 cursor-pointer select-none"
+                                        >
+                                          {isSubExpanded ? (
+                                            <ChevronUp className="h-3.5 w-3.5 text-gray-500" />
+                                          ) : (
+                                            <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                                          )}
+                                          <span className="text-xs font-bold text-gray-200">
+                                            {sub.name}
+                                          </span>
+                                          {sub.sub_subcategories && sub.sub_subcategories.length > 0 && (
+                                            <span className="rounded-full bg-cyan-500/10 border border-cyan-500/25 px-1.5 py-0.5 text-[8.5px] font-black text-cyan-400">
+                                              {sub.sub_subcategories.length} nested
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex gap-1.5">
+                                          <button
+                                            onClick={() => {
+                                              setEditingSubcatId(sub.id);
+                                              setEditingSubcatName(sub.name);
+                                            }}
+                                            className="text-gray-400 hover:text-cyan-400 p-1 cursor-pointer"
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              if (confirm(`Delete subcategory "${sub.name}"?`)) {
+                                                deleteSubcatMutation.mutate(sub.id);
+                                              }
+                                            }}
+                                            className="text-gray-400 hover:text-red-400 p-1 cursor-pointer"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </button>
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
-                                ) : (
-                                  <>
-                                    <span className="text-xs font-bold text-gray-200">
-                                      {sub.name}
-                                    </span>
-                                    <div className="flex gap-1.5">
-                                      <button
-                                        onClick={() => {
-                                          setEditingSubcatId(sub.id);
-                                          setEditingSubcatName(sub.name);
-                                        }}
-                                        className="text-gray-400 hover:text-cyan-400 p-1"
-                                      >
-                                        <Pencil className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          if (confirm(`Delete subcategory "${sub.name}"?`)) {
-                                            deleteSubcatMutation.mutate(sub.id);
-                                          }
-                                        }}
-                                        className="text-gray-400 hover:text-red-400 p-1"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
+
+                                  {/* Sub-subcategories panel */}
+                                  {isSubExpanded && (
+                                    <div className="p-4 bg-black/20 border-t border-white/5 space-y-3 animate-slideDown">
+                                      <div className="text-[9px] font-black uppercase tracking-wider text-cyan-500">
+                                        Level 3 Sub-subcategories
+                                      </div>
+
+                                      {(!sub.sub_subcategories || sub.sub_subcategories.length === 0) ? (
+                                        <div className="text-[10px] text-gray-500 font-medium italic">
+                                          No sub-subcategories registered under this subcategory yet.
+                                        </div>
+                                      ) : (
+                                        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+                                          {sub.sub_subcategories.map((ssub) => (
+                                            <div
+                                              key={ssub.id}
+                                              className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.01] px-2.5 py-1.5"
+                                            >
+                                              {editingSubSubcatId === ssub.id ? (
+                                                <div className="flex items-center gap-1.5 flex-1">
+                                                  <input
+                                                    value={editingSubSubcatName}
+                                                    onChange={(e) => setEditingSubSubcatName(sanitizeInput(e.target.value))}
+                                                    className="flex-1 h-7 rounded-lg border border-white/10 bg-slate-950 px-2 text-[11px] text-white outline-none focus:border-cyan-400"
+                                                    autoFocus
+                                                  />
+                                                  <button
+                                                    onClick={() => {
+                                                      if (editingSubSubcatName.trim()) {
+                                                        updateSubSubcatMutation.mutate({ id: ssub.id, name: editingSubSubcatName.trim() });
+                                                      }
+                                                    }}
+                                                    className="rounded bg-emerald-600 px-2 py-1 text-[9px] font-bold text-white uppercase cursor-pointer"
+                                                  >
+                                                    Save
+                                                  </button>
+                                                  <button
+                                                    onClick={() => setEditingSubSubcatId(null)}
+                                                    className="rounded bg-white/5 border border-white/10 px-2 py-1 text-[9px] font-bold text-gray-400 cursor-pointer"
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <>
+                                                  <span className="text-[11px] font-medium text-gray-300">
+                                                    {ssub.name}
+                                                  </span>
+                                                  <div className="flex gap-1">
+                                                    <button
+                                                      onClick={() => {
+                                                        setEditingSubSubcatId(ssub.id);
+                                                        setEditingSubSubcatName(ssub.name);
+                                                      }}
+                                                      className="text-gray-500 hover:text-cyan-400 p-0.5 cursor-pointer"
+                                                    >
+                                                      <Pencil className="h-3 w-3" />
+                                                    </button>
+                                                    <button
+                                                      onClick={() => {
+                                                        if (confirm(`Delete sub-subcategory "${ssub.name}"?`)) {
+                                                          deleteSubSubcatMutation.mutate(ssub.id);
+                                                        }
+                                                      }}
+                                                      className="text-gray-500 hover:text-red-400 p-0.5 cursor-pointer"
+                                                    >
+                                                      <Trash2 className="h-3 w-3" />
+                                                    </button>
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {/* Add Sub-subcategory Form */}
+                                      <div className="flex gap-2 pt-2 border-t border-white/5 items-center">
+                                        <input
+                                          value={newSubSubcatName}
+                                          onChange={(e) => setNewSubSubcatName(sanitizeInput(e.target.value))}
+                                          placeholder="Add sub-subcategory (e.g. LED bulb)"
+                                          className="flex-1 h-8 rounded-lg border border-white/10 bg-slate-950 px-2.5 text-[11px] text-white outline-none focus:border-cyan-400"
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            if (!newSubSubcatName.trim()) {
+                                              toast.error("Sub-subcategory name is required");
+                                              return;
+                                            }
+                                            addSubSubcatMutation.mutate({ subcategoryId: sub.id, name: newSubSubcatName.trim() });
+                                          }}
+                                          disabled={addSubSubcatMutation.isPending}
+                                          className="h-8 rounded-lg bg-cyan-500 hover:bg-cyan-400 px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-950 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                                        >
+                                          Add
+                                        </button>
+                                      </div>
                                     </div>
-                                  </>
-                                )}
-                              </div>
-                            ))}
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
 
@@ -681,13 +869,13 @@ export function CategoriesModal({ onClose }: Props) {
                           <button
                             onClick={() => {
                               if (!newSubcategoryName.trim()) {
-                                toast.error("Subcategory name is required");
-                                return;
+                                  toast.error("Subcategory name is required");
+                                  return;
                               }
                               addSubcatMutation.mutate({ categoryId: cat.id, name: newSubcategoryName.trim() });
                             }}
                             disabled={addSubcatMutation.isPending}
-                            className="h-9 rounded-xl bg-cyan-500 hover:bg-cyan-400 px-4 text-xs font-extrabold uppercase tracking-wider text-slate-950 transition active:scale-95 disabled:opacity-50"
+                            className="h-9 rounded-xl bg-cyan-500 hover:bg-cyan-400 px-4 text-xs font-extrabold uppercase tracking-wider text-slate-950 transition active:scale-95 disabled:opacity-50 cursor-pointer"
                           >
                             Add
                           </button>

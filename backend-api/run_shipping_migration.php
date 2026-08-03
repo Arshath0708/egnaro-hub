@@ -14,13 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 mysqli_report(MYSQLI_REPORT_OFF);
 
 include "db.php";
-
 $executed = 0;
 $skipped = 0;
 $failed = 0;
 $details = [];
-
-// Helper function to log details
 function log_step(&$details, &$executed, &$skipped, &$failed, $description, $status, $query = "", $message = "") {
     if ($status === "executed") $executed++;
     elseif ($status === "skipped") $skipped++;

@@ -26,6 +26,7 @@ $offset = ($page - 1) * $limit;
 $status_filter   = trim($_GET['status']   ?? '');   
 $category_filter = trim($_GET['category'] ?? '');   
 $subcategory_id_filter = intval($_GET['subcategory_id'] ?? 0);
+$sub_subcategory_id_filter = intval($_GET['sub_subcategory_id'] ?? 0);
 $search          = trim($_GET['search']   ?? '');   
 
 $where  = "WHERE p.vendor_id = ?";
@@ -47,6 +48,12 @@ if ($category_filter !== '') {
 if ($subcategory_id_filter > 0) {
     $where   .= " AND p.subcategory_id = ?";
     $params[] = $subcategory_id_filter;
+    $types   .= "i";
+}
+
+if ($sub_subcategory_id_filter > 0) {
+    $where   .= " AND p.sub_subcategory_id = ?";
+    $params[] = $sub_subcategory_id_filter;
     $types   .= "i";
 }
 
@@ -75,11 +82,13 @@ $stmt = $conn->prepare("
         p.*,
         v.company_name AS vendor_company,
         sb.name AS subcategory_name,
+        ssb.name AS sub_subcategory_name,
         COALESCE((SELECT AVG(rating) FROM reviews WHERE product_id = p.id), 0) AS average_rating,
         COALESCE((SELECT COUNT(*) FROM reviews WHERE product_id = p.id), 0) AS total_reviews
     FROM products p
     LEFT JOIN vendors v ON p.vendor_id = v.id
     LEFT JOIN subcategories sb ON p.subcategory_id = sb.id
+    LEFT JOIN sub_subcategories ssb ON p.sub_subcategory_id = ssb.id
     $where
     ORDER BY p.id DESC
     LIMIT ? OFFSET ?
@@ -101,12 +110,16 @@ while ($row = $result->fetch_assoc()) {
         "category"       => $row['category'],
         "subcategory"    => $row['subcategory_name'] ?? "",
         "subcategory_id" => $row['subcategory_id'] ? intval($row['subcategory_id']) : null,
+        "sub_subcategory"    => $row['sub_subcategory_name'] ?? "",
+        "sub_subcategory_id" => $row['sub_subcategory_id'] ? intval($row['sub_subcategory_id']) : null,
         "stock_quantity" => intval($row['stock_quantity'] ?? 0),
         "average_rating" => floatval($row['average_rating'] ?? 0),
         "total_reviews"  => intval($row['total_reviews'] ?? 0),
         "approved"       => intval($row['approved'] ?? 0),
         "status"         => $row['status'] ?? 'pending',
         "vendor_company" => $row['vendor_company'] ?? 'Egnaro Mart',
+        "gst_percentage" => isset($row['gst_percentage']) ? (float)$row['gst_percentage'] : 0.00,
+        "hsn_code"       => $row['hsn_code'] ?? null,
         "created_at"     => $row['created_at']
     ];
 }

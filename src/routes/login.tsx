@@ -113,7 +113,7 @@ function PrimaryButton({ loading, label, loadingLabel }: { loading: boolean; lab
     <button
       type="submit"
       disabled={loading}
-      className="w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+      className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-emerald-500 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
     >
       {loading ? (
         <>

@@ -19,11 +19,13 @@ try {
         v.city AS vendor_city, 
         v.town AS vendor_town,
         sb.name AS subcategory_name,
+        ssb.name AS sub_subcategory_name,
         COALESCE((SELECT AVG(rating) FROM reviews WHERE product_id = p.id), 0) AS average_rating,
         COALESCE((SELECT COUNT(*) FROM reviews WHERE product_id = p.id), 0) AS total_reviews
         FROM products p
         LEFT JOIN vendors v ON p.vendor_id = v.id
         LEFT JOIN subcategories sb ON p.subcategory_id = sb.id
+        LEFT JOIN sub_subcategories ssb ON p.sub_subcategory_id = ssb.id
         ORDER BY p.id DESC";
         
     $stmt = $conn->prepare($query);
@@ -43,6 +45,8 @@ try {
             "category" => $row['category'],
             "subcategory" => $row['subcategory_name'] ?? "",
             "subcategory_id" => $row['subcategory_id'] ? (int)$row['subcategory_id'] : null,
+            "sub_subcategory" => $row['sub_subcategory_name'] ?? "",
+            "sub_subcategory_id" => $row['sub_subcategory_id'] ? (int)$row['sub_subcategory_id'] : null,
             "vendor_id" => $row['vendor_id'] ? (int)$row['vendor_id'] : null,
             "created_by_type" => $row['created_by_type'],
             "created_by_id" => isset($row['created_by_id']) ? (int)$row['created_by_id'] : null,
@@ -56,6 +60,8 @@ try {
             "vendor_state" => $row['vendor_state'] ?? "Tamil Nadu",
             "vendor_city" => $row['vendor_city'] ?? "Erode",
             "vendor_town" => $row['vendor_town'] ?? "Perundurai",
+            "gst_percentage" => isset($row['gst_percentage']) ? (float)$row['gst_percentage'] : 0.00,
+            "hsn_code" => $row['hsn_code'] ?? null,
             "created_at" => $row['created_at']
         ];
     }

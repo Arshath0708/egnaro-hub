@@ -43,8 +43,11 @@ if (hash_equals($generatedSignature, $razorpaySignature)) {
     $conn->begin_transaction();
 
     try {
-        // Check if order exists
-        $stmt_check = $conn->prepare("SELECT id, payment_status FROM orders WHERE order_id = ? LIMIT 1");
+        // Check if order exists and fetch validation reference
+        $stmt_check = $conn->prepare("SELECT id, payment_status, payment_reference FROM orders WHERE order_id = ? LIMIT 1");
+        if (!$stmt_check) {
+            throw new Exception("Check query preparation error: " . $conn->error);
+        }
         $stmt_check->bind_param("s", $orderId);
         $stmt_check->execute();
         $order = $stmt_check->get_result()->fetch_assoc();
@@ -54,8 +57,28 @@ if (hash_equals($generatedSignature, $razorpaySignature)) {
             throw new Exception("Order not found");
         }
 
-        // Update order status to paid and Processing
+        // 1. Prevent Double-Verification / Re-entry
+        if (strtolower($order['payment_status'] ?? '') === 'paid') {
+            $conn->commit();
+            echo json_encode([
+                "success" => true,
+                "message" => "Payment already verified and completed previously"
+            ]);
+            $conn->close();
+            exit;
+        }
+
+        // 2. Prevent Signature Bypass / Replay Attacks
+        // The payment_reference must match the client's razorpay_order_id
+        if ($order['payment_reference'] !== $razorpayOrderId) {
+            throw new Exception("Razorpay Order ID mismatch for this order receipt. Verification rejected.");
+        }
+
+        // Update order status to paid and Processing, store verified payment reference
         $stmt_update = $conn->prepare("UPDATE orders SET payment_status = 'paid', status = 'Processing', payment_reference = ? WHERE order_id = ?");
+        if (!$stmt_update) {
+            throw new Exception("Update query preparation error: " . $conn->error);
+        }
         $stmt_update->bind_param("ss", $razorpayPaymentId, $orderId);
         
         if (!$stmt_update->execute()) {

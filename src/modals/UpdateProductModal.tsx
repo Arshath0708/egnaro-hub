@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Sparkles, ImagePlus, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { updateProduct, adminUpdateProduct, getCategories, addSubcategory } from "@/services/api";
+import { updateProduct, adminUpdateProduct, getCategories, addSubcategory, addSubSubcategory } from "@/services/api";
 import {
   Select,
   SelectContent,
@@ -41,6 +41,8 @@ export function UpdateProductModal({
     category: product.category || "",
     subcategory_id: product.subcategory_id || undefined,
     subcategory: product.subcategory || "",
+    sub_subcategory_id: product.sub_subcategory_id || undefined,
+    sub_subcategory: product.sub_subcategory || "",
     image: product.image || "",
     price: product.price || "",
     original_price: product.original_price || "",
@@ -59,11 +61,15 @@ export function UpdateProductModal({
       const defaultCat = categories[0];
       const subcats = defaultCat.subcategories || [];
       const firstSub = subcats[0];
+      const subsubcats = firstSub?.sub_subcategories || [];
+      const firstSubSub = subsubcats[0];
       setForm((prev) => ({
         ...prev,
         category: defaultCat.name,
         subcategory_id: firstSub ? Number(firstSub.id) : undefined,
-        subcategory: firstSub ? firstSub.name : ""
+        subcategory: firstSub ? firstSub.name : "",
+        sub_subcategory_id: firstSubSub ? Number(firstSubSub.id) : undefined,
+        sub_subcategory: firstSubSub ? firstSubSub.name : ""
       }));
     }
   }, [categories, form.category, product.category]);
@@ -71,6 +77,10 @@ export function UpdateProductModal({
   const [isCreatingSubcat, setIsCreatingSubcat] = useState(false);
   const [newSubcatName, setNewSubcatName] = useState("");
   const [subcatLoading, setSubcatLoading] = useState(false);
+
+  const [isCreatingSubSubcat, setIsCreatingSubSubcat] = useState(false);
+  const [newSubSubcatNameInput, setNewSubSubcatNameInput] = useState("");
+  const [subsubcatLoading, setSubsubcatLoading] = useState(false);
 
   async function handleCreateSubcategory() {
     const nameTrimmed = newSubcatName.trim();
@@ -94,6 +104,8 @@ export function UpdateProductModal({
           ...prev,
           subcategory_id: Number(res.id),
           subcategory: nameTrimmed,
+          sub_subcategory_id: undefined,
+          sub_subcategory: "",
         }));
         setNewSubcatName("");
         setIsCreatingSubcat(false);
@@ -105,6 +117,41 @@ export function UpdateProductModal({
       toast.error("Error creating subcategory");
     } finally {
       setSubcatLoading(false);
+    }
+  }
+
+  async function handleCreateSubSubcategory() {
+    const nameTrimmed = newSubSubcatNameInput.trim();
+    if (!nameTrimmed) {
+      toast.error("Please enter a sub-subcategory name");
+      return;
+    }
+    if (!form.subcategory_id) {
+      toast.error("Please select a subcategory first");
+      return;
+    }
+
+    try {
+      setSubsubcatLoading(true);
+      const res = await addSubSubcategory(Number(form.subcategory_id), nameTrimmed);
+      if (res.success) {
+        toast.success("Sub-subcategory added successfully");
+        await queryClient.invalidateQueries({ queryKey: ["categories"] });
+        setForm((prev: any) => ({
+          ...prev,
+          sub_subcategory_id: Number(res.id),
+          sub_subcategory: nameTrimmed,
+        }));
+        setNewSubSubcatNameInput("");
+        setIsCreatingSubSubcat(false);
+      } else {
+        toast.error(res.message || "Failed to add sub-subcategory");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Error creating sub-subcategory");
+    } finally {
+      setSubsubcatLoading(false);
     }
   }
 
@@ -219,11 +266,15 @@ export function UpdateProductModal({
                       const selectedCat = categories.find((c: any) => c.name === val);
                       const subcats = selectedCat?.subcategories || [];
                       const firstSub = subcats[0];
+                      const subsubcats = firstSub?.sub_subcategories || [];
+                      const firstSubSub = subsubcats[0];
                       setForm((p) => ({
                         ...p,
                         category: val,
                         subcategory_id: firstSub ? Number(firstSub.id) : undefined,
-                        subcategory: firstSub ? firstSub.name : ""
+                        subcategory: firstSub ? firstSub.name : "",
+                        sub_subcategory_id: firstSubSub ? Number(firstSubSub.id) : undefined,
+                        sub_subcategory: firstSubSub ? firstSubSub.name : ""
                       }));
                     }}
                   >
@@ -245,77 +296,157 @@ export function UpdateProductModal({
                   if (!form.category) return null;
 
                   const subcategories = currentCategoryObj?.subcategories || [];
+                  const currentSubcatObj = subcategories.find((s: any) => Number(s.id) === Number(form.subcategory_id));
+                  const subsubcategories = currentSubcatObj?.sub_subcategories || [];
 
                   return (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">Subcategory</label>
-                        {!isCreatingSubcat && (
-                          <button
-                            type="button"
-                            onClick={() => setIsCreatingSubcat(true)}
-                            className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-gray-300">Subcategory</label>
+                          {!isCreatingSubcat && (
+                            <button
+                              type="button"
+                              onClick={() => setIsCreatingSubcat(true)}
+                              className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
+                            >
+                              + Add New Subcategory
+                            </button>
+                          )}
+                        </div>
+
+                        {isCreatingSubcat ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Enter new subcategory name"
+                              value={newSubcatName}
+                              onChange={(e) => setNewSubcatName(e.target.value)}
+                              disabled={subcatLoading}
+                              className="flex-1 h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#06b6d4]"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleCreateSubcategory}
+                              disabled={subcatLoading}
+                              className="h-11 px-4 rounded-2xl bg-cyan-500 hover:bg-cyan-600 text-sm font-semibold text-white active:scale-95 transition-all disabled:opacity-50"
+                            >
+                              {subcatLoading ? "Adding..." : "Add"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCreatingSubcat(false);
+                                setNewSubcatName("");
+                              }}
+                              disabled={subcatLoading}
+                              className="h-11 px-4 rounded-2xl bg-white/5 text-sm font-semibold text-gray-300 hover:bg-white/10 active:scale-95 transition-all disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <Select
+                            value={form.subcategory_id ? String(form.subcategory_id) : ""}
+                            onValueChange={(val) => {
+                              const sub = subcategories.find((s: any) => String(s.id) === val);
+                              const subsubs = sub?.sub_subcategories || [];
+                              const firstSubSub = subsubs[0];
+                              setForm((p) => ({
+                                ...p,
+                                subcategory_id: sub ? Number(sub.id) : undefined,
+                                subcategory: sub ? sub.name : "",
+                                sub_subcategory_id: firstSubSub ? Number(firstSubSub.id) : undefined,
+                                sub_subcategory: firstSubSub ? firstSubSub.name : ""
+                              }));
+                            }}
                           >
-                            + Add New Subcategory
-                          </button>
+                            <SelectTrigger className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:ring-1 focus:ring-primary outline-none">
+                              <SelectValue placeholder={subcategories.length === 0 ? "No subcategories. Create one." : "Select subcategory"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {subcategories.map((sub: any) => (
+                                <SelectItem key={sub.id} value={String(sub.id)}>
+                                  {sub.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         )}
                       </div>
 
-                      {isCreatingSubcat ? (
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Enter new subcategory name"
-                            value={newSubcatName}
-                            onChange={(e) => setNewSubcatName(e.target.value)}
-                            disabled={subcatLoading}
-                            className="flex-1 h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#06b6d4]"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleCreateSubcategory}
-                            disabled={subcatLoading}
-                            className="h-11 px-4 rounded-2xl bg-cyan-500 hover:bg-cyan-600 text-sm font-semibold text-white active:scale-95 transition-all disabled:opacity-50"
-                          >
-                            {subcatLoading ? "Adding..." : "Add"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsCreatingSubcat(false);
-                              setNewSubcatName("");
-                            }}
-                            disabled={subcatLoading}
-                            className="h-11 px-4 rounded-2xl bg-white/5 text-sm font-semibold text-gray-300 hover:bg-white/10 active:scale-95 transition-all disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
+                      {form.subcategory_id && (
+                        <div className="space-y-2 animate-fadeIn">
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-300">Sub-subcategory (Level 3)</label>
+                            {!isCreatingSubSubcat && (
+                              <button
+                                type="button"
+                                onClick={() => setIsCreatingSubSubcat(true)}
+                                className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
+                              >
+                                + Add New Sub-subcategory
+                              </button>
+                            )}
+                          </div>
+
+                          {isCreatingSubSubcat ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Enter new sub-subcategory name"
+                                value={newSubSubcatNameInput}
+                                onChange={(e) => setNewSubSubcatNameInput(e.target.value)}
+                                disabled={subsubcatLoading}
+                                className="flex-1 h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#06b6d4]"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleCreateSubSubcategory}
+                                disabled={subsubcatLoading}
+                                className="h-11 px-4 rounded-2xl bg-cyan-500 hover:bg-cyan-600 text-sm font-semibold text-white active:scale-95 transition-all disabled:opacity-50"
+                              >
+                                {subsubcatLoading ? "Adding..." : "Add"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsCreatingSubSubcat(false);
+                                  setNewSubSubcatNameInput("");
+                                }}
+                                disabled={subsubcatLoading}
+                                className="h-11 px-4 rounded-2xl bg-white/5 text-sm font-semibold text-gray-300 hover:bg-white/10 active:scale-95 transition-all disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <Select
+                              value={form.sub_subcategory_id ? String(form.sub_subcategory_id) : ""}
+                              onValueChange={(val) => {
+                                const subsub = subsubcategories.find((ss: any) => String(ss.id) === val);
+                                setForm((p) => ({
+                                  ...p,
+                                  sub_subcategory_id: subsub ? Number(subsub.id) : undefined,
+                                  sub_subcategory: subsub ? subsub.name : ""
+                                }));
+                              }}
+                            >
+                              <SelectTrigger className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:ring-1 focus:ring-primary outline-none">
+                                <SelectValue placeholder={subsubcategories.length === 0 ? "No sub-subcategories. Create one." : "Select sub-subcategory"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {subsubcategories.map((ssub: any) => (
+                                  <SelectItem key={ssub.id} value={String(ssub.id)}>
+                                    {ssub.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
-                      ) : (
-                        <Select
-                          value={form.subcategory_id ? String(form.subcategory_id) : ""}
-                          onValueChange={(val) => {
-                            const sub = subcategories.find((s: any) => String(s.id) === val);
-                            setForm((p) => ({
-                              ...p,
-                              subcategory_id: sub ? Number(sub.id) : undefined,
-                              subcategory: sub ? sub.name : ""
-                            }));
-                          }}
-                        >
-                          <SelectTrigger className="w-full h-11 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:ring-1 focus:ring-primary outline-none">
-                            <SelectValue placeholder={subcategories.length === 0 ? "No subcategories. Create one." : "Select subcategory"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {subcategories.map((sub: any) => (
-                              <SelectItem key={sub.id} value={String(sub.id)}>
-                                {sub.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       )}
-                    </div>
+                    </>
                   );
                 })()}
 

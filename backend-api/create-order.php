@@ -25,11 +25,17 @@ if (isset($data['customer'])) {
     $phone        = trim($data['customer']['phone']    ?? '');
     $email        = trim($data['customer']['email']    ?? '');
     $address      = trim($data['customer']['address']  ?? '');
+    $city         = trim($data['customer']['city']     ?? '');
+    $state        = trim($data['customer']['state']    ?? '');
+    $pincode      = trim($data['customer']['pincode']  ?? '');
 } else {
     $customerName = trim($data['customer_name'] ?? '');
     $phone        = trim($data['phone']         ?? '');
     $email        = trim($data['email']         ?? '');
     $address      = trim($data['address']       ?? '');
+    $city         = trim($data['city']          ?? '');
+    $state        = trim($data['state']         ?? '');
+    $pincode      = trim($data['pincode']       ?? '');
 }
 
 $payment   = trim($data['payment_method'] ?? ($data['payment'] ?? 'COD'));
@@ -50,13 +56,15 @@ try {
     $sanitized_items = [];
     $vendor_groups = [];
     $subtotal = 0;
+    $total_taxable_amount = 0;
+    $total_tax = 0;
     
     foreach ($items as $item) {
         $pid = intval($item['product_id'] ?? ($item['id'] ?? 0));
         $qty = intval($item['quantity'] ?? 1);
         if ($pid === 0 || $qty <= 0) continue;
         
-        $stmt_prod = $conn->prepare("SELECT id, name, price, image, vendor_id, stock_quantity FROM products WHERE id = ? LIMIT 1");
+        $stmt_prod = $conn->prepare("SELECT p.id, p.name, p.price, p.image, p.vendor_id, p.stock_quantity, p.gst_percentage, p.hsn_code, v.state AS vendor_state FROM products p LEFT JOIN vendors v ON p.vendor_id = v.id WHERE p.id = ? LIMIT 1");
         $stmt_prod->bind_param("i", $pid);
         $stmt_prod->execute();
         $prod = $stmt_prod->get_result()->fetch_assoc();
@@ -81,6 +89,32 @@ try {
         
         $subtotal += ($price * $qty);
         
+        // --- GST Option A (Inclusive) Math ---
+        $gst_percentage = floatval($prod['gst_percentage'] ?? 0);
+        $hsn_code = $prod['hsn_code'] ?? null;
+        $item_total = $price * $qty;
+        
+        // Prevent division by zero logic, just in case
+        $taxable_value = $item_total / (1 + ($gst_percentage / 100));
+        $gst_amount = $item_total - $taxable_value;
+        
+        $vendor_state = strtolower(trim($prod['vendor_state'] ?? 'Tamil Nadu'));
+        $buyer_state = strtolower(trim($state));
+        
+        $cgst_amount = 0;
+        $sgst_amount = 0;
+        $igst_amount = 0;
+        
+        if ($vendor_state === $buyer_state) {
+            $cgst_amount = $gst_amount / 2;
+            $sgst_amount = $gst_amount / 2;
+        } else {
+            $igst_amount = $gst_amount;
+        }
+        
+        $total_taxable_amount += $taxable_value;
+        $total_tax += $gst_amount;
+        
         $sanitized_item = [
             'product_id' => $prod['id'],
             'name' => $prod['name'],
@@ -88,7 +122,13 @@ try {
             'image' => $prod['image'] ?? '',
             'quantity' => $qty,
             'vendor_id' => $vendor_id,
-            'weight_g' => $weight
+            'weight_g' => $weight,
+            'gst_percentage' => $gst_percentage,
+            'hsn_code' => $hsn_code,
+            'taxable_value' => $taxable_value,
+            'cgst_amount' => $cgst_amount,
+            'sgst_amount' => $sgst_amount,
+            'igst_amount' => $igst_amount
         ];
         
         $sanitized_items[] = $sanitized_item;
@@ -101,6 +141,18 @@ try {
         $vendor_groups[$vkey][] = $sanitized_item;
     }
     
+    // Recalculate shipping
+    $expected_shipping = ($subtotal >= 5000) ? 0.00 : 99.00;
+    $expected_total_no_discount = $subtotal + $expected_shipping;
+    $expected_total_with_discount = ($subtotal * 0.90) + $expected_shipping;
+    
+    $diff_no_discount = abs($total - $expected_total_no_discount);
+    $diff_with_discount = abs($total - $expected_total_with_discount);
+    
+    if ($diff_no_discount > 0.05 && $diff_with_discount > 0.05) {
+        throw new Exception("Amount verification failed: Payment amount mismatch due to unauthorized discount calculation.");
+    }
+
     // Calculate discounts and shipping charges
     $discount = 0.00;
     $shipping_charges = 0.00;
@@ -152,8 +204,8 @@ try {
 
     // Insert Parent Order Row
     $sql_order = "INSERT INTO orders 
-    (order_id, vendor_id, user_id, customer_name, phone, email, address, items, total, payment_method, status, estimated_days, subtotal, discount, shipping_charges, payment_status, payment_reference, buyer_gst) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    (order_id, vendor_id, user_id, customer_name, phone, email, address, billing_address, billing_city, billing_state, billing_pincode, total_taxable_amount, total_tax, items, total, payment_method, status, estimated_days, subtotal, discount, shipping_charges, payment_status, payment_reference, buyer_gst) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt_order = $conn->prepare($sql_order);
     if (!$stmt_order) {
@@ -161,7 +213,7 @@ try {
     }
     
     $stmt_order->bind_param(
-        "siisssssdsssdddsss", 
+        "siissssssssddsdsssdddsss", 
         $orderId, 
         $first_item_vendor, 
         $user_id, 
@@ -169,6 +221,12 @@ try {
         $phone, 
         $email, 
         $address, 
+        $address, // billing_address fallback to main address
+        $city,
+        $state,
+        $pincode,
+        $total_taxable_amount,
+        $total_tax,
         $legacy_items_json, 
         $total, 
         $payment, 
@@ -192,11 +250,25 @@ try {
     // 3. Insert Relational Order Items
     $order_item_ids_map = []; // Maps product_id -> order_item_db_id
     
-    $sql_item = "INSERT INTO order_items (order_id, product_id, vendor_id, price, quantity) VALUES (?, ?, ?, ?, ?)";
+    $sql_item = "INSERT INTO order_items (order_id, product_id, vendor_id, price, quantity, product_name, unit_price, gst_percentage, hsn_code, taxable_value, cgst_amount, sgst_amount, igst_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_item = $conn->prepare($sql_item);
     
     foreach ($sanitized_items as $si) {
-        $stmt_item->bind_param("iiidi", $order_db_id, $si['product_id'], $si['vendor_id'], $si['price'], $si['quantity']);
+        $stmt_item->bind_param("iiidisddsdddd", 
+            $order_db_id, 
+            $si['product_id'], 
+            $si['vendor_id'], 
+            $si['price'], 
+            $si['quantity'],
+            $si['name'],
+            $si['price'],
+            $si['gst_percentage'],
+            $si['hsn_code'],
+            $si['taxable_value'],
+            $si['cgst_amount'],
+            $si['sgst_amount'],
+            $si['igst_amount']
+        );
         if (!$stmt_item->execute()) {
             throw new Exception("Item insertion failed: " . $stmt_item->error);
         }
@@ -394,6 +466,17 @@ try {
         } else {
             throw new Exception("Invalid response from Razorpay API");
         }
+
+        // Store razorpay_order_id temporarily as payment_reference
+        $stmt_up_ref = $conn->prepare("UPDATE orders SET payment_reference = ? WHERE order_id = ?");
+        if (!$stmt_up_ref) {
+            throw new Exception("Reference query preparation error: " . $conn->error);
+        }
+        $stmt_up_ref->bind_param("ss", $razorpay_order_id, $orderId);
+        if (!$stmt_up_ref->execute()) {
+            throw new Exception("Reference query execution error: " . $stmt_up_ref->error);
+        }
+        $stmt_up_ref->close();
     }
 
     // Commit transaction on success

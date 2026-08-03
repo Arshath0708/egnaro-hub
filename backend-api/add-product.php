@@ -14,6 +14,7 @@ if (!empty($data->name) && isset($data->price)) {
         $name = trim($data->name);
         $category = trim($data->category ?? "");
         $subcategory_id = !empty($data->subcategory_id) ? intval($data->subcategory_id) : null;
+        $sub_subcategory_id = !empty($data->sub_subcategory_id) ? intval($data->sub_subcategory_id) : null;
         $image = trim($data->image ?? "");
         $price = floatval($data->price);
         $original_price = isset($data->original_price) ? floatval($data->original_price) : $price;
@@ -27,14 +28,18 @@ if (!empty($data->name) && isset($data->price)) {
         
         $approved = isset($data->approved) ? intval($data->approved) : 0;
         $status = trim($data->status ?? "pending");
+        
+        // GST details
+        $gst_percentage = isset($data->gst_percentage) ? floatval($data->gst_percentage) : 0.00;
+        $hsn_code = !empty($data->hsn_code) ? trim($data->hsn_code) : null;
 
         $query = "INSERT INTO products 
-            (name, description, price, original_price, discount, image, category, subcategory_id, vendor_id, created_by_type, created_by_id, approved, status, stock_quantity) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            (name, description, price, original_price, discount, image, category, subcategory_id, sub_subcategory_id, vendor_id, created_by_type, created_by_id, approved, status, stock_quantity, gst_percentage, hsn_code) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
         $stmt = $conn->prepare($query);
         $stmt->bind_param(
-            "ssddissiiisiis", 
+            "ssddissiiiisiisds", 
             $name, 
             $description, 
             $price, 
@@ -43,12 +48,15 @@ if (!empty($data->name) && isset($data->price)) {
             $image, 
             $category, 
             $subcategory_id, 
+            $sub_subcategory_id,
             $vendor_id, 
             $created_by_type, 
             $created_by_id, 
             $approved, 
             $status, 
-            $stock_quantity
+            $stock_quantity,
+            $gst_percentage,
+            $hsn_code
         );
         
         if ($stmt->execute()) {

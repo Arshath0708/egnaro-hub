@@ -35,6 +35,8 @@ type Product = {
   category: string;
   subcategory_id?: number | string;
   subcategory?: string;
+  sub_subcategory_id?: number | string;
+  sub_subcategory?: string;
   image: string;
   price: number;
   original_price: number;
@@ -335,9 +337,17 @@ export default function ProductDetail() {
               {product.subcategory && (
                 <>
                   <ChevronRight className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-                  <Link to={`/products?subcategories=${encodeURIComponent(product.subcategory_id || "")}`} className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                  <Link to={`/products?subcategories=${encodeURIComponent(product.subcategory_id || "")}`} className="hover:text-cyan-300 transition-colors">
                     {product.subcategory}
                   </Link>
+                </>
+              )}
+              {product.sub_subcategory && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                  <span className="text-cyan-400 font-bold">
+                    {product.sub_subcategory}
+                  </span>
                 </>
               )}
             </div>
@@ -539,6 +549,12 @@ export default function ProductDetail() {
                       <>
                         <dt className="text-muted-foreground">Subcategory</dt>
                         <dd>{product.subcategory}</dd>
+                      </>
+                    )}
+                    {product.sub_subcategory && (
+                      <>
+                        <dt className="text-muted-foreground">Sub-subcategory</dt>
+                        <dd>{product.sub_subcategory}</dd>
                       </>
                     )}
                     <dt className="text-muted-foreground">Product ID</dt>

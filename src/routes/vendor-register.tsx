@@ -456,8 +456,8 @@ export default function VendorRegister() {
                     value={form.ifsc_code} onChange={(e) => setRegField("ifsc_code", e.target.value)} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-400">GST Number</label>
-                  <input required placeholder="15-character GSTIN (e.g. 22AAAAA0000A1Z5)" maxLength={15} className={inp}
+                  <label className="mb-1 block text-xs font-medium text-gray-400">GST Number (Optional)</label>
+                  <input placeholder="15-character GSTIN (e.g. 22AAAAA0000A1Z5)" maxLength={15} className={inp}
                     value={form.gst} onChange={(e) => setRegField("gst", e.target.value.toUpperCase().replace(/\s/g, ""))} />
                   {form.gst ? (
                     (() => {
@@ -469,7 +469,7 @@ export default function VendorRegister() {
                       );
                     })()
                   ) : (
-                    <p className="mt-1 text-[11px] text-gray-500">GSTIN is mandatory (exactly 15 characters).</p>
+                    <p className="mt-1 text-[11px] text-gray-500">GSTIN is optional. If provided, standard validation applies.</p>
                   )}
                 </div>
               </div>
@@ -568,7 +568,7 @@ export default function VendorRegister() {
                   )}
                 </div>
               </div>
-              <button disabled={loading || !!getGstErrorMessage(form.gst)}
+              <button disabled={loading || (form.gst ? !!getGstErrorMessage(form.gst) : false)}
                 className="w-full rounded-lg gradient-primary py-3 font-semibold text-white disabled:opacity-60">
                 {loading ? "Submitting..." : "Submit Application"}
               </button>

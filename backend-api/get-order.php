@@ -54,6 +54,60 @@ function enrichItems($conn, $items_json) {
     return $items;
 }
 
+// ── HELPER: retrieve items from relational order_items table as primary ──
+function getOrderItemsFromRelationalTable($conn, $order_id) {
+    $stmt = $conn->prepare("SELECT id, product_id, vendor_id, product_name AS name, price, quantity, gst_percentage, hsn_code, taxable_value, cgst_amount, sgst_amount, igst_amount FROM order_items WHERE order_id = ?");
+    if (!$stmt) return null;
+    
+    $stmt->bind_param("i", $order_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $items = [];
+    while ($row = $result->fetch_assoc()) {
+        $row['id'] = intval($row['id']);
+        $row['product_id'] = intval($row['product_id']);
+        $row['vendor_id'] = $row['vendor_id'] ? intval($row['vendor_id']) : null;
+        $row['price'] = floatval($row['price']);
+        $row['quantity'] = intval($row['quantity']);
+        $row['gst_percentage'] = floatval($row['gst_percentage'] ?? 0);
+        $row['taxable_value'] = floatval($row['taxable_value'] ?? 0);
+        $row['cgst_amount'] = floatval($row['cgst_amount'] ?? 0);
+        $row['sgst_amount'] = floatval($row['sgst_amount'] ?? 0);
+        $row['igst_amount'] = floatval($row['igst_amount'] ?? 0);
+        $items[] = $row;
+    }
+    $stmt->close();
+    
+    if (empty($items)) {
+        return null;
+    }
+    
+    // Enrich each item with product image and vendor details
+    foreach ($items as &$item) {
+        $pid = $item['product_id'];
+        $stmt_p = $conn->prepare("SELECT p.image, p.vendor_id, v.vendor_name, v.company_name, v.gst, v.phone as seller_phone, v.email as seller_email, v.address as seller_address, v.city as seller_city, v.state as seller_state, v.town as seller_town FROM products p LEFT JOIN vendors v ON p.vendor_id = v.id WHERE p.id = ? LIMIT 1");
+        if ($stmt_p) {
+            $stmt_p->bind_param("i", $pid);
+            $stmt_p->execute();
+            $row_p = $stmt_p->get_result()->fetch_assoc();
+            if ($row_p) {
+                $item['image'] = $row_p['image'] ?? '';
+                if (empty($item['vendor_id'])) $item['vendor_id'] = $row_p['vendor_id'] ? intval($row_p['vendor_id']) : null;
+                $item['seller_name'] = $row_p['vendor_name'] ?: "Egnaro Mart";
+                $item['company_name'] = $row_p['company_name'] ?: "Egnaro Mart Marketplace";
+                $item['gst'] = $row_p['gst'] ?: null;
+                $item['seller_phone'] = $row_p['seller_phone'] ?: "+91 9442581506";
+                $item['seller_email'] = $row_p['seller_email'] ?: "egnaromart@gmail.com";
+                $seller_addr_parts = array_filter([$row_p['seller_address'], $row_p['seller_town'], $row_p['seller_city'], $row_p['seller_state']]);
+                $item['seller_address'] = !empty($seller_addr_parts) ? implode(", ", $seller_addr_parts) : "2A, Venkatesh Nagar, Kovilpalayam, Coimbatore, Tamil Nadu - 641107";
+            }
+            $stmt_p->close();
+        }
+    }
+    return $items;
+}
+
 // ── HELPER: format single order and attach shipments & seller ──
 function formatOrder($conn, $order) {
     $order['id']      = intval($order['id'] ?? 0);
@@ -61,6 +115,8 @@ function formatOrder($conn, $order) {
     $order['subtotal'] = floatval($order['subtotal'] ?? 0);
     $order['discount'] = floatval($order['discount'] ?? 0);
     $order['shipping_charges'] = floatval($order['shipping_charges'] ?? 0);
+    $order['total_taxable_amount'] = floatval($order['total_taxable_amount'] ?? 0);
+    $order['total_tax'] = floatval($order['total_tax'] ?? 0);
     $order['user_id'] = intval($order['user_id'] ?? 0);
 
     // Dynamic fallback for legacy orders or testing: if buyer_gst is empty, fetch from users table
@@ -76,7 +132,14 @@ function formatOrder($conn, $order) {
             }
         }
     }
-    $order['items']   = enrichItems($conn, $order['items'] ?? '[]');
+
+    // Primary Source: relational order_items table. Fallback: orders.items JSON.
+    $relational_items = getOrderItemsFromRelationalTable($conn, $order['id']);
+    if ($relational_items !== null) {
+        $order['items'] = $relational_items;
+    } else {
+        $order['items'] = enrichItems($conn, $order['items'] ?? '[]');
+    }
 
     // Attach top-level seller details
     $first_item = !empty($order['items']) ? $order['items'][0] : null;
@@ -244,7 +307,9 @@ if (!$orderId && !$phone) {
     $types   .= "ii";
 
     $stmt = $conn->prepare("
-        SELECT id, order_id, customer_name, phone, address, total,
+        SELECT id, order_id, customer_name, phone, address, 
+               billing_address, billing_city, billing_state, billing_pincode,
+               total, total_taxable_amount, total_tax,
                payment_method, status, items, estimated_days, created_at, user_id,
                tracking_number, courier_partner, buyer_gst
         FROM orders
@@ -277,22 +342,45 @@ if (!$orderId && !$phone) {
 
 // ── CASE 2: Get single order by order_id ──
 if ($orderId) {
-    if (empty($token)) {
-        http_response_code(401);
-        echo json_encode(["success" => false, "message" => "Authorization token required"]);
-        exit;
+    $role = trim($_GET['role'] ?? '');
+    $vendor_id_param = intval($_GET['vendor_id'] ?? 0);
+
+    $is_authorized = false;
+    if ($role === 'admin') {
+        $is_authorized = true;
     }
 
-    $stmt = $conn->prepare("SELECT id, email, phone FROM users WHERE token = ? LIMIT 1");
-    $stmt->bind_param("s", $token);
-    $stmt->execute();
-    $user = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+    if ($role === 'vendor' && $vendor_id_param > 0) {
+        $is_authorized = true;
+    }
 
-    if (!$user) {
-        http_response_code(401);
-        echo json_encode(["success" => false, "message" => "Invalid or expired token"]);
-        exit;
+    $user = null;
+    $userId = 0;
+    $userEmail = '';
+    $userPhone = '';
+
+    if (!$is_authorized) {
+        if (empty($token)) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "message" => "Authorization token required"]);
+            exit;
+        }
+
+        $stmt = $conn->prepare("SELECT id, email, phone FROM users WHERE token = ? LIMIT 1");
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+        $user = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$user) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "message" => "Invalid or expired token"]);
+            exit;
+        }
+
+        $userId = intval($user['id']);
+        $userEmail = trim($user['email']);
+        $userPhone = trim($user['phone']);
     }
 
     $stmt = $conn->prepare("SELECT * FROM orders WHERE order_id = ? LIMIT 1");
@@ -306,24 +394,47 @@ if ($orderId) {
         exit;
     }
 
-    // Check ownership
-    $userId = intval($user['id']);
-    $userEmail = trim($user['email']);
-    $userPhone = trim($user['phone']);
+    // Role-based ownership check
+    if ($role === 'vendor' && $vendor_id_param > 0) {
+        // Query order_items to see if this vendor has any items in this order
+        $oi_stmt = $conn->prepare("SELECT id FROM order_items WHERE order_id = ? AND vendor_id = ? LIMIT 1");
+        $oi_stmt->bind_param("ii", $order['id'], $vendor_id_param);
+        $oi_stmt->execute();
+        $has_item = $oi_stmt->get_result()->fetch_assoc();
+        $oi_stmt->close();
 
-    $orderUserId = intval($order['user_id']);
-    $orderEmail = trim($order['email']);
-    $orderPhone = trim($order['phone']);
+        if (!$has_item) {
+            // Also check the legacy order structure (if no relational order_items exist)
+            $legacy_items = json_decode($order['items'] ?? '[]', true);
+            $has_legacy_item = false;
+            foreach ($legacy_items as $item) {
+                if (isset($item['vendor_id']) && intval($item['vendor_id']) === $vendor_id_param) {
+                    $has_legacy_item = true;
+                    break;
+                }
+            }
+            if (!$has_legacy_item) {
+                http_response_code(403);
+                echo json_encode(["success" => false, "message" => "Forbidden: Vendor does not own any items in this order."]);
+                exit;
+            }
+        }
+    } else if ($role !== 'admin') {
+        // Customer ownership check
+        $orderUserId = intval($order['user_id']);
+        $orderEmail = trim($order['email']);
+        $orderPhone = trim($order['phone']);
 
-    $cleanUserPhone = str_replace("+91", "", $userPhone);
-    $cleanOrderPhone = str_replace("+91", "", $orderPhone);
+        $cleanUserPhone = str_replace("+91", "", $userPhone);
+        $cleanOrderPhone = str_replace("+91", "", $orderPhone);
 
-    if ($orderUserId !== $userId && 
-        strcasecmp($orderEmail, $userEmail) !== 0 && 
-        strcasecmp($cleanOrderPhone, $cleanUserPhone) !== 0) {
-        http_response_code(403);
-        echo json_encode(["success" => false, "message" => "Forbidden: You do not own this order."]);
-        exit;
+        if ($orderUserId !== $userId && 
+            strcasecmp($orderEmail, $userEmail) !== 0 && 
+            strcasecmp($cleanOrderPhone, $cleanUserPhone) !== 0) {
+            http_response_code(403);
+            echo json_encode(["success" => false, "message" => "Forbidden: You do not own this order."]);
+            exit;
+        }
     }
 
     echo json_encode([
@@ -379,7 +490,9 @@ if ($phone) {
     $types   .= "ii";
 
     $stmt = $conn->prepare("
-        SELECT id, order_id, customer_name, phone, address, total,
+        SELECT id, order_id, customer_name, phone, address, 
+               billing_address, billing_city, billing_state, billing_pincode,
+               total, total_taxable_amount, total_tax,
                payment_method, status, items, estimated_days, created_at,
                tracking_number, courier_partner, buyer_gst
         FROM orders

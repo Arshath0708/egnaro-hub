@@ -856,11 +856,11 @@ const Sidebar = memo(
                         onClick={() => onToggleCategory("categories", cat.name)}
                         className="flex items-center gap-2 flex-1 cursor-pointer select-none py-3.5 pl-3.5 min-w-0"
                       >
-                        <span className={`text-xs truncate transition-colors ${
-                          isCatChecked ? "text-primary font-bold" : "text-gray-300 font-medium group-hover:text-white"
-                        }`}>
-                          {cat.name}
-                        </span>
+                         <span className={`text-xs transition-colors ${
+                           isCatChecked ? "text-primary font-bold" : "text-gray-300 font-medium group-hover:text-white"
+                         }`}>
+                           {cat.name}
+                         </span>
 
                         <span className="text-[10px] text-gray-500 font-mono font-semibold">
                           ({count})
@@ -907,11 +907,11 @@ const Sidebar = memo(
                                       </svg>
                                     )}
 
-                                    <span className={`text-[11px] truncate transition-colors ${
-                                      isSubChecked ? "text-primary font-bold" : "text-gray-400 group-hover:text-gray-200"
-                                    }`}>
-                                      {sub.name}
-                                    </span>
+                                     <span className={`text-[11px] transition-colors ${
+                                       isSubChecked ? "text-primary font-bold" : "text-gray-400 group-hover:text-gray-200"
+                                     }`}>
+                                       {sub.name}
+                                     </span>
                                   </div>
 
                                   <span className="text-[10px] text-gray-500 font-mono font-semibold pr-1">
