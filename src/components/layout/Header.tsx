@@ -55,9 +55,7 @@ const NAV = [
 export function Header() {
   const count = useCart(cartCount);
   const isVendor = useAuth(selectIsVendor);
-  const user = useAuth((s) => s.user);
-  const admin = useAuth((s) => s.admin);
-  const currentUser = user || admin;
+  const currentUser = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const queryClient = useQueryClient();
 
@@ -489,7 +487,7 @@ export function Header() {
                       </span>
                     )}
                     <span className="font-display font-bold text-[0.9rem] text-slate-200">
-                      {currentUser ? `Hi, ${currentUser.name}` : "Hi"}
+                      {currentUser ? `Hi, ${displayName}` : "Hi"}
                     </span>
                   </div>
                   {!currentUser && (

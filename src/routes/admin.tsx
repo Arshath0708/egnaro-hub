@@ -40,6 +40,7 @@ import { HomeContentModal } from "@/modals/HomeContentModal";
 import { ViewUserModal } from "@/modals/ViewUserModal";
 import { HaltVendorModal } from "@/modals/HaltVendorModal";
 import { DeleteVendorModal } from "@/modals/DeleteVendorModal";
+import { DeleteUserModal } from "@/modals/DeleteUserModal";
 import { DeleteOrderModal } from "@/modals/DeleteOrderModal";
 import { LogisticsModal } from "@/components/vendor/LogisticsModal";
 import { InvoicePreviewButton } from "@/components/invoice/InvoiceModal";
@@ -348,6 +349,9 @@ function AdminPanel({
     useState<any>(null);
 
   const [viewingUser, setViewingUser] =
+    useState<any>(null);
+
+  const [deletingUser, setDeletingUser] =
     useState<any>(null);
 
   const admin = useAuth((s) => s.admin);
@@ -1516,13 +1520,22 @@ function AdminPanel({
                               <TableStatusBadge status={user.status} />
                             </TableCell>
                             <TableCell className="text-right py-4 pr-6">
-                              <button
-                                onClick={() => setViewingUser(user)}
-                                className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20 cursor-pointer"
-                                title="View Customer Details"
-                              >
-                                <Search className="h-4.5 w-4.5" />
-                              </button>
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => setViewingUser(user)}
+                                  className="rounded-xl bg-cyan-500/10 p-2 text-cyan-400 transition hover:bg-cyan-500/20 cursor-pointer"
+                                  title="View Customer Details"
+                                >
+                                  <Search className="h-4.5 w-4.5" />
+                                </button>
+                                <button
+                                  onClick={() => setDeletingUser(user)}
+                                  className="rounded-xl bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/20 cursor-pointer"
+                                  title="Delete Customer Account"
+                                >
+                                  <Trash2 className="h-4.5 w-4.5" />
+                                </button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -1773,6 +1786,14 @@ function AdminPanel({
           <ViewUserModal
             user={viewingUser}
             onClose={() => setViewingUser(null)}
+          />,
+          document.body
+        )}
+
+        {deletingUser && createPortal(
+          <DeleteUserModal
+            user={deletingUser}
+            onClose={() => setDeletingUser(null)}
           />,
           document.body
         )}

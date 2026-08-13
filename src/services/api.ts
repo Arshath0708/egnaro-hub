@@ -895,6 +895,14 @@ export async function getUsers(params?: {
   return await request(`/get-users.php${queryString}`);
 }
 
+export async function deleteUser(id: number) {
+  return await request("/delete-user.php", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+
 /* ================= VENDOR SUPPORT ================= */
 
 export async function createSupportRequest(data: {

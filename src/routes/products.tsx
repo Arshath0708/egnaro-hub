@@ -92,6 +92,7 @@ export default function ProductsPage() {
   const currentQ = params.get("q")?.toLowerCase() ?? "";
   const currentCats = useMemo(() => params.get("categories")?.split(",").filter(Boolean) ?? [], [location.search]);
   const currentSubcats = useMemo(() => params.get("subcategories")?.split(",").filter(Boolean) ?? [], [location.search]);
+  const currentSubSubcats = useMemo(() => params.get("sub_subcategories")?.split(",").filter(Boolean) ?? [], [location.search]);
   const currentState = params.get("state") ?? "";
   const currentCity = params.get("city") ?? "";
   const currentCo = params.get("company") ?? "";
@@ -208,7 +209,7 @@ export default function ProductsPage() {
     );
 
     /* CATEGORIES & SUBCATEGORIES FILTER */
-    if (currentCats.length > 0 || currentSubcats.length > 0) {
+    if (currentCats.length > 0 || currentSubcats.length > 0 || currentSubSubcats.length > 0) {
       arr = arr.filter((p: any) => {
         const matchCat = currentCats.some((catName) => {
           const catObj = categories.find((c: any) => c.name.toLowerCase() === catName.toLowerCase());
@@ -220,7 +221,11 @@ export default function ProductsPage() {
           return String(p.subcategory_id) === String(subId);
         });
 
-        return matchCat || matchSub;
+        const matchSubSub = currentSubSubcats.some((subSubId) => {
+          return String(p.sub_subcategory_id) === String(subSubId);
+        });
+
+        return matchCat || matchSub || matchSubSub;
       });
     }
 
@@ -385,9 +390,27 @@ export default function ProductsPage() {
     navigate(`/products?${params.toString()}`);
   }
 
+  function handleToggleSubSubcategory(value: string) {
+    const list = params.get("sub_subcategories")?.split(",").filter(Boolean) ?? [];
+    const index = list.indexOf(value);
+    if (index > -1) {
+      list.splice(index, 1);
+    } else {
+      list.push(value);
+    }
+    
+    if (list.length > 0) {
+      params.set("sub_subcategories", list.join(","));
+    } else {
+      params.delete("sub_subcategories");
+    }
+    navigate(`/products?${params.toString()}`);
+  }
+
   function handleClearAllFilters() {
     params.delete("categories");
     params.delete("subcategories");
+    params.delete("sub_subcategories");
     params.delete("state");
     params.delete("city");
     params.delete("company");
@@ -488,7 +511,7 @@ export default function ProductsPage() {
 
         {/* LAYOUT */}
 
-        <div className="grid gap-4 sm:gap-8 lg:grid-cols-[240px_1fr]">
+        <div className="grid gap-4 sm:gap-8 lg:grid-cols-[340px_1fr]">
 
           <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <Sidebar
@@ -496,8 +519,10 @@ export default function ProductsPage() {
               categories={categories}
               currentCats={currentCats}
               currentSubcats={currentSubcats}
+              currentSubSubcats={currentSubSubcats}
               onToggleCategory={handleToggleFilter}
               onToggleSubcategory={handleToggleSubcategory}
+              onToggleSubSubcategory={handleToggleSubSubcategory}
               availableStates={availableStates}
               availableCities={availableCities}
               availableCompanies={availableCompanies}
@@ -510,7 +535,7 @@ export default function ProductsPage() {
               onCityChange={handleCityChange}
               onCompanyChange={handleCompanyChange}
               onClearAll={handleClearAllFilters}
-              hasActiveFilters={currentCats.length > 0 || currentSubcats.length > 0 || !!currentState || !!currentCity || !!currentCo}
+              hasActiveFilters={currentCats.length > 0 || currentSubcats.length > 0 || currentSubSubcats.length > 0 || !!currentState || !!currentCity || !!currentCo}
             />
           </div>
 
@@ -518,7 +543,7 @@ export default function ProductsPage() {
 
           <div>
             {isLoading ? (
-              <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 xl:grid-cols-4">
                 {Array.from({
                   length: 6,
                 }).map((_, i) => (
@@ -540,7 +565,7 @@ export default function ProductsPage() {
                   }
                 />
               ) : (
-                <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 xl:grid-cols-4">
                   {displayProducts.map(
                     (
                       p: any,
@@ -605,8 +630,10 @@ export default function ProductsPage() {
                   categories={categories}
                   currentCats={currentCats}
                   currentSubcats={currentSubcats}
+                  currentSubSubcats={currentSubSubcats}
                   onToggleCategory={handleToggleFilter}
                   onToggleSubcategory={handleToggleSubcategory}
+                  onToggleSubSubcategory={handleToggleSubSubcategory}
                   availableStates={availableStates}
                   availableCities={availableCities}
                   availableCompanies={availableCompanies}
@@ -619,7 +646,7 @@ export default function ProductsPage() {
                   onCityChange={handleCityChange}
                   onCompanyChange={handleCompanyChange}
                   onClearAll={handleClearAllFilters}
-                  hasActiveFilters={currentCats.length > 0 || currentSubcats.length > 0 || !!currentState || !!currentCity || !!currentCo}
+                  hasActiveFilters={currentCats.length > 0 || currentSubcats.length > 0 || currentSubSubcats.length > 0 || !!currentState || !!currentCity || !!currentCo}
                 />
               </div>
 
@@ -659,8 +686,10 @@ const Sidebar = memo(
     categories,
     currentCats,
     currentSubcats,
+    currentSubSubcats,
     onToggleCategory,
     onToggleSubcategory,
+    onToggleSubSubcategory,
     availableStates,
     availableCities,
     availableCompanies,
@@ -679,8 +708,10 @@ const Sidebar = memo(
     categories: any[];
     currentCats: string[];
     currentSubcats: string[];
+    currentSubSubcats: string[];
     onToggleCategory: (type: "categories" | "locations" | "companies", value: string) => void;
     onToggleSubcategory: (value: string) => void;
+    onToggleSubSubcategory: (value: string) => void;
     availableStates: string[];
     availableCities: string[];
     availableCompanies: string[];
@@ -697,6 +728,11 @@ const Sidebar = memo(
   }) {
     const [catSearch, setCatSearch] = useState("");
     const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+    const [expandedSubcats, setExpandedSubcats] = useState<Record<string, boolean>>({});
+
+    const toggleExpandSubcat = (subId: string) => {
+      setExpandedSubcats(prev => ({ ...prev, [subId]: !prev[subId] }));
+    };
 
     const categoryCounts = useMemo(() => {
       const counts: Record<string, number> = {};
@@ -732,34 +768,83 @@ const Sidebar = memo(
       return counts;
     }, [products, categories]);
 
+    const subSubcategoryCounts = useMemo(() => {
+      const counts: Record<string, number> = {};
+      categories.forEach((cat: any) => {
+        const subcats = cat.subcategories || [];
+        subcats.forEach((sub: any) => {
+          const subsubs = sub.sub_subcategories || [];
+          subsubs.forEach((subsub: any) => {
+            let count = 0;
+            products.forEach((p: any) => {
+              if (String(p.sub_subcategory_id) === String(subsub.id)) {
+                count++;
+              }
+            });
+            counts[String(subsub.id)] = count;
+          });
+        });
+      });
+      return counts;
+    }, [products, categories]);
+
     useEffect(() => {
-      const next = { ...expandedCats };
-      let changed = false;
+      const nextCats = { ...expandedCats };
+      const nextSubs = { ...expandedSubcats };
+      let catsChanged = false;
+      let subsChanged = false;
+
       categories.forEach((cat: any) => {
         const isCatChecked = currentCats.includes(cat.name);
         const subcats = cat.subcategories || [];
         const hasActiveSubcat = subcats.some((sub: any) => currentSubcats.includes(String(sub.id)));
+        const hasActiveSubSubcat = subcats.some((sub: any) => {
+          const subsubs = sub.sub_subcategories || [];
+          return subsubs.some((subsub: any) => currentSubSubcats.includes(String(subsub.id)));
+        });
         
-        if ((isCatChecked || hasActiveSubcat) && !next[cat.name]) {
-          next[cat.name] = true;
-          changed = true;
+        if ((isCatChecked || hasActiveSubcat || hasActiveSubSubcat) && !nextCats[cat.name]) {
+          nextCats[cat.name] = true;
+          catsChanged = true;
         }
+
+        subcats.forEach((sub: any) => {
+          const isSubChecked = currentSubcats.includes(String(sub.id));
+          const subsubs = sub.sub_subcategories || [];
+          const hasActiveSubSub = subsubs.some((subsub: any) => currentSubSubcats.includes(String(subsub.id)));
+          
+          if ((isSubChecked || hasActiveSubSub) && !nextSubs[String(sub.id)]) {
+            nextSubs[String(sub.id)] = true;
+            subsChanged = true;
+          }
+        });
       });
-      if (changed) {
-        setExpandedCats(next);
+
+      if (catsChanged) {
+        setExpandedCats(nextCats);
       }
-    }, [currentCats, currentSubcats, categories]);
+      if (subsChanged) {
+        setExpandedSubcats(nextSubs);
+      }
+    }, [currentCats, currentSubcats, currentSubSubcats, categories]);
 
     const expandAll = () => {
-      const next: Record<string, boolean> = {};
+      const nextCats: Record<string, boolean> = {};
+      const nextSubs: Record<string, boolean> = {};
       categories.forEach((cat: any) => {
-        next[cat.name] = true;
+        nextCats[cat.name] = true;
+        const subcats = cat.subcategories || [];
+        subcats.forEach((sub: any) => {
+          nextSubs[String(sub.id)] = true;
+        });
       });
-      setExpandedCats(next);
+      setExpandedCats(nextCats);
+      setExpandedSubcats(nextSubs);
     };
 
     const collapseAll = () => {
       setExpandedCats({});
+      setExpandedSubcats({});
     };
 
     const toggleExpand = (catName: string) => {
@@ -856,8 +941,8 @@ const Sidebar = memo(
                         onClick={() => onToggleCategory("categories", cat.name)}
                         className="flex items-center gap-2 flex-1 cursor-pointer select-none py-3.5 pl-3.5 min-w-0"
                       >
-                         <span className={`text-xs transition-colors ${
-                           isCatChecked ? "text-primary font-bold" : "text-gray-300 font-medium group-hover:text-white"
+                         <span className={`text-xs uppercase tracking-wider font-display font-black transition-colors ${
+                           isCatChecked ? "text-primary" : "text-green-400 group-hover:text-green-300"
                          }`}>
                            {cat.name}
                          </span>
@@ -888,35 +973,88 @@ const Sidebar = memo(
                           transition={{ duration: 0.2, ease: "easeInOut" }}
                           className="overflow-hidden"
                         >
-                          <div className="border-t border-white/5 bg-slate-950/20 px-3.5 py-2 space-y-1.5">
+                          <div className="border-t border-white/5 bg-slate-950/20 px-3.5 py-2 space-y-2">
                             {subcats.map((sub: any) => {
                               const isSubChecked = currentSubcats.includes(String(sub.id));
                               const subCount = subcategoryCounts[String(sub.id)] || 0;
+                              const subsubs = sub.sub_subcategories || [];
 
                               return (
-                                <div 
-                                  key={sub.id}
-                                  onClick={() => onToggleSubcategory(String(sub.id))}
-                                  className="flex items-center justify-between pl-3 border-l border-white/10 hover:border-primary/50 py-1.5 cursor-pointer select-none group transition-all duration-150"
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    {/* Small check indicator instead of large checkbox */}
-                                    {isSubChecked && (
-                                      <svg className="h-3 w-3 text-primary shrink-0 animate-fadeIn" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4.5">
-                                        <polyline points="20 6 9 17 4 12" />
-                                      </svg>
-                                    )}
+                                <div key={sub.id} className="space-y-1">
+                                  {/* Subcategory Row */}
+                                  <div className="flex items-center justify-between border-l border-white/10 hover:border-primary/50 group transition-all duration-150 rounded hover:bg-white/[0.02]">
+                                    <div 
+                                      onClick={() => onToggleSubcategory(String(sub.id))}
+                                      className="flex items-center gap-2 flex-1 cursor-pointer select-none py-1.5 pl-3 min-w-0"
+                                    >
+                                      {isSubChecked && (
+                                        <svg className="h-3 w-3 text-primary shrink-0 animate-fadeIn" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4.5">
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                      )}
 
-                                     <span className={`text-[11px] transition-colors ${
-                                       isSubChecked ? "text-primary font-bold" : "text-gray-400 group-hover:text-gray-200"
-                                     }`}>
-                                       {sub.name}
-                                     </span>
+                                       <span className={`text-[11px] transition-colors truncate ${
+                                         isSubChecked ? "text-white font-bold" : "text-green-400 group-hover:text-green-300"
+                                       }`}>
+                                         {sub.name}
+                                       </span>
+
+                                      <span className="text-[10px] text-gray-500 font-mono font-semibold">
+                                        ({subCount})
+                                      </span>
+                                    </div>
+
+                                    {subsubs.length > 0 && (
+                                      <div 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleExpandSubcat(String(sub.id));
+                                        }}
+                                        className="flex items-center justify-center p-1.5 cursor-pointer hover:bg-white/5 transition-colors shrink-0 rounded"
+                                      >
+                                        <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-300 ${
+                                          expandedSubcats[String(sub.id)] ? "rotate-180 text-gray-300" : ""
+                                        }`} />
+                                      </div>
+                                    )}
                                   </div>
 
-                                  <span className="text-[10px] text-gray-500 font-mono font-semibold pr-1">
-                                    ({subCount})
-                                  </span>
+                                  {/* Sub-subcategories List */}
+                                  {subsubs.length > 0 && expandedSubcats[String(sub.id)] && (
+                                    <div className="pl-5 space-y-1 mt-0.5">
+                                      {subsubs.map((subsub: any) => {
+                                        const isSubSubChecked = currentSubSubcats.includes(String(subsub.id));
+                                        const subSubCount = subSubcategoryCounts[String(subsub.id)] || 0;
+
+                                        return (
+                                          <div 
+                                            key={subsub.id}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onToggleSubSubcategory(String(subsub.id));
+                                            }}
+                                            className="flex items-center justify-between pl-3.5 border-l border-white/5 hover:border-amber-500/50 py-1.5 cursor-pointer select-none group transition-all duration-150"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              {isSubSubChecked && (
+                                                <svg className="h-2.5 w-2.5 text-amber-500 shrink-0 animate-fadeIn" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4.5">
+                                                  <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                              )}
+                                              <span className={`text-[10px] transition-colors ${
+                                                isSubSubChecked ? "text-amber-500 font-bold" : "text-green-400 group-hover:text-green-300"
+                                              }`}>
+                                                {subsub.name}
+                                              </span>
+                                            </div>
+                                            <span className="text-[9px] text-gray-650 font-mono font-semibold pr-1">
+                                              ({subSubCount})
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

@@ -466,7 +466,10 @@ export function AddProductModal({
                   label="Selling Price"
                   type="number"
                   value={form.price}
-                  onChange={(v) => setForm((p) => ({ ...p, price: v }))}
+                  onChange={(v) => {
+                    if (v && parseFloat(v) < 0) return;
+                    setForm((p) => ({ ...p, price: v }));
+                  }}
                   placeholder="₹ 0"
                   className={inputClass}
                 />
@@ -475,7 +478,19 @@ export function AddProductModal({
                   label="Original Price"
                   type="number"
                   value={form.original_price}
-                  onChange={(v) => setForm((p) => ({ ...p, original_price: v }))}
+                  onChange={(v) => {
+                    if (v && parseFloat(v) < 0) return;
+                    setForm((p) => {
+                      const orig = parseFloat(v) || 0;
+                      const disc = parseFloat(p.discount) || 0;
+                      const computedPrice = Math.max(0, orig - (orig * disc) / 100);
+                      return {
+                        ...p,
+                        original_price: v,
+                        price: computedPrice > 0 ? String(Math.round(computedPrice * 100) / 100) : ""
+                      };
+                    });
+                  }}
                   placeholder="₹ 0"
                   className={inputClass}
                 />
@@ -484,7 +499,22 @@ export function AddProductModal({
                   label="Discount %"
                   type="number"
                   value={form.discount}
-                  onChange={(v) => setForm((p) => ({ ...p, discount: v }))}
+                  onChange={(v) => {
+                    const discVal = parseFloat(v);
+                    if (!isNaN(discVal) && (discVal < 0 || discVal > 100)) {
+                      return;
+                    }
+                    setForm((p) => {
+                      const orig = parseFloat(p.original_price) || 0;
+                      const disc = parseFloat(v) || 0;
+                      const computedPrice = Math.max(0, orig - (orig * disc) / 100);
+                      return {
+                        ...p,
+                        discount: v,
+                        price: computedPrice > 0 ? String(Math.round(computedPrice * 100) / 100) : ""
+                      };
+                    });
+                  }}
                   placeholder="10"
                   className={inputClass}
                 />
@@ -600,7 +630,16 @@ export function AddProductModal({
                       if (!form.name.trim()) return toast.error("Enter product name");
                       if (!form.price) return toast.error("Enter selling price");
                       if (!form.original_price) return toast.error("Enter original price");
-                      if (!form.discount) return toast.error("Enter discount");
+                      if (form.discount === undefined || form.discount === null || form.discount === "") return toast.error("Enter discount");
+                      
+                      const parsedPrice = parseFloat(form.price);
+                      const parsedOriginalPrice = parseFloat(form.original_price);
+                      const parsedDiscount = parseFloat(form.discount);
+                      
+                      if (isNaN(parsedPrice) || parsedPrice < 0) return toast.error("Selling price cannot be negative");
+                      if (isNaN(parsedOriginalPrice) || parsedOriginalPrice < 0) return toast.error("Original price cannot be negative");
+                      if (isNaN(parsedDiscount) || parsedDiscount < 0 || parsedDiscount > 100) return toast.error("Discount must be between 0% and 100%");
+                      
                       if (!form.stock_quantity) return toast.error("Enter stock quantity");
                       if (!form.description.trim()) return toast.error("Enter description");
                       if (!form.image) return toast.error("Upload product image");
