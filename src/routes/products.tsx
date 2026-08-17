@@ -1042,7 +1042,7 @@ const Sidebar = memo(
                                                 </svg>
                                               )}
                                               <span className={`text-[10px] transition-colors ${
-                                                isSubSubChecked ? "text-amber-500 font-bold" : "text-green-400 group-hover:text-green-300"
+                                                isSubSubChecked ? "text-white font-bold" : "text-green-400 group-hover:text-green-300"
                                               }`}>
                                                 {subsub.name}
                                               </span>
